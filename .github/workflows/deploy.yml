@@ -25,6 +25,12 @@ jobs:
       - name: Validate required build secrets
         run: |
           test -n "${{ secrets.VITE_CONVEX_URL }}" || { echo "Missing required secret: VITE_CONVEX_URL"; exit 1; }
+          test -n "${{ secrets.CONVEX_DEPLOY_KEY }}" || { echo "Missing required secret: CONVEX_DEPLOY_KEY"; exit 1; }
+
+      - name: Deploy Convex backend (prod)
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: bunx convex deploy
 
       - name: Build
         env:
