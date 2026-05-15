@@ -15,6 +15,7 @@ import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
 import type * as model_auth from "../model/auth.js";
 import type * as products from "../products.js";
+import type * as submissions from "../submissions.js";
 import type * as users from "../users.js";
 import type * as variants from "../variants.js";
 
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   inventory: typeof inventory;
   "model/auth": typeof model_auth;
   products: typeof products;
+  submissions: typeof submissions;
   users: typeof users;
   variants: typeof variants;
 }>;

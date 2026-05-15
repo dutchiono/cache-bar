@@ -81,6 +81,7 @@ export default defineSchema({
     basePrice: v.number(),
     currency: v.string(),
     imageStorageIds: v.array(v.id("_storage")),
+    demoImageUrls: v.optional(v.array(v.string())),
     tokenDiscountEligible: v.boolean(),
     provenance: v.object({
       makerType: makerType,

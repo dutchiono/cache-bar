@@ -75,6 +75,7 @@ export const createDraft = mutation({
     basePrice: v.number(),
     currency: v.string(),
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
+    demoImageUrls: v.optional(v.array(v.string())),
     tokenDiscountEligible: v.boolean(),
     provenance: provenanceArg,
     royaltySplits: royaltySplitsArg,
@@ -101,6 +102,7 @@ export const createDraft = mutation({
       basePrice: args.basePrice,
       currency: args.currency,
       imageStorageIds: args.imageStorageIds ?? [],
+      demoImageUrls: args.demoImageUrls ?? [],
       tokenDiscountEligible: args.tokenDiscountEligible,
       provenance: { ...args.provenance, makerType: derivedMakerType },
       royaltySplits: args.royaltySplits,
@@ -117,6 +119,7 @@ export const update = mutation({
     basePrice: v.optional(v.number()),
     currency: v.optional(v.string()),
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
+    demoImageUrls: v.optional(v.array(v.string())),
     tokenDiscountEligible: v.optional(v.boolean()),
     provenance: v.optional(provenanceArg),
     royaltySplits: v.optional(royaltySplitsArg),
@@ -160,6 +163,71 @@ export const setStatus = mutation({
       validateSplits(existing.royaltySplits);
     }
     await ctx.db.patch(id, { status });
+  },
+});
+
+export const seedVisionDemo = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const me = await requireRole(ctx, ["admin", "catalog_manager"]);
+
+    const creators = await ctx.db.query("creators").collect();
+    let demoCreator = creators.find((c) => c.agentId === "waifu.fun/v2.0.0");
+    if (!demoCreator) {
+      const creatorId = await ctx.db.insert("creators", {
+        name: "WAIFU.FUN // Image Protocol",
+        type: "agent",
+        status: "active",
+        agentId: "waifu.fun/v2.0.0",
+        baseModel: "milady-ai/streetwear-gen",
+        operatorUserId: me._id,
+        reinvestPercent: 100,
+        capabilities: ["lookbook", "drop-copy", "merch-variant-ideation"],
+        payoutMethod: {
+          kind: "usdc_wallet",
+          chain: "evm",
+          address: "0xDEMO000000000000000000000000000000W41FU",
+        },
+      });
+      demoCreator = (await ctx.db.get(creatorId))!;
+    }
+
+    const title = "WAIFU.FUN v2.0.0 // Statement Tee";
+    const existing = (await ctx.db.query("products").collect()).find((p) => p.title === title);
+    if (existing) return existing._id;
+
+    return await ctx.db.insert("products", {
+      title,
+      description:
+        "Oversized washed-black heavyweight tee with front/back full-print anime-core composition. Visual direction: dark internet protocol, pink accent system, high-density ink treatment, boxed fit.",
+      productType: "physical",
+      category: "tees",
+      makerType: "agent",
+      creatorId: demoCreator._id,
+      status: "draft",
+      basePrice: 69,
+      currency: "USD",
+      imageStorageIds: [],
+      demoImageUrls: ["/images/waifu.png", "/images/image.png"],
+      tokenDiscountEligible: true,
+      provenance: {
+        makerType: "agent",
+        summary:
+          "Agent-created visual system derived from waifu.fun / elizaOS capsule references.",
+        baseModel: "milady-ai/streetwear-gen",
+        provider: "Eliza creator agent",
+        brief:
+          "Create a washed-black, oversized, 280gsm tee with front/back narrative print and pink-glitch accent language.",
+        seed: "WF-0007",
+        runId: "vision-seed-waifu-fun-v2",
+        generatedAt: Date.now(),
+        license: "internal demo use",
+      },
+      royaltySplits: [
+        { role: "creator", percent: 90, payeeCreatorId: demoCreator._id },
+        { role: "platform", percent: 10 },
+      ],
+    });
   },
 });
 
@@ -219,4 +287,3 @@ function validateSplits(
     );
   }
 }
-

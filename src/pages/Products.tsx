@@ -11,6 +11,7 @@ export default function Products() {
   const products = useQuery(api.products.list, {});
   const creators = useQuery(api.creators.list, {});
   const createDraft = useMutation(api.products.createDraft);
+  const seedVisionDemo = useMutation(api.products.seedVisionDemo);
 
   const [open, setOpen] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -71,6 +72,10 @@ export default function Products() {
         creatorId,
         basePrice: Number(fd.get("basePrice") ?? 0),
         currency: (fd.get("currency") as string) || "USD",
+        demoImageUrls: ((fd.get("demoImageUrls") as string) || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
         tokenDiscountEligible: fd.get("tokenDiscountEligible") === "on",
         provenance,
         royaltySplits: splits,
@@ -91,6 +96,21 @@ export default function Products() {
   }
 
   const columns: Column<Product>[] = [
+    {
+      header: "Preview",
+      cell: (r) => {
+        const src = r.demoImageUrls?.[0];
+        if (!src) return <span className="text-xs text-neutral-400">—</span>;
+        return (
+          <img
+            src={src}
+            alt={r.title}
+            className="h-12 w-12 rounded-md border border-neutral-300 bg-zinc-900 object-contain p-0.5"
+          />
+        );
+      },
+      width: "w-16",
+    },
     {
       header: "Title",
       cell: (r) => <span className="font-medium">{r.title}</span>,
@@ -126,6 +146,43 @@ export default function Products() {
 
   return (
     <div>
+      <div className="mb-4 overflow-hidden rounded-2xl border border-fuchsia-300/40 bg-gradient-to-r from-zinc-950 via-black to-zinc-950">
+        <div className="grid gap-3 p-4 md:grid-cols-[1.2fr_1fr]">
+          <div>
+            <h2 className="text-xl font-semibold tracking-wide text-zinc-100">
+              Vision Capsule / Demo Direction
+            </h2>
+            <p className="mt-1 text-sm text-zinc-400">
+              Dark web-punk oversized tee language: washed black, pink accents, heavy typography,
+              anime-core front/back narrative.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => void seedVisionDemo({})}
+                className="rounded-md border border-fuchsia-400/60 bg-fuchsia-500/10 px-3 py-1.5 text-sm font-semibold text-fuchsia-200"
+              >
+                Seed Vision Demo Product
+              </button>
+              <span className="rounded-md border border-zinc-700 px-2.5 py-1 text-xs text-zinc-400">
+                Uses: <code>/public/images/waifu.png</code> + <code>/public/images/image.png</code>
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <img
+              src="/images/waifu.png"
+              alt="Waifu.fun tee reference"
+              className="h-40 w-full rounded-lg border border-zinc-700 bg-zinc-900 object-contain p-1"
+            />
+            <img
+              src="/images/image.png"
+              alt="Capsule collection board reference"
+              className="h-40 w-full rounded-lg border border-zinc-700 bg-zinc-900 object-contain p-1"
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Products</h1>
@@ -178,6 +235,11 @@ export default function Products() {
               required
             />
             <Field label="Currency" name="currency" defaultValue="USD" required />
+            <Field
+              label="Demo image URLs (csv)"
+              name="demoImageUrls"
+              placeholder="/images/waifu.png, /images/image.png"
+            />
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-xs text-neutral-600">Creator</span>
               <select

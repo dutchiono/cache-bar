@@ -7,10 +7,10 @@ import Creators from "./pages/Creators";
 import CreatorDetail from "./pages/CreatorDetail";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
+import Submissions from "./pages/Submissions";
 
-const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
+  const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
   { path: "/", title: "Dashboard", subtitle: "Commerce + treasury overview" },
-  { path: "/submissions", title: "Submissions", subtitle: "Review queue" },
   { path: "/orders", title: "Orders", subtitle: "Card + USDC, all rails" },
   { path: "/orders/:id", title: "Order detail" },
   { path: "/customers", title: "Customers (CRM)", subtitle: "With wallets + $CACHE tier" },
@@ -48,6 +48,7 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/submissions" element={<Submissions />} />
         <Route path="/creators" element={<Creators />} />
         <Route path="/creators/:id" element={<CreatorDetail />} />
         {stubRoutes.map((r) => (
