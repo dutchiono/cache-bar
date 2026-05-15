@@ -24,6 +24,8 @@ export function SignIn() {
         setError("Account already exists. Sign in with your password.");
       } else if (message.includes("InvalidSecret") || message.includes("Invalid credentials")) {
         setError("Wrong password for this email.");
+      } else if (message.includes("Server Error")) {
+        setError("Sign-in failed on server. Refresh and try again, then confirm email/password.");
       } else if (message.includes("TooManyFailedAttempts")) {
         setError("Too many failed attempts. Wait a minute and try again.");
       } else {
