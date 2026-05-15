@@ -18,7 +18,13 @@ export function SignIn() {
     try {
       await signIn("password", form);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed.");
+      const message = err instanceof Error ? err.message : "Sign-in failed.";
+      if (mode === "signUp" && message.toLowerCase().includes("already exists")) {
+        setMode("signIn");
+        setError("Account already exists. Sign in with your password.");
+      } else {
+        setError(message);
+      }
     } finally {
       setPending(false);
     }
