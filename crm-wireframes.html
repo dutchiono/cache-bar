@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NovaMerch + ElizaOS v3 — Wireframes</title>
+<style>
+  :root {
+    --ink:#2b2b2b; --line:#b8b8b8; --line-strong:#6f6f6f;
+    --fill:#ececec; --fill-2:#f6f6f6; --accent:#d8d8d8; --paper:#fff;
+    --muted:#8a8a8a; --tag:#dfe6ef;
+    --ai:#e7e0f3; --ai-line:#9b86c4;
+    --human:#dcebdc; --human-line:#6f9a6f;
+    --agent:#e7e0f3; --agent-line:#9b86c4;
+    --coin:#e3edda; --coin-line:#7d9b5e;
+    --usdc:#d6e6f5; --usdc-line:#6f93b8;
+    --burn:#f3ddd2; --burn-line:#bf8a6f;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; font-family:"Comic Sans MS","Segoe Print","Bradley Hand","Marker Felt",system-ui,sans-serif;
+    background:#d4d4d4; color:var(--ink); font-size:14px;
+  }
+  .app {
+    display:grid; grid-template-columns:230px 1fr; grid-template-rows:48px 1fr;
+    grid-template-areas:"logo topbar" "nav main"; height:100vh; background:var(--paper);
+  }
+  .logo { grid-area:logo; border-right:2px solid var(--ink); border-bottom:2px solid var(--ink);
+    display:flex; align-items:center; gap:8px; padding:0 14px; font-weight:bold; }
+  .logo .mark { width:22px; height:22px; border:2px solid var(--ink); border-radius:4px;
+    display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .topbar { grid-area:topbar; border-bottom:2px solid var(--ink);
+    display:flex; align-items:center; gap:10px; padding:0 14px; }
+  .search { flex:1; max-width:380px; border:1.5px dashed var(--line-strong); border-radius:6px;
+    padding:6px 10px; color:var(--muted); background:var(--fill-2); }
+  .topbar .spacer { flex:1; }
+  .pill { border:1.5px solid var(--line-strong); border-radius:20px; padding:4px 12px;
+    background:var(--fill-2); cursor:default; }
+  .pill.ai { background:var(--ai); border-color:var(--ai-line); }
+  .pill.wallet { background:var(--usdc); border-color:var(--usdc-line); }
+  .avatar { width:30px; height:30px; border:2px solid var(--ink); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; background:var(--fill); }
+  nav { grid-area:nav; border-right:2px solid var(--ink); padding:10px 8px; overflow-y:auto; }
+  nav .group-label { font-size:11px; color:var(--muted); margin:14px 8px 4px; text-transform:uppercase; }
+  nav button { width:100%; text-align:left; border:1.5px solid transparent; border-radius:6px;
+    background:none; padding:7px 10px; margin-bottom:2px; font-family:inherit; font-size:13px;
+    cursor:pointer; color:var(--ink); display:flex; align-items:center; gap:8px; }
+  nav button:hover { background:var(--fill-2); }
+  nav button.active { background:var(--fill); border:1.5px solid var(--ink); font-weight:bold; }
+  nav button .ic { width:16px; height:16px; border:1.5px solid var(--line-strong); border-radius:3px; flex:none; }
+  nav button.ai-link { background:var(--ai); border:1.5px solid var(--ai-line); margin-top:6px; }
+  main { grid-area:main; overflow-y:auto; padding:18px 22px 60px; position:relative; }
+  .screen { display:none; }
+  .screen.active { display:block; }
+  .crumbs { color:var(--muted); font-size:12px; margin-bottom:4px; }
+  h1.title { margin:0 0 2px; font-size:22px; }
+  .subtitle { color:var(--muted); margin:0 0 16px; font-size:13px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .col { flex:1; min-width:0; }
+  .box { border:2px solid var(--ink); border-radius:8px; background:var(--paper);
+    padding:14px; margin-bottom:14px; }
+  .box.dashed { border-style:dashed; border-color:var(--line-strong); }
+  .box h3 { margin:0 0 10px; font-size:14px; display:flex; justify-content:space-between; align-items:center; }
+  .box h3 .more { color:var(--muted); font-size:12px; font-weight:normal; }
+  .kpi { text-align:left; }
+  .kpi .num { font-size:23px; font-weight:bold; }
+  .kpi .lbl { color:var(--muted); font-size:12px; }
+  .kpi .delta { font-size:11px; color:var(--line-strong); }
+  .ph-line { height:9px; background:var(--fill); border-radius:4px; margin:7px 0; }
+  .ph-line.w90{width:90%;} .ph-line.w70{width:70%;} .ph-line.w50{width:50%;}
+  .ph-line.w40{width:40%;} .ph-line.w30{width:30%;}
+  .chart { height:150px; border:1.5px dashed var(--line-strong); border-radius:6px;
+    background:repeating-linear-gradient(45deg,var(--fill-2),var(--fill-2) 8px,var(--paper) 8px,var(--paper) 16px);
+    display:flex; align-items:flex-end; gap:8px; padding:10px; }
+  .bar { flex:1; background:var(--accent); border:1.5px solid var(--line-strong); border-radius:3px 3px 0 0; }
+  .bar.agent { background:var(--agent); border-color:var(--agent-line); }
+  .bar.human { background:var(--human); border-color:var(--human-line); }
+  .bar.burn { background:var(--burn); border-color:var(--burn-line); }
+  .donut { width:120px; height:120px; border-radius:50%;
+    border:18px solid var(--human); border-top-color:var(--agent-line);
+    border-right-color:var(--agent-line); margin:0 auto; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { text-align:left; padding:8px; border-bottom:1.5px solid var(--line); font-size:13px; }
+  th { color:var(--muted); font-size:11px; text-transform:uppercase; border-bottom:2px solid var(--ink); }
+  tr:hover td { background:var(--fill-2); }
+  .tag { display:inline-block; border:1.5px solid var(--line-strong); border-radius:12px;
+    padding:1px 9px; font-size:11px; background:var(--tag); }
+  .tag.green{background:#dcebdc;} .tag.red{background:#f0dada;}
+  .tag.amber{background:#f1e7cf;} .tag.grey{background:var(--fill);}
+  .tag.human{background:var(--human); border-color:var(--human-line);}
+  .tag.agent{background:var(--agent); border-color:var(--agent-line);}
+  .tag.coin{background:var(--coin); border-color:var(--coin-line);}
+  .tag.usdc{background:var(--usdc); border-color:var(--usdc-line);}
+  .tag.burn{background:var(--burn); border-color:var(--burn-line);}
+  .tag.evm{background:var(--fill); border-color:var(--line-strong);}
+  .tag.sol{background:var(--fill); border-color:var(--line-strong);}
+  .btn { border:2px solid var(--ink); border-radius:6px; background:var(--fill);
+    padding:6px 14px; font-family:inherit; font-size:13px; cursor:pointer; }
+  .btn.primary { background:var(--ink); color:#fff; }
+  .btn.sm { padding:3px 9px; font-size:11px; }
+  .btn.ai { background:var(--ai); border-color:var(--ai-line); }
+  .btn.coin { background:var(--coin); border-color:var(--coin-line); }
+  .btn.usdc { background:var(--usdc); border-color:var(--usdc-line); }
+  .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+  .toolbar .grow { flex:1; }
+  .chip { border:1.5px dashed var(--line-strong); border-radius:14px; padding:3px 10px;
+    font-size:12px; color:var(--muted); background:var(--fill-2); }
+  .kanban { display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; }
+  .lane { flex:1; min-width:160px; border:2px solid var(--ink); border-radius:8px;
+    background:var(--fill-2); padding:8px; }
+  .lane h4 { margin:2px 4px 8px; font-size:13px; display:flex; justify-content:space-between; }
+  .lane h4 span { color:var(--muted); }
+  .card { border:1.5px solid var(--line-strong); border-radius:6px; background:var(--paper);
+    padding:8px; margin-bottom:8px; }
+  .card .nm { font-size:13px; font-weight:bold; }
+  .card .amt { font-size:12px; color:var(--line-strong); }
+  .split { display:grid; grid-template-columns:1.6fr 1fr; gap:14px; }
+  .field { margin-bottom:9px; }
+  .field .k { font-size:11px; color:var(--muted); text-transform:uppercase; }
+  .field .v { border-bottom:1.5px dashed var(--line); padding:3px 0; }
+  .timeline-item { display:flex; gap:10px; margin-bottom:12px; }
+  .timeline-item .dot { width:14px; height:14px; border:2px solid var(--ink); border-radius:50%;
+    flex:none; margin-top:2px; }
+  .timeline-item .line { flex:1; }
+  .ai-panel { border:2px solid var(--ai-line); border-radius:8px; background:var(--ai);
+    padding:12px; margin-bottom:14px; }
+  .ai-panel h3 { margin:0 0 8px; font-size:14px; display:flex; align-items:center; gap:6px; }
+  .ai-msg { background:var(--paper); border:1.5px solid var(--ai-line); border-radius:8px;
+    padding:8px 10px; margin-bottom:8px; font-size:13px; }
+  .ai-msg.user { background:var(--fill-2); border-color:var(--line-strong); margin-left:30px; }
+  .ai-input { display:flex; gap:6px; }
+  .ai-input .ti { flex:1; border:1.5px solid var(--ai-line); border-radius:6px; padding:7px 10px;
+    background:var(--paper); color:var(--muted); }
+  .ai-suggest { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .ai-suggest .chip { background:var(--paper); border-color:var(--ai-line); color:var(--ink); cursor:pointer; }
+  .flow { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .node { border:2px solid var(--ink); border-radius:8px; background:var(--paper);
+    padding:10px 12px; min-width:120px; }
+  .node.trigger { background:#dcebdc; }
+  .node.action { background:var(--fill); }
+  .node.ai { background:var(--ai); border-color:var(--ai-line); }
+  .node .nt { font-size:10px; color:var(--muted); text-transform:uppercase; }
+  .arrow { font-size:18px; color:var(--line-strong); }
+  .tabs { display:flex; gap:4px; border-bottom:2px solid var(--ink); margin-bottom:14px; flex-wrap:wrap; }
+  .tabs .t { padding:7px 11px; border:2px solid var(--ink); border-bottom:none;
+    border-radius:6px 6px 0 0; background:var(--fill-2); margin-bottom:-2px; cursor:default; font-size:12px; }
+  .tabs .t.on { background:var(--paper); font-weight:bold; }
+  .note { border:1.5px dashed var(--ai-line); background:#fbf7ff; border-radius:6px;
+    padding:6px 10px; font-size:11px; color:#5a4a7a; margin:0 0 14px; }
+  .note b { color:#3f3060; }
+  .note.coin { border-color:var(--coin-line); background:#f5f9f0; color:#4a5e3a; }
+  .note.coin b { color:#36492a; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .login-wrap { display:flex; align-items:center; justify-content:center; height:100%; }
+  .login-card { width:340px; }
+  .thumb { border:1.5px solid var(--line-strong); border-radius:6px; background:var(--fill-2);
+    height:90px; display:flex; align-items:center; justify-content:center; color:var(--muted);
+    font-size:11px; margin-bottom:8px;
+    background-image:repeating-linear-gradient(45deg,var(--fill-2),var(--fill-2) 6px,var(--paper) 6px,var(--paper) 12px); }
+  .thumb.sq { height:54px; width:54px; margin:0; flex:none; }
+  .thumb.big { height:200px; }
+  .prod-card { border:2px solid var(--ink); border-radius:8px; background:var(--paper); padding:10px; }
+  .prod-card .pt { font-size:13px; font-weight:bold; }
+  .prod-card .pp { font-size:12px; color:var(--line-strong); }
+  .screen-tag { position:absolute; top:10px; right:18px; font-size:10px; color:var(--muted);
+    border:1px solid var(--line); border-radius:4px; padding:2px 6px; background:var(--fill-2); }
+  .footer-legend { margin-top:20px; border-top:1.5px dashed var(--line-strong); padding-top:10px;
+    font-size:11px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap; }
+  .legend-sw { display:inline-block; width:12px; height:12px; border:1.5px solid var(--ink);
+    border-radius:3px; vertical-align:-2px; margin-right:4px; }
+  .legend-sw.ai { background:var(--ai); border-color:var(--ai-line); }
+  .legend-sw.human { background:var(--human); border-color:var(--human-line); }
+  .legend-sw.coin { background:var(--coin); border-color:var(--coin-line); }
+  .legend-sw.std { background:var(--fill); }
+  .stat-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .pay-option { border:1.5px solid var(--line-strong); border-radius:8px; padding:10px;
+    margin-bottom:8px; background:var(--fill-2); }
+  .pay-option.sel { border:2px solid var(--ink); background:var(--paper); }
+  .pay-option .po-h { font-weight:bold; display:flex; justify-content:space-between; }
+  .meter { height:14px; border:1.5px solid var(--ink); border-radius:7px; background:var(--fill-2);
+    overflow:hidden; margin:6px 0; }
+  .meter > div { height:100%; background:var(--coin); border-right:1.5px solid var(--coin-line); }
+  .meter.usdc > div { background:var(--usdc); border-color:var(--usdc-line); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LOGO -->
+  <div class="logo">
+    <div class="mark">M</div>
+    <div>NovaMerch</div>
+  </div>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="search">&#128269;&nbsp; Search products, orders, creators, customers&hellip;</div>
+    <div class="spacer"></div>
+    <div class="pill ai" onclick="go('ai')">&#10024; Ask Eliza</div>
+    <div class="pill wallet">&#128091; Treasury: $182k USDC</div>
+    <div class="pill">&#43; New</div>
+    <div class="avatar">WD</div>
+  </div>
+
+  <!-- NAV -->
+  <nav>
+    <button data-screen="login" onclick="go('login')"><span class="ic"></span> Login / Auth</button>
+    <div class="group-label">Overview</div>
+    <button data-screen="dashboard" class="active" onclick="go('dashboard')"><span class="ic"></span> Dashboard</button>
+    <div class="group-label">Catalog</div>
+    <button data-screen="products" onclick="go('products')"><span class="ic"></span> Products</button>
+    <button data-screen="productDetail" onclick="go('productDetail')"><span class="ic"></span> Product Detail</button>
+    <button data-screen="submissions" onclick="go('submissions')"><span class="ic"></span> Submissions / Review</button>
+    <button data-screen="creators" onclick="go('creators')"><span class="ic"></span> Creators</button>
+    <button data-screen="creatorDetail" onclick="go('creatorDetail')"><span class="ic"></span> Creator Detail</button>
+    <div class="group-label">Sales</div>
+    <button data-screen="orders" onclick="go('orders')"><span class="ic"></span> Orders</button>
+    <button data-screen="orderDetail" onclick="go('orderDetail')"><span class="ic"></span> Order Detail</button>
+    <button data-screen="customers" onclick="go('customers')"><span class="ic"></span> Customers</button>
+    <button data-screen="customerDetail" onclick="go('customerDetail')"><span class="ic"></span> Customer Detail</button>
+    <div class="group-label">Operations</div>
+    <button data-screen="inventory" onclick="go('inventory')"><span class="ic"></span> Inventory &amp; Fulfillment</button>
+    <button data-screen="royalties" onclick="go('royalties')"><span class="ic"></span> Royalties &amp; Payouts</button>
+    <div class="group-label">Finance</div>
+    <button data-screen="treasury" onclick="go('treasury')"><span class="ic"></span> Treasury &amp; Off-ramp</button>
+    <button data-screen="token" onclick="go('token')"><span class="ic"></span> Token &amp; Burn</button>
+    <div class="group-label">Intelligence</div>
+    <button data-screen="reports" onclick="go('reports')"><span class="ic"></span> Reports &amp; Analytics</button>
+    <button data-screen="automations" onclick="go('automations')"><span class="ic"></span> Automations</button>
+    <div class="group-label">Channels</div>
+    <button data-screen="storefront" onclick="go('storefront')"><span class="ic"></span> Storefront Preview</button>
+    <button data-screen="checkout" onclick="go('checkout')"><span class="ic"></span> Checkout</button>
+    <div class="group-label">Admin</div>
+    <button data-screen="team" onclick="go('team')"><span class="ic"></span> Team &amp; Roles</button>
+    <button data-screen="settings" onclick="go('settings')"><span class="ic"></span> Settings</button>
+    <button data-screen="ai" class="ai-link" onclick="go('ai')"><span class="ic"></span> &#10024; Eliza Agent</button>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+
+  <!-- 01 LOGIN -->
+  <section class="screen" id="login">
+    <div class="screen-tag">SCREEN 01 — Auth</div>
+    <div class="login-wrap">
+      <div class="box login-card">
+        <div style="text-align:center;margin-bottom:12px;">
+          <div class="mark" style="margin:0 auto 6px;width:34px;height:34px;border:2px solid var(--ink);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:bold;">M</div>
+          <h1 class="title" style="font-size:18px;">Sign in to NovaMerch</h1>
+          <div class="subtitle" style="margin:0;">Commerce platform for human- &amp; agent-made merch</div>
+        </div>
+        <div class="field"><div class="k">Work email</div><div class="v" style="color:var(--muted)">you@novamerch.co</div></div>
+        <div class="field"><div class="k">Password</div><div class="v" style="color:var(--muted)">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div></div>
+        <button class="btn primary" style="width:100%;margin:6px 0;">Sign in</button>
+        <button class="btn" style="width:100%;">Continue with Google SSO</button>
+        <div class="subtitle" style="text-align:center;margin:10px 0 0;">Staff sign-in &middot; Customers connect a wallet at checkout</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 DASHBOARD -->
+  <section class="screen active" id="dashboard">
+    <div class="screen-tag">SCREEN 02 — Dashboard</div>
+    <div class="crumbs">Overview</div>
+    <h1 class="title">Good morning, Wes</h1>
+    <p class="subtitle">Store health, treasury, and an Eliza briefing.</p>
+    <div class="grid-4">
+      <div class="box kpi"><div class="num">$48.2k</div><div class="lbl">GMV (30 days)</div><div class="delta">&#9650; 18% &middot; 54% paid in USDC</div></div>
+      <div class="box kpi"><div class="num">1,304</div><div class="lbl">Orders (30 days)</div><div class="delta">311 used a token discount</div></div>
+      <div class="box kpi"><div class="num">$182k</div><div class="lbl">USDC treasury</div><div class="delta">fiat runway for ops: ~6 wks</div></div>
+      <div class="box kpi"><div class="num">1.34M</div><div class="lbl">$NOVA burned (lifetime)</div><div class="delta">&#9650; 22k burned this week</div></div>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:2;">
+        <div class="box">
+          <h3>Sales trend <span class="more">last 30 days &middot; by maker type</span></h3>
+          <div class="chart">
+            <div class="bar human" style="height:40%"></div><div class="bar agent" style="height:55%"></div>
+            <div class="bar human" style="height:50%"></div><div class="bar agent" style="height:75%"></div>
+            <div class="bar human" style="height:45%"></div><div class="bar agent" style="height:85%"></div>
+            <div class="bar human" style="height:60%"></div>
+          </div>
+          <div class="subtitle" style="margin:8px 0 0;"><span class="tag human">human-made</span> <span class="tag agent">agent-made</span></div>
+        </div>
+        <div class="box">
+          <h3>Needs attention</h3>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>23 submissions</b> awaiting review &mdash; 15 agent-made, 8 human-made</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>$40k USDC</b> ready to off-ramp &mdash; POD partner invoice due Fri</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>"Galaxy Cat" tee</b> low stock &mdash; 4 left, reorder point 20</div></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="ai-panel">
+          <h3>&#10024; Eliza &mdash; daily briefing</h3>
+          <div class="ai-msg">USDC treasury is healthy but the POD invoice ($38k) is due Friday. I've prepared an <b>off-ramp proposal</b> for $40k &rarr; fiat ops account. Also: agent-made merch drove 61% of GMV. <b>Review the off-ramp?</b></div>
+          <div class="ai-suggest">
+            <span class="chip">Review off-ramp</span>
+            <span class="chip">Summarize today</span>
+            <span class="chip">Burn stats this week</span>
+          </div>
+          <div class="ai-input"><div class="ti">Ask Eliza anything&hellip;</div><button class="btn ai sm">Send</button></div>
+        </div>
+        <div class="box"><h3>Treasury snapshot</h3>
+          <div class="field"><div class="k">USDC &mdash; EVM</div><div class="v">$121,400</div></div>
+          <div class="field"><div class="k">USDC &mdash; Solana</div><div class="v">$60,600</div></div>
+          <div class="field"><div class="k">Fiat ops account</div><div class="v">$24,800</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note coin"><b>Payments are multi-rail.</b> Customers pay by card or USDC (EVM / Solana). USDC accrues in the treasury and is off-ramped to fiat to pay suppliers, dropship &amp; POD. Holding $NOVA unlocks discount tiers; spending $NOVA at checkout burns it.</div>
+  </section>
+
+  <!-- 03 PRODUCTS -->
+  <section class="screen" id="products">
+    <div class="screen-tag">SCREEN 03 — Catalog / Products</div>
+    <div class="crumbs">Catalog</div>
+    <h1 class="title">Products</h1>
+    <p class="subtitle">412 live &middot; 23 in review &middot; physical &amp; digital</p>
+    <div class="toolbar">
+      <span class="chip">All products &#9662;</span>
+      <span class="chip">Maker: all</span>
+      <span class="chip">Type: all</span>
+      <span class="chip">+ Filter</span>
+      <div class="grow"></div>
+      <button class="btn ai sm">&#10024; Eliza: generate a product</button>
+      <button class="btn primary sm">+ New product</button>
+    </div>
+    <div class="box" style="padding:0;">
+      <table>
+        <thead><tr><th>&#9744;</th><th></th><th>Title</th><th>Type</th><th>Category</th><th>Maker</th><th>Creator</th><th>Price</th><th>Stock</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr onclick="go('productDetail')" style="cursor:pointer;"><td>&#9744;</td><td><div class="thumb sq"></div></td><td>Galaxy Cat tee</td><td>Physical</td><td>T-shirt</td><td><span class="tag agent">agent-made</span></td><td>Eliza v3</td><td>$28</td><td>4</td><td><span class="tag green">Live</span></td></tr>
+          <tr><td>&#9744;</td><td><div class="thumb sq"></div></td><td>Synthwave Vol.3</td><td>Digital</td><td>Song track</td><td><span class="tag agent">agent-made</span></td><td>Eliza v3</td><td>$3</td><td>&infin;</td><td><span class="tag green">Live</span></td></tr>
+          <tr><td>&#9744;</td><td><div class="thumb sq"></div></td><td>"Quiet Machines" — poem book</td><td>Digital</td><td>Book</td><td><span class="tag human">human-made</span></td><td>R. Okafor</td><td>$9</td><td>&infin;</td><td><span class="tag green">Live</span></td></tr>
+          <tr><td>&#9744;</td><td><div class="thumb sq"></div></td><td>Vaporwave mouse pad</td><td>Physical</td><td>Mouse pad</td><td><span class="tag agent">agent-made</span></td><td>Eliza v3</td><td>$14</td><td>120</td><td><span class="tag green">Live</span></td></tr>
+          <tr><td>&#9744;</td><td><div class="thumb sq"></div></td><td>Track title pack — "Neon Dusk"</td><td>Digital</td><td>Song titles</td><td><span class="tag agent">agent-made</span></td><td>Eliza v3</td><td>$2</td><td>&infin;</td><td><span class="tag amber">In review</span></td></tr>
+          <tr><td>&#9744;</td><td><div class="thumb sq"></div></td><td>Hand-screened tour tee</td><td>Physical</td><td>T-shirt</td><td><span class="tag human">human-made</span></td><td>M. Alvarez</td><td>$34</td><td>62</td><td><span class="tag green">Live</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><b>One catalog, two product types.</b> Physical (tees, mouse pads, print books) carry variants + inventory; digital (song tracks, song-title packs, ebooks) carry files + unlimited stock. Every product carries a maker type and a provenance record.</div>
+  </section>
+
+  <!-- 04 PRODUCT DETAIL -->
+  <section class="screen" id="productDetail">
+    <div class="screen-tag">SCREEN 04 — Product detail</div>
+    <div class="crumbs">Catalog / Products</div>
+    <h1 class="title">Galaxy Cat tee <span class="tag agent" style="font-size:12px;vertical-align:3px;">agent-made</span></h1>
+    <p class="subtitle">Physical &middot; T-shirt &middot; Created by Eliza v3 &middot; <span class="tag green">Live</span></p>
+    <div class="split">
+      <div>
+        <div class="box">
+          <h3>Media &amp; preview</h3>
+          <div class="thumb big">product image / mockup</div>
+          <div class="row" style="gap:8px;"><div class="thumb sq"></div><div class="thumb sq"></div><div class="thumb sq"></div></div>
+        </div>
+        <div class="box">
+          <h3>Variants &amp; inventory <span class="more">+ Add variant</span></h3>
+          <table>
+            <thead><tr><th>SKU</th><th>Option</th><th>Price</th><th>On hand</th><th>Reorder pt</th></tr></thead>
+            <tbody>
+              <tr><td>GCT-S</td><td>Small</td><td>$28</td><td>1</td><td>20</td></tr>
+              <tr><td>GCT-M</td><td>Medium</td><td>$28</td><td>2</td><td>20</td></tr>
+              <tr><td>GCT-L</td><td>Large</td><td>$28</td><td>1</td><td>20</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="box" style="border-color:var(--agent-line);background:#faf7ff;">
+          <h3>&#129516; Provenance</h3>
+          <div class="field"><div class="k">Maker type</div><div class="v"><span class="tag agent">agent-made</span></div></div>
+          <div class="field"><div class="k">Base model</div><div class="v">eliza-v3 &middot; claude-3-5-sonnet</div></div>
+          <div class="field"><div class="k">Prompt / brief</div><div class="v">"retro space cat, halftone, 2-color"</div></div>
+          <div class="field"><div class="k">Seed / run id</div><div class="v">run_8f2a&hellip; &middot; seed 41327</div></div>
+          <div class="field"><div class="k">License</div><div class="v">Store-exclusive &middot; commercial</div></div>
+        </div>
+        <div class="box">
+          <h3>Royalty splits <span class="more">total 100%</span></h3>
+          <table><tbody>
+            <tr><td>Eliza v3 <span class="tag agent">agent</span></td><td>40%</td></tr>
+            <tr><td>M. Alvarez <span class="tag human">human</span></td><td>20%</td></tr>
+            <tr><td>NovaMerch</td><td>40%</td></tr>
+          </tbody></table>
+        </div>
+        <div class="box">
+          <h3>Pricing &amp; payment</h3>
+          <div class="field"><div class="k">Base price</div><div class="v">$28.00</div></div>
+          <div class="field"><div class="k">Accepted</div><div class="v"><span class="tag card">Card</span> <span class="tag usdc">USDC (EVM)</span> <span class="tag usdc">USDC (SOL)</span></div></div>
+          <div class="field"><div class="k">$NOVA discount</div><div class="v">Eligible &mdash; hold tiers + spend-to-burn</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 SUBMISSIONS -->
+  <section class="screen" id="submissions">
+    <div class="screen-tag">SCREEN 05 — Submissions / Review queue</div>
+    <div class="crumbs">Catalog</div>
+    <h1 class="title">Submissions &amp; Review</h1>
+    <p class="subtitle">23 awaiting review &middot; new merch from human &amp; agent creators</p>
+    <div class="toolbar">
+      <span class="chip">Pending &#9662;</span><span class="chip">Maker: all</span>
+      <div class="grow"></div>
+      <button class="btn ai sm">&#10024; Eliza: pre-screen the queue</button>
+    </div>
+    <div class="kanban">
+      <div class="lane"><h4>New <span>11</span></h4>
+        <div class="card"><div class="nm">"Neon Dusk" title pack</div><div class="amt"><span class="tag agent">agent</span> Eliza v3</div></div>
+        <div class="card"><div class="nm">Sticker sheet — cats</div><div class="amt"><span class="tag human">human</span> R. Okafor</div></div>
+      </div>
+      <div class="lane"><h4>Eliza pre-screened <span>6</span></h4>
+        <div class="card"><div class="nm">Synthwave Vol.4</div><div class="amt"><span class="tag agent">agent</span> &middot; &#10003; quality, &#10003; IP</div></div>
+        <div class="card"><div class="nm">Tour poster set</div><div class="amt"><span class="tag human">human</span> &middot; &#9888; check trademark</div></div>
+      </div>
+      <div class="lane"><h4>Approved <span>4</span></h4>
+        <div class="card"><div class="nm">Vaporwave mouse pad v2</div><div class="amt"><span class="tag agent">agent</span> &rarr; pricing</div></div>
+      </div>
+      <div class="lane"><h4>Rejected <span>2</span></h4>
+        <div class="card"><div class="nm">Lo-fi loop pack</div><div class="amt">duplicate of live SKU</div></div>
+      </div>
+    </div>
+    <div class="ai-panel">
+      <h3>&#10024; Eliza pre-screen result &mdash; "Neon Dusk" title pack</h3>
+      <div class="ai-msg">Originality check passed. No trademark hits. Suggested category: Song titles. Suggested price: $2. Proposed royalty split: Eliza v3 60% / Platform 40%. <b>Approve to publish?</b> &nbsp;<span class="btn ai sm">Review &amp; confirm</span></div>
+    </div>
+    <div class="note"><b>The review queue is where agent-made and human-made merch converge.</b> Eliza pre-screens every submission; a human reviewer makes the final approve/reject call.</div>
+  </section>
+
+  <!-- 06 CREATORS -->
+  <section class="screen" id="creators">
+    <div class="screen-tag">SCREEN 06 — Creators</div>
+    <div class="crumbs">Catalog</div>
+    <h1 class="title">Creators</h1>
+    <p class="subtitle">38 creators &middot; 31 human &middot; 7 agent</p>
+    <div class="toolbar">
+      <span class="chip">All creators &#9662;</span><span class="chip">Type: all</span>
+      <div class="grow"></div>
+      <button class="btn sm">Invite human creator</button>
+      <button class="btn ai sm">&#10024; Register agent creator</button>
+    </div>
+    <div class="box" style="padding:0;">
+      <table>
+        <thead><tr><th>Creator</th><th>Type</th><th>Identity</th><th>Products</th><th>Royalties earned</th><th>Unpaid</th><th>Payout</th></tr></thead>
+        <tbody>
+          <tr onclick="go('creatorDetail')" style="cursor:pointer;"><td>Eliza v3</td><td><span class="tag agent">agent</span></td><td>eliza-v3 / claude-3-5-sonnet</td><td>146</td><td>$21,400</td><td>$3,910</td><td><span class="tag usdc">USDC wallet</span></td></tr>
+          <tr><td>M. Alvarez</td><td><span class="tag human">human</span></td><td>screen printer &middot; Austin</td><td>22</td><td>$8,720</td><td>$1,140</td><td><span class="tag">Bank</span></td></tr>
+          <tr><td>R. Okafor</td><td><span class="tag human">human</span></td><td>poet / illustrator</td><td>9</td><td>$3,210</td><td>$540</td><td><span class="tag usdc">USDC wallet</span></td></tr>
+          <tr><td>Beatsmith-2</td><td><span class="tag agent">agent</span></td><td>music agent</td><td>54</td><td>$6,050</td><td>$880</td><td><span class="tag usdc">USDC wallet</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 07 CREATOR DETAIL -->
+  <section class="screen" id="creatorDetail">
+    <div class="screen-tag">SCREEN 07 — Creator detail (agent)</div>
+    <div class="crumbs">Catalog / Creators</div>
+    <h1 class="title">Eliza v3 <span class="tag agent" style="font-size:12px;vertical-align:3px;">agent creator</span></h1>
+    <p class="subtitle">146 products &middot; $21,400 lifetime royalties &middot; <span class="tag green">Active</span></p>
+    <div class="split">
+      <div>
+        <div class="box">
+          <h3>Products by this creator</h3>
+          <table>
+            <thead><tr><th>Title</th><th>Category</th><th>Sales</th><th>Royalty %</th></tr></thead>
+            <tbody>
+              <tr><td>Galaxy Cat tee</td><td>T-shirt</td><td>312</td><td>40%</td></tr>
+              <tr><td>Synthwave Vol.3</td><td>Song track</td><td>1,204</td><td>60%</td></tr>
+              <tr><td>Vaporwave mouse pad</td><td>Mouse pad</td><td>188</td><td>55%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="box">
+          <h3>Royalty earnings <span class="more">last 6 months</span></h3>
+          <div class="chart">
+            <div class="bar agent" style="height:35%"></div><div class="bar agent" style="height:50%"></div>
+            <div class="bar agent" style="height:45%"></div><div class="bar agent" style="height:70%"></div>
+            <div class="bar agent" style="height:65%"></div><div class="bar agent" style="height:90%"></div>
+          </div>
+        </div>
+        <div class="box">
+          <h3>Payout history</h3>
+          <table><tbody>
+            <tr><td>Apr 2026</td><td>$3,820 USDC</td><td><span class="tag green">Paid</span> &rarr; operator wallet (SOL)</td></tr>
+            <tr><td>Mar 2026</td><td>$2,640 USDC</td><td><span class="tag green">Paid</span></td></tr>
+            <tr><td>May 2026</td><td>$3,910 USDC</td><td><span class="tag amber">Pending</span></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+      <div>
+        <div class="box" style="border-color:var(--agent-line);background:#faf7ff;">
+          <h3>&#129302; Agent identity</h3>
+          <div class="field"><div class="k">ElizaOS agent id</div><div class="v">agent_eliza_creator_v3</div></div>
+          <div class="field"><div class="k">Base model</div><div class="v">eliza-v3 &middot; claude-3-5-sonnet</div></div>
+          <div class="field"><div class="k">Operator</div><div class="v">NovaMerch Studio (Wes D.)</div></div>
+          <div class="field"><div class="k">Payout target</div><div class="v">Operator wallet (SOL) &middot; 30% reinvest</div></div>
+        </div>
+        <div class="ai-panel">
+          <h3>&#10024; Eliza &mdash; creator console</h3>
+          <div class="ai-msg">This creator's tees convert 2.3&times; better than its mouse pads. Want me to brief a new tee batch around the "Synthwave" theme?</div>
+          <div class="ai-suggest"><span class="chip">Brief a new batch</span><span class="chip">Pause this creator</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 ORDERS -->
+  <section class="screen" id="orders">
+    <div class="screen-tag">SCREEN 08 — Orders</div>
+    <div class="crumbs">Sales</div>
+    <h1 class="title">Orders</h1>
+    <p class="subtitle">1,304 in the last 30 days</p>
+    <div class="toolbar">
+      <span class="chip">All orders &#9662;</span><span class="chip">Payment: any</span><span class="chip">Status: any</span>
+      <div class="grow"></div>
+      <button class="btn primary sm">+ Manual order</button>
+    </div>
+    <div class="box" style="padding:0;">
+      <table>
+        <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Payment</th><th>$NOVA discount</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr onclick="go('orderDetail')" style="cursor:pointer;"><td>#10482</td><td>J. Park</td><td>2</td><td><span class="tag usdc">USDC &middot; SOL</span></td><td><span class="tag burn">tier 2 + burn</span></td><td>$33.10</td><td><span class="tag amber">Processing</span></td></tr>
+          <tr><td>#10481</td><td>L. Mwangi</td><td>1</td><td><span class="tag usdc">USDC &middot; EVM</span></td><td><span class="tag coin">tier 1 hold</span></td><td>$2.70</td><td><span class="tag green">Delivered</span></td></tr>
+          <tr><td>#10480</td><td>S. Tan</td><td>3</td><td><span class="tag">Card</span></td><td><span class="tag grey">none</span></td><td>$84.00</td><td><span class="tag amber">In production</span></td></tr>
+          <tr><td>#10479</td><td>D. Whitfield</td><td>1</td><td><span class="tag usdc">USDC &middot; EVM</span></td><td><span class="tag grey">none</span></td><td>$34.00</td><td><span class="tag green">Shipped</span></td></tr>
+          <tr><td>#10478</td><td>A. Rossi</td><td>1</td><td><span class="tag">Card</span></td><td><span class="tag grey">none</span></td><td>$9.00</td><td><span class="tag red">Refunded</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 09 ORDER DETAIL -->
+  <section class="screen" id="orderDetail">
+    <div class="screen-tag">SCREEN 09 — Order detail</div>
+    <div class="crumbs">Sales / Orders</div>
+    <h1 class="title">Order #10482</h1>
+    <p class="subtitle">J. Park &middot; placed 2h ago &middot; <span class="tag amber">Processing</span></p>
+    <div class="split">
+      <div>
+        <div class="box">
+          <h3>Line items</h3>
+          <table>
+            <thead><tr><th>Item</th><th>Maker</th><th>Qty</th><th>Price</th><th>Fulfillment</th></tr></thead>
+            <tbody>
+              <tr><td>Galaxy Cat tee (M)</td><td><span class="tag agent">agent</span></td><td>1</td><td>$28.00</td><td>Print-on-demand</td></tr>
+              <tr><td>Synthwave Vol.3</td><td><span class="tag agent">agent</span></td><td>1</td><td>$3.00</td><td>Digital delivery</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="box">
+          <h3>Payment &amp; discount</h3>
+          <div class="field"><div class="k">Rail</div><div class="v"><span class="tag usdc">USDC</span> on Solana</div></div>
+          <div class="field"><div class="k">Payment tx</div><div class="v">5xQp&hellip;9hT2 &middot; confirmed (32 conf)</div></div>
+          <div class="field"><div class="k">Subtotal</div><div class="v">$31.00</div></div>
+          <div class="field"><div class="k">$NOVA hold tier</div><div class="v">Tier 2 (holds 25k $NOVA) &rarr; &minus;10%</div></div>
+          <div class="field"><div class="k">$NOVA spent &amp; burned</div><div class="v">1,200 $NOVA &rarr; &minus;$2.40 &middot; burn tx 7aD&hellip;Kp</div></div>
+          <div class="field"><div class="k">Tax / shipping</div><div class="v">$2.48 / $4.00</div></div>
+          <div class="field"><div class="k">Total charged (USDC)</div><div class="v"><b>33.10 USDC</b></div></div>
+        </div>
+        <div class="box">
+          <h3>Royalty accrual for this order <span class="more">on net revenue</span></h3>
+          <table><tbody>
+            <tr><td>Eliza v3</td><td>Galaxy Cat tee</td><td>40%</td><td>$10.24</td></tr>
+            <tr><td>M. Alvarez</td><td>Galaxy Cat tee</td><td>20%</td><td>$5.12</td></tr>
+            <tr><td>Eliza v3</td><td>Synthwave Vol.3</td><td>60%</td><td>$1.74</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+      <div>
+        <div class="box"><h3>Customer</h3>
+          <div class="field"><div class="k">Name</div><div class="v">J. Park</div></div>
+          <div class="field"><div class="k">Wallet (SOL)</div><div class="v">8kT2&hellip;Qp9h</div></div>
+          <div class="field"><div class="k">Lifetime value</div><div class="v">$214.00 &middot; 9 orders</div></div>
+        </div>
+        <div class="box">
+          <h3>Fulfillment timeline</h3>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>USDC payment confirmed</b> &middot; Solana &middot; finality reached</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>$NOVA burn confirmed</b> &middot; 1,200 tokens</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>Digital item delivered</b> &middot; download link sent</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>POD job submitted</b> &middot; awaiting print partner</div></div>
+        </div>
+        <div class="ai-panel">
+          <h3>&#10024; Eliza</h3>
+          <div class="ai-msg">POD partner is running 2 days behind. Want me to draft a proactive "slight delay" note to J. Park?</div>
+          <div class="ai-suggest"><span class="chip">Draft the note</span><span class="chip">Refund shipping (USDC)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 CUSTOMERS -->
+  <section class="screen" id="customers">
+    <div class="screen-tag">SCREEN 10 — Customers (CRM)</div>
+    <div class="crumbs">Sales</div>
+    <h1 class="title">Customers</h1>
+    <p class="subtitle">8,940 customers &middot; CRM side of the platform</p>
+    <div class="toolbar">
+      <span class="chip">All customers &#9662;</span><span class="chip">Segment: any</span><span class="chip">$NOVA tier: any</span>
+      <div class="grow"></div>
+      <button class="btn ai sm">&#10024; Eliza: build a segment</button>
+      <button class="btn primary sm">+ New customer</button>
+    </div>
+    <div class="box" style="padding:0;">
+      <table>
+        <thead><tr><th>&#9744;</th><th>Name</th><th>Wallets</th><th>$NOVA held</th><th>Tier</th><th>Orders</th><th>LTV</th><th>Segment</th></tr></thead>
+        <tbody>
+          <tr onclick="go('customerDetail')" style="cursor:pointer;"><td>&#9744;</td><td>J. Park</td><td><span class="tag sol">SOL</span> <span class="tag evm">EVM</span></td><td>25,400</td><td><span class="tag coin">Tier 2</span></td><td>9</td><td>$214</td><td><span class="tag">VIP</span></td></tr>
+          <tr><td>&#9744;</td><td>L. Mwangi</td><td><span class="tag evm">EVM</span></td><td>6,100</td><td><span class="tag coin">Tier 1</span></td><td>3</td><td>$41</td><td><span class="tag grey">Digital-only</span></td></tr>
+          <tr><td>&#9744;</td><td>S. Tan</td><td><span class="tag grey">none</span></td><td>0</td><td><span class="tag grey">&mdash;</span></td><td>5</td><td>$162</td><td><span class="tag">Repeat</span></td></tr>
+          <tr><td>&#9744;</td><td>A. Rossi</td><td><span class="tag sol">SOL</span></td><td>900</td><td><span class="tag grey">&mdash;</span></td><td>1</td><td>$0</td><td><span class="tag red">Churn risk</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note coin"><b>Wallets are a customer attribute.</b> Customers can connect EVM and Solana wallets; $NOVA holdings (snapshotted at order time) map to a discount tier. Segments can target by tier and by wallet activity.</div>
+  </section>
+
+  <!-- 11 CUSTOMER DETAIL -->
+  <section class="screen" id="customerDetail">
+    <div class="screen-tag">SCREEN 11 — Customer detail</div>
+    <div class="crumbs">Sales / Customers</div>
+    <h1 class="title">J. Park <span class="tag" style="font-size:12px;vertical-align:3px;">VIP</span> <span class="tag coin" style="font-size:12px;vertical-align:3px;">$NOVA Tier 2</span></h1>
+    <p class="subtitle">9 orders &middot; $214 lifetime value &middot; Seattle, WA</p>
+    <div class="split">
+      <div>
+        <div class="box">
+          <h3>Order history</h3>
+          <table><tbody>
+            <tr><td>#10482</td><td>Galaxy Cat tee + Synthwave Vol.3</td><td><span class="tag usdc">USDC</span></td><td>$33.10</td><td><span class="tag amber">Processing</span></td></tr>
+            <tr><td>#10410</td><td>Vaporwave mouse pad</td><td><span class="tag usdc">USDC</span></td><td>$12.60</td><td><span class="tag green">Delivered</span></td></tr>
+            <tr><td>#10330</td><td>"Quiet Machines" book</td><td><span class="tag">Card</span></td><td>$9.00</td><td><span class="tag green">Delivered</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="box">
+          <h3>Activity &amp; notes <span class="more">+ Log</span></h3>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>Note</b> &mdash; prefers agent-made music merch, pays in USDC</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>$NOVA</b> &mdash; crossed Tier 2 threshold (25k) on May 2</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line"><b>&#10024; Eliza</b> &mdash; recommended Synthwave Vol.3 &rarr; converted</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="ai-panel">
+          <h3>&#10024; Eliza &mdash; customer assistant</h3>
+          <div class="ai-msg">J. Park holds 25.4k $NOVA (Tier 2) and buys agent-made music merch. "Synthwave Vol.4" is in review &mdash; want me to draft an early-access email with a Tier-2 perk?</div>
+          <div class="ai-suggest"><span class="chip">Draft the email</span><span class="chip">Recommend products</span><span class="chip">Add to VIP drop list</span></div>
+        </div>
+        <div class="box">
+          <h3>Wallets &amp; $NOVA</h3>
+          <div class="field"><div class="k">Solana wallet</div><div class="v">8kT2&hellip;Qp9h &middot; verified</div></div>
+          <div class="field"><div class="k">EVM wallet</div><div class="v">0x4A1&hellip;e7C9 &middot; verified</div></div>
+          <div class="field"><div class="k">$NOVA held</div><div class="v">25,400 &rarr; <span class="tag coin">Tier 2 (&minus;10%)</span></div></div>
+          <div class="field"><div class="k">$NOVA burned (lifetime)</div><div class="v">4,300</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 INVENTORY -->
+  <section class="screen" id="inventory">
+    <div class="screen-tag">SCREEN 12 — Inventory &amp; Fulfillment</div>
+    <div class="crumbs">Operations</div>
+    <h1 class="title">Inventory &amp; Fulfillment</h1>
+    <p class="subtitle">Physical stock, print-on-demand, dropship &amp; digital delivery</p>
+    <div class="row">
+      <div class="col"><div class="box kpi"><div class="num">7</div><div class="lbl">SKUs below reorder point</div></div></div>
+      <div class="col"><div class="box kpi"><div class="num">14</div><div class="lbl">POD jobs in production</div></div></div>
+      <div class="col"><div class="box kpi"><div class="num">$38k</div><div class="lbl">Supplier invoices due (fiat)</div></div></div>
+      <div class="col"><div class="box kpi"><div class="num">$24.8k</div><div class="lbl">Fiat ops balance</div></div></div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div class="box">
+          <h3>Low stock <span class="more">physical</span></h3>
+          <table>
+            <thead><tr><th>SKU</th><th>Product</th><th>On hand</th><th>Reorder pt</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>GCT-S</td><td>Galaxy Cat tee / S</td><td>1</td><td>20</td><td><button class="btn sm">Reorder</button></td></tr>
+              <tr><td>GCT-L</td><td>Galaxy Cat tee / L</td><td>1</td><td>20</td><td><button class="btn sm">Reorder</button></td></tr>
+              <tr><td>VMP-1</td><td>Vaporwave mouse pad</td><td>9</td><td>25</td><td><button class="btn sm">Reorder</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col">
+        <div class="box">
+          <h3>Supplier funding</h3>
+          <div class="field"><div class="k">Print-on-demand (Printful)</div><div class="v">$38k due Fri &middot; pays in fiat</div></div>
+          <div class="field"><div class="k">Dropship partner</div><div class="v">$6k due &middot; pays in fiat</div></div>
+          <div class="field"><div class="k">Funding source</div><div class="v">Fiat ops account ($24.8k) &mdash; needs top-up</div></div>
+          <div class="meter usdc"><div style="width:65%"></div></div>
+          <div class="subtitle" style="margin:0;">Off-ramp ~$20k USDC to cover Friday invoices</div>
+        </div>
+        <div class="ai-panel">
+          <h3>&#10024; Eliza</h3>
+          <div class="ai-msg">Fiat ops balance won't cover Friday's supplier invoices. Proposed: off-ramp $40k USDC (EVM) &rarr; fiat. <b>Review off-ramp proposal?</b></div>
+          <div class="ai-suggest"><span class="chip">Review off-ramp</span><span class="chip">Switch some SKUs to POD</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="note coin"><b>Suppliers are paid in fiat.</b> Stock purchases, dropship and POD invoices draw from the fiat ops account, which is topped up by off-ramping USDC from the treasury (Screen 13). Digital products skip inventory and fulfillment entirely.</div>
+  </section>
+
+  <!-- 13 TREASURY -->
+  <section class="screen" id="treasury">
+    <div class="screen-tag">SCREEN 13 — Treasury &amp; Off-ramp</div>
+    <div class="crumbs">Finance</div>
+    <h1 class="title">Treasury &amp; Off-ramp</h1>
+    <p class="subtitle">USDC balances, off-ramp to fiat, and supplier funding</p>
+    <div class="grid-4">
+      <div class="box kpi"><div class="num">$121.4k</div><div class="lbl">USDC &mdash; EVM</div><div class="delta">Safe multisig 3/5</div></div>
+      <div class="box kpi"><div class="num">$60.6k</div><div class="lbl">USDC &mdash; Solana</div><div class="delta">Squads multisig 2/4</div></div>
+      <div class="box kpi"><div class="num">$24.8k</div><div class="lbl">Fiat ops account</div><div class="delta">pays suppliers</div></div>
+      <div class="box kpi"><div class="num">$40.0k</div><div class="lbl">Off-ramp in progress</div><div class="delta">1 job &middot; settling</div></div>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:2;">
+        <div class="box">
+          <h3>Treasury ledger <span class="more">USDC in / out</span></h3>
+          <table>
+            <thead><tr><th>Date</th><th>Type</th><th>Chain</th><th>Amount</th><th>Ref</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>May 15</td><td>USDC in (order #10482)</td><td><span class="tag sol">SOL</span></td><td>+33.10</td><td>5xQp&hellip;9hT2</td><td><span class="tag green">Confirmed</span></td></tr>
+              <tr><td>May 15</td><td>Off-ramp &rarr; fiat</td><td><span class="tag evm">EVM</span></td><td>&minus;40,000</td><td>job_ofr_2207</td><td><span class="tag amber">Settling</span></td></tr>
+              <tr><td>May 14</td><td>Supplier payment (Printful)</td><td>Fiat</td><td>&minus;31,200</td><td>inv_PF_8841</td><td><span class="tag green">Paid</span></td></tr>
+              <tr><td>May 14</td><td>USDC in (batch &times;46)</td><td><span class="tag evm">EVM</span></td><td>+1,910.00</td><td>indexer batch</td><td><span class="tag green">Confirmed</span></td></tr>
+              <tr><td>May 13</td><td>Creator payout (USDC)</td><td><span class="tag sol">SOL</span></td><td>&minus;3,910</td><td>payout_May26</td><td><span class="tag green">Paid</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="box">
+          <h3>Off-ramp jobs</h3>
+          <table>
+            <thead><tr><th>Job</th><th>USDC</th><th>Expected fiat</th><th>Provider</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>job_ofr_2207</td><td>40,000</td><td>~$39,920</td><td>Off-ramp provider</td><td><span class="tag amber">Settling</span></td></tr>
+              <tr><td>job_ofr_2199</td><td>25,000</td><td>$24,950</td><td>Off-ramp provider</td><td><span class="tag green">Settled</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col">
+        <div class="box" style="border-color:var(--usdc-line);background:#f4f9fd;">
+          <h3>&#128091; New off-ramp</h3>
+          <div class="field"><div class="k">From</div><div class="v">USDC &mdash; EVM treasury</div></div>
+          <div class="field"><div class="k">Amount</div><div class="v">40,000 USDC</div></div>
+          <div class="field"><div class="k">To</div><div class="v">Fiat ops account</div></div>
+          <div class="field"><div class="k">Provider quote</div><div class="v">~$39,920 &middot; 0.2% &middot; T+1</div></div>
+          <div class="field"><div class="k">Approval</div><div class="v">Requires 3/5 multisig signers</div></div>
+          <button class="btn usdc" style="width:100%;margin-top:4px;">Create off-ramp proposal</button>
+        </div>
+        <div class="note coin" style="margin:0;"><b>Humans move money.</b> Eliza and automations can <b>propose</b> an off-ramp; execution always requires multisig signers. The platform never holds custody keys in app code.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 TOKEN & BURN -->
+  <section class="screen" id="token">
+    <div class="screen-tag">SCREEN 14 — Token &amp; Burn</div>
+    <div class="crumbs">Finance</div>
+    <h1 class="title">$NOVA Token &amp; Burn</h1>
+    <p class="subtitle">Native token on EVM + Solana &middot; discount tiers &middot; spend-to-burn</p>
+    <div class="grid-4">
+      <div class="box kpi"><div class="num">100M</div><div class="lbl">Initial supply</div></div>
+      <div class="box kpi"><div class="num">98.66M</div><div class="lbl">Circulating</div></div>
+      <div class="box kpi"><div class="num">1.34M</div><div class="lbl">Burned (lifetime)</div><div class="delta">&#9650; 22k this week</div></div>
+      <div class="box kpi"><div class="num">311</div><div class="lbl">Orders with burn (30d)</div></div>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:2;">
+        <div class="box">
+          <h3>Burn events <span class="more">one row per spend-to-burn at checkout</span></h3>
+          <table>
+            <thead><tr><th>Date</th><th>Order</th><th>Chain</th><th>$NOVA burned</th><th>Discount given</th><th>Burn tx</th></tr></thead>
+            <tbody>
+              <tr><td>May 15</td><td>#10482</td><td><span class="tag sol">SOL</span></td><td>1,200</td><td>$2.40</td><td>7aD&hellip;Kp &#10003;</td></tr>
+              <tr><td>May 15</td><td>#10477</td><td><span class="tag evm">EVM</span></td><td>800</td><td>$1.60</td><td>0x9c&hellip;2f &#10003;</td></tr>
+              <tr><td>May 14</td><td>#10463</td><td><span class="tag sol">SOL</span></td><td>2,500</td><td>$5.00</td><td>3pR&hellip;Tq &#10003;</td></tr>
+              <tr><td>May 14</td><td>#10455</td><td><span class="tag evm">EVM</span></td><td>1,000</td><td>$2.00</td><td>0x1a&hellip;8d &#10003;</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="box">
+          <h3>Burn trend <span class="more">$NOVA burned per week</span></h3>
+          <div class="chart">
+            <div class="bar burn" style="height:30%"></div><div class="bar burn" style="height:45%"></div>
+            <div class="bar burn" style="height:40%"></div><div class="bar burn" style="height:60%"></div>
+            <div class="bar burn" style="height:70%"></div><div class="bar burn" style="height:85%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="box" style="border-color:var(--coin-line);background:#f5f9f0;">
+          <h3>&#129689; Discount tiers <span class="more">hold-to-qualify</span></h3>
+          <div class="field"><div class="k">Tier 1</div><div class="v">hold 5,000 $NOVA &rarr; &minus;5%</div></div>
+          <div class="field"><div class="k">Tier 2</div><div class="v">hold 25,000 $NOVA &rarr; &minus;10%</div></div>
+          <div class="field"><div class="k">Tier 3</div><div class="v">hold 100,000 $NOVA &rarr; &minus;15%</div></div>
+          <div class="field"><div class="k">Holdings snapshot</div><div class="v">read on-chain at checkout</div></div>
+        </div>
+        <div class="box" style="border-color:var(--burn-line);background:#fbf2ec;">
+          <h3>&#128293; Spend-to-burn</h3>
+          <div class="field"><div class="k">Rate</div><div class="v">500 $NOVA = $1 discount</div></div>
+          <div class="field"><div class="k">Cap per order</div><div class="v">up to 20% of subtotal</div></div>
+          <div class="field"><div class="k">Mechanism</div><div class="v">spent $NOVA sent to burn address / burn instruction</div></div>
+          <div class="field"><div class="k">Stacks with tiers</div><div class="v">yes &mdash; hold tier + burn combine</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note coin"><b>Two ways $NOVA cuts the price.</b> Holding unlocks a tier discount (tokens stay in the wallet). Spending burns tokens for extra discount. Only redeemed/spent tokens are burned &mdash; there is no revenue buy-and-burn. Every burn is an on-chain tx recorded against its order.</div>
+  </section>
+
+  <!-- 15 ROYALTIES -->
+  <section class="screen" id="royalties">
+    <div class="screen-tag">SCREEN 15 — Royalties &amp; Payouts</div>
+    <div class="crumbs">Operations</div>
+    <h1 class="title">Royalties &amp; Payouts</h1>
+    <p class="subtitle">Per-sale accrual on net revenue &middot; period statements &middot; payout runs</p>
+    <div class="row">
+      <div class="col"><div class="box kpi"><div class="num">$9,740</div><div class="lbl">Owed this period</div></div></div>
+      <div class="col"><div class="box kpi"><div class="num">$6,050</div><div class="lbl">To agent creators</div></div></div>
+      <div class="col"><div class="box kpi"><div class="num">$3,690</div><div class="lbl">To human creators</div></div></div>
+      <div class="col"><div class="box kpi"><div class="num">May 31</div><div class="lbl">Next payout run</div></div></div>
+    </div>
+    <div class="box">
+      <h3>Royalty ledger <span class="more">accrues on net revenue of every paid order line</span></h3>
+      <table>
+        <thead><tr><th>Date</th><th>Order</th><th>Product</th><th>Payee</th><th>Type</th><th>Basis</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr><td>May 15</td><td>#10482</td><td>Galaxy Cat tee</td><td>Eliza v3</td><td><span class="tag agent">agent</span></td><td>40% of $25.60 net</td><td>$10.24</td></tr>
+          <tr><td>May 15</td><td>#10482</td><td>Galaxy Cat tee</td><td>M. Alvarez</td><td><span class="tag human">human</span></td><td>20% of $25.60 net</td><td>$5.12</td></tr>
+          <tr><td>May 14</td><td>#10455</td><td>"Quiet Machines"</td><td>R. Okafor</td><td><span class="tag human">human</span></td><td>70% of $9 net</td><td>$6.30</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box">
+      <h3>Payout runs <span class="more">+ Run payout</span></h3>
+      <table>
+        <thead><tr><th>Period</th><th>Payees</th><th>Total</th><th>Method split</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>May 2026</td><td>38</td><td>$9,740</td><td>USDC $6,300 &middot; Bank $3,440</td><td><span class="tag amber">Pending</span></td></tr>
+          <tr><td>Apr 2026</td><td>36</td><td>$11,210</td><td>USDC $7,100 &middot; Bank $4,110</td><td><span class="tag green">Paid</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note coin"><b>Net revenue, not gross.</b> Royalties accrue on the line revenue after $NOVA discounts. Human creators are paid by bank or USDC wallet; agent creators are paid in USDC to the operator's wallet, minus the reinvest share.</div>
+  </section>
+
+  <!-- 16 REPORTS -->
+  <section class="screen" id="reports">
+    <div class="screen-tag">SCREEN 16 — Reports &amp; Analytics</div>
+    <div class="crumbs">Intelligence</div>
+    <h1 class="title">Reports &amp; Analytics</h1>
+    <p class="subtitle">Sales, maker mix, payment rails, $NOVA economics &amp; royalty liability</p>
+    <div class="toolbar">
+      <span class="chip">Date: Q2 2026 &#9662;</span><span class="chip">Channel: all</span>
+      <div class="grow"></div>
+      <button class="btn ai sm">&#10024; Eliza: explain the maker-mix shift</button>
+      <button class="btn sm">Export</button>
+    </div>
+    <div class="row">
+      <div class="col"><div class="box"><h3>GMV by maker type</h3>
+        <div class="donut"></div>
+        <div class="subtitle" style="text-align:center;margin:8px 0 0;"><span class="tag agent">agent 61%</span> <span class="tag human">human 39%</span></div>
+      </div></div>
+      <div class="col"><div class="box"><h3>Payment rail mix</h3>
+        <div class="chart"><div class="bar usdc" style="height:54%"></div><div class="bar usdc" style="height:30%"></div><div class="bar" style="height:46%"></div></div>
+        <div class="subtitle" style="margin:8px 0 0;"><span class="tag usdc">USDC-EVM 34%</span> <span class="tag usdc">USDC-SOL 20%</span> <span class="tag">Card 46%</span></div>
+      </div></div>
+    </div>
+    <div class="row">
+      <div class="col"><div class="box"><h3>$NOVA burned vs discounts given</h3>
+        <div class="chart"><div class="bar burn" style="height:40%"></div><div class="bar burn" style="height:55%"></div><div class="bar burn" style="height:60%"></div><div class="bar burn" style="height:80%"></div></div>
+      </div></div>
+      <div class="col"><div class="box"><h3>Royalty liability trend</h3>
+        <div class="chart"><div class="bar" style="height:40%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:80%"></div></div>
+      </div></div>
+    </div>
+    <div class="ai-panel">
+      <h3>&#10024; Eliza analytics narrative</h3>
+      <div class="ai-msg">Agent-made share of GMV rose to 61% this quarter. USDC now covers 54% of payments &mdash; treasury inflow is strong but lumpy, so time off-ramps to supplier invoice dates. $NOVA burn is up 85% QoQ as Tier-2 customers spend tokens; discount cost is 3.1% of GMV, within target.</div>
+    </div>
+  </section>
+
+  <!-- 17 AUTOMATIONS -->
+  <section class="screen" id="automations">
+    <div class="screen-tag">SCREEN 17 — Automations</div>
+    <div class="crumbs">Intelligence</div>
+    <h1 class="title">Automations</h1>
+    <p class="subtitle">No-code workflow builder &middot; 16 active automations</p>
+    <div class="toolbar">
+      <span class="chip">All automations &#9662;</span><span class="chip">Active</span>
+      <div class="grow"></div>
+      <button class="btn primary sm">+ New automation</button>
+    </div>
+    <div class="box">
+      <h3>"Treasury runway guard"</h3>
+      <div class="flow">
+        <div class="node trigger"><div class="nt">Trigger</div>Fiat ops &lt; supplier invoices due</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node ai"><div class="nt">&#10024; AI step</div>Eliza sizes the off-ramp</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node action"><div class="nt">Action</div>Create off-ramp proposal</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node action"><div class="nt">Action</div>Notify multisig signers</div>
+      </div>
+    </div>
+    <div class="box">
+      <h3>"USDC payment confirmed &rarr; fulfill"</h3>
+      <div class="flow">
+        <div class="node trigger"><div class="nt">Trigger</div>On-chain payment finality</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node action"><div class="nt">Action</div>Mark order paid + accrue royalty</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node action"><div class="nt">Condition</div>Has digital item?</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node action"><div class="nt">Action</div>Deliver signed link + record burn</div>
+      </div>
+    </div>
+    <div class="box">
+      <h3>"Agent merch generation batch"</h3>
+      <div class="flow">
+        <div class="node trigger"><div class="nt">Trigger</div>Weekly &middot; Mon 6am</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node ai"><div class="nt">&#10024; AI step</div>Eliza generates 10 products</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node action"><div class="nt">Action</div>Create submissions w/ provenance</div>
+        <span class="arrow">&rarr;</span>
+        <div class="node action"><div class="nt">Action</div>Notify reviewer</div>
+      </div>
+    </div>
+    <div class="note coin"><b>AI steps propose; humans execute money moves.</b> An AI step can size an off-ramp or generate merch, but creating an off-ramp proposal still routes to multisig signers, and generated merch still enters the review queue.</div>
+  </section>
+
+  <!-- 18 STOREFRONT -->
+  <section class="screen" id="storefront">
+    <div class="screen-tag">SCREEN 18 — Storefront preview</div>
+    <div class="crumbs">Channels</div>
+    <h1 class="title">Storefront Preview</h1>
+    <p class="subtitle">Customer-facing shop &middot; what buyers see</p>
+    <div class="toolbar">
+      <span class="chip">Shop all &#9662;</span><span class="chip">Filter: maker type</span><span class="chip">Filter: category</span>
+      <div class="grow"></div>
+      <span class="pill wallet">&#128091; Connect wallet for $NOVA discount</span>
+      <button class="btn sm">Open live storefront</button>
+    </div>
+    <div class="grid-4">
+      <div class="prod-card"><div class="thumb"></div><div class="pt">Galaxy Cat tee</div><div class="pp">$28 &middot; <span class="tag agent">agent-made</span></div></div>
+      <div class="prod-card"><div class="thumb"></div><div class="pt">Synthwave Vol.3</div><div class="pp">$3 &middot; <span class="tag agent">agent-made</span></div></div>
+      <div class="prod-card"><div class="thumb"></div><div class="pt">"Quiet Machines" book</div><div class="pp">$9 &middot; <span class="tag human">human-made</span></div></div>
+      <div class="prod-card"><div class="thumb"></div><div class="pt">Hand-screened tour tee</div><div class="pp">$34 &middot; <span class="tag human">human-made</span></div></div>
+      <div class="prod-card"><div class="thumb"></div><div class="pt">Vaporwave mouse pad</div><div class="pp">$14 &middot; <span class="tag agent">agent-made</span></div></div>
+      <div class="prod-card"><div class="thumb"></div><div class="pt">Neon Dusk title pack</div><div class="pp">$2 &middot; <span class="tag agent">agent-made</span></div></div>
+      <div class="prod-card"><div class="thumb"></div><div class="pt">Sticker sheet — cats</div><div class="pp">$6 &middot; <span class="tag human">human-made</span></div></div>
+      <div class="prod-card"><div class="thumb"></div><div class="pt">Lo-fi loop pack</div><div class="pp">$5 &middot; <span class="tag agent">agent-made</span></div></div>
+    </div>
+    <div class="note coin"><b>Provenance + wallet are customer-facing.</b> Every product page shows the human-made / agent-made badge. Connecting an EVM or Solana wallet shows the buyer their $NOVA tier discount applied live across the shop.</div>
+  </section>
+
+  <!-- 19 CHECKOUT -->
+  <section class="screen" id="checkout">
+    <div class="screen-tag">SCREEN 19 — Checkout</div>
+    <div class="crumbs">Channels</div>
+    <h1 class="title">Checkout</h1>
+    <p class="subtitle">Cart &middot; payment rail &middot; $NOVA discounts</p>
+    <div class="split">
+      <div>
+        <div class="box">
+          <h3>Cart</h3>
+          <table><tbody>
+            <tr><td><div class="thumb sq"></div></td><td>Galaxy Cat tee (M)<br><span class="tag agent">agent-made</span></td><td>1</td><td>$28.00</td></tr>
+            <tr><td><div class="thumb sq"></div></td><td>Synthwave Vol.3<br><span class="tag agent">agent-made</span></td><td>1</td><td>$3.00</td></tr>
+          </tbody></table>
+        </div>
+        <div class="box">
+          <h3>Payment method</h3>
+          <div class="pay-option"><div class="po-h"><span>&#128179; Card</span><span>Stripe</span></div><div class="subtitle" style="margin:4px 0 0;">Visa / Mastercard / Apple Pay</div></div>
+          <div class="pay-option sel"><div class="po-h"><span>&#128091; USDC &mdash; Solana</span><span>&#10003; selected</span></div><div class="subtitle" style="margin:4px 0 0;">Wallet 8kT2&hellip;Qp9h connected &middot; balance 412 USDC</div></div>
+          <div class="pay-option"><div class="po-h"><span>&#128091; USDC &mdash; EVM</span><span></span></div><div class="subtitle" style="margin:4px 0 0;">Connect an EVM wallet</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="box" style="border-color:var(--coin-line);background:#f5f9f0;">
+          <h3>&#129689; $NOVA discount</h3>
+          <div class="field"><div class="k">Wallet holdings</div><div class="v">25,400 $NOVA &rarr; <span class="tag coin">Tier 2 (&minus;10%)</span> applied</div></div>
+          <div class="field"><div class="k">Spend $NOVA to burn?</div><div class="v">1,200 $NOVA &rarr; &minus;$2.40 extra &middot; <span class="tag burn">will be burned</span></div></div>
+          <div class="meter"><div style="width:48%"></div></div>
+          <div class="subtitle" style="margin:0;">Burn cap: 20% of subtotal &middot; 500 $NOVA = $1</div>
+        </div>
+        <div class="box">
+          <h3>Summary</h3>
+          <div class="field"><div class="k">Subtotal</div><div class="v">$31.00</div></div>
+          <div class="field"><div class="k">Tier 2 hold discount</div><div class="v">&minus;$3.10</div></div>
+          <div class="field"><div class="k">$NOVA spend-to-burn</div><div class="v">&minus;$2.40</div></div>
+          <div class="field"><div class="k">Tax + shipping</div><div class="v">$2.48 + $4.00</div></div>
+          <div class="field"><div class="k">Total</div><div class="v"><b>31.98 USDC</b></div></div>
+          <button class="btn usdc" style="width:100%;margin-top:6px;">Pay 31.98 USDC &amp; burn 1,200 $NOVA</button>
+          <div class="subtitle" style="margin:6px 0 0;text-align:center;">Two signatures: USDC transfer + $NOVA burn</div>
+        </div>
+      </div>
+    </div>
+    <div class="note coin"><b>Checkout composes both discount paths.</b> The hold-tier discount is automatic from the connected wallet's snapshot; the spend-to-burn slider is optional. Paying with USDC submits a payment transfer and, if tokens are spent, a burn transaction; the order is created once on-chain finality is reached.</div>
+  </section>
+
+  <!-- 20 TEAM -->
+  <section class="screen" id="team">
+    <div class="screen-tag">SCREEN 20 — Team &amp; Roles</div>
+    <div class="crumbs">Admin</div>
+    <h1 class="title">Team &amp; Roles</h1>
+    <p class="subtitle">9 staff &middot; 5 roles &middot; RBAC enforced in Convex</p>
+    <div class="toolbar"><div class="grow"></div><button class="btn primary sm">+ Invite member</button></div>
+    <div class="box" style="padding:0;">
+      <table>
+        <thead><tr><th>Member</th><th>Role</th><th>Scope</th><th>Treasury rights</th><th>Eliza access</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Wes D.</td><td><span class="tag">Admin</span></td><td>All</td><td><span class="tag usdc">Multisig signer</span></td><td><span class="tag agent">Full</span></td><td><span class="tag green">Active</span></td></tr>
+          <tr><td>Jordan S.</td><td><span class="tag">Catalog mgr</span></td><td>Products, Submissions</td><td><span class="tag grey">None</span></td><td><span class="tag agent">Full</span></td><td><span class="tag green">Active</span></td></tr>
+          <tr><td>Aisha K.</td><td><span class="tag">Fulfillment</span></td><td>Orders, Inventory</td><td><span class="tag grey">None</span></td><td><span class="tag">Scoped</span></td><td><span class="tag green">Active</span></td></tr>
+          <tr><td>Priya R.</td><td><span class="tag">Finance</span></td><td>Treasury, Royalties, Reports</td><td><span class="tag usdc">Multisig signer</span></td><td><span class="tag">Scoped</span></td><td><span class="tag green">Active</span></td></tr>
+          <tr><td>Sam P.</td><td><span class="tag">Support</span></td><td>Orders, Customers</td><td><span class="tag grey">None</span></td><td><span class="tag">Scoped</span></td><td><span class="tag green">Active</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note coin"><b>Treasury rights are separate from app roles.</b> App RBAC (Convex) governs who can read/write platform data; moving USDC or running an off-ramp additionally requires being a multisig signer on the treasury wallets. The app can only ever <b>propose</b>.</div>
+  </section>
+
+  <!-- 21 SETTINGS -->
+  <section class="screen" id="settings">
+    <div class="screen-tag">SCREEN 21 — Settings</div>
+    <div class="crumbs">Admin</div>
+    <h1 class="title">Settings</h1>
+    <p class="subtitle">Store configuration</p>
+    <div class="tabs">
+      <div class="t on">General</div><div class="t">Categories</div><div class="t">Card payments</div>
+      <div class="t">Wallets &amp; chains</div><div class="t">Treasury &amp; off-ramp</div><div class="t">$NOVA &amp; discounts</div>
+      <div class="t">Fulfillment</div><div class="t">Royalty rules</div><div class="t">Eliza Agent</div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div class="box"><h3>Wallets &amp; chains</h3>
+          <div class="field"><div class="k">EVM chain</div><div class="v">Base &middot; USDC contract 0x833&hellip;913 &middot; RPC set</div></div>
+          <div class="field"><div class="k">Solana</div><div class="v">Mainnet &middot; USDC mint EPjF&hellip;Dt1v &middot; RPC set</div></div>
+          <div class="field"><div class="k">$NOVA &mdash; EVM</div><div class="v">ERC-20 0x4d2&hellip;a07</div></div>
+          <div class="field"><div class="k">$NOVA &mdash; Solana</div><div class="v">SPL mint 9xN&hellip;v3K</div></div>
+          <div class="field"><div class="k">Payment confirmation</div><div class="v">Indexer webhook + finality threshold</div></div>
+        </div>
+        <div class="box"><h3>Treasury &amp; off-ramp</h3>
+          <div class="field"><div class="k">EVM treasury</div><div class="v">Safe multisig 3/5</div></div>
+          <div class="field"><div class="k">Solana treasury</div><div class="v">Squads multisig 2/4</div></div>
+          <div class="field"><div class="k">Off-ramp provider</div><div class="v">configured &middot; quote API connected</div></div>
+          <div class="field"><div class="k">Fiat ops account</div><div class="v">linked &mdash; pays suppliers</div></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="box" style="border-color:var(--coin-line);background:#f5f9f0;"><h3>$NOVA &amp; discounts</h3>
+          <div class="field"><div class="k">Hold tiers</div><div class="v">5k/&minus;5% &middot; 25k/&minus;10% &middot; 100k/&minus;15%</div></div>
+          <div class="field"><div class="k">Spend-to-burn rate</div><div class="v">500 $NOVA = $1 &middot; cap 20% of subtotal</div></div>
+          <div class="field"><div class="k">Burn destination</div><div class="v">EVM burn address / SOL burn instruction</div></div>
+          <div class="field"><div class="k">Buy-and-burn</div><div class="v">off &mdash; redeemed tokens only</div></div>
+        </div>
+        <div class="ai-panel">
+          <h3>&#10024; Eliza Agent configuration</h3>
+          <div class="field"><div class="k">Copilot agent id</div><div class="v">agent_novamerch_copilot_v3</div></div>
+          <div class="field"><div class="k">Creator agent id</div><div class="v">agent_eliza_creator_v3</div></div>
+          <div class="field"><div class="k">MCP server</div><div class="v">novamerch-mcp &middot; connected &#10003;</div></div>
+          <div class="field"><div class="k">Copilot writes</div><div class="v">Draft &amp; propose only &mdash; incl. off-ramp proposals</div></div>
+          <div class="field"><div class="k">Treasury access</div><div class="v">Read-only + propose &mdash; never signs or moves funds</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 ELIZA AGENT -->
+  <section class="screen" id="ai">
+    <div class="screen-tag">SCREEN 22 — Eliza Agent (full console)</div>
+    <div class="crumbs">Intelligence</div>
+    <h1 class="title">&#10024; Eliza Agent</h1>
+    <p class="subtitle">ElizaOS v3 &mdash; copilot + creator &middot; connected via MCP</p>
+    <div class="split">
+      <div class="box" style="background:var(--ai);border-color:var(--ai-line);">
+        <div class="ai-msg user">Friday's POD invoice is $38k. Do we have the fiat?</div>
+        <div class="ai-msg">Fiat ops balance is $24.8k &mdash; short by ~$13.2k, plus a $6k dropship invoice. I recommend off-ramping <b>$40k USDC</b> from the EVM treasury (quote ~$39,920, T+1). I've prepared an <b>off-ramp proposal</b> &mdash; it routes to the 3/5 multisig signers; I can't execute it. <b>Create the proposal?</b> &nbsp;<span class="btn ai sm">Review &amp; confirm</span></div>
+        <div class="ai-msg user">Do it. Also how's the burn looking?</div>
+        <div class="ai-msg">Proposal created, signers notified. $NOVA burn: 22,300 burned this week across 311 orders (&#9650;85% QoQ) &mdash; all on-chain, all recorded against their orders. Discount cost is 3.1% of GMV, within your target.</div>
+        <div class="ai-suggest" style="margin-top:10px;">
+          <span class="chip">Generate a product batch</span>
+          <span class="chip">Explain the payment-rail mix</span>
+          <span class="chip">Time the next off-ramp</span>
+          <span class="chip">Draft a drop announcement</span>
+        </div>
+        <div class="ai-input"><div class="ti">Message Eliza&hellip;</div><button class="btn ai sm">Send</button></div>
+      </div>
+      <div>
+        <div class="box"><h3>Two modes</h3>
+          <div class="field"><div class="k">Copilot mode</div><div class="v">answers, drafts, proposes writes &amp; off-ramps &mdash; scoped to your permissions</div></div>
+          <div class="field"><div class="k">Creator mode</div><div class="v">generates merch as a registered creator &rarr; submissions queue, with provenance + splits</div></div>
+        </div>
+        <div class="box"><h3>Tools (via MCP)</h3>
+          <div class="field"><div class="k">Read</div><div class="v">search_products, get_order, sales_summary, treasury_balances, burn_stats, fiat_runway</div></div>
+          <div class="field"><div class="k">Write (proposal)</div><div class="v">create_submission*, draft_email*, create_reorder_task*, schedule_offramp*</div></div>
+          <div class="field"><div class="k">* writes</div><div class="v">return a proposal; off-ramps additionally need multisig signers</div></div>
+        </div>
+        <div class="box"><h3>Run log</h3>
+          <div class="timeline-item"><div class="dot"></div><div class="line">called <b>fiat_runway</b> &rarr; short $13.2k</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line">proposed <b>schedule_offramp</b> $40k &mdash; routed to signers</div></div>
+          <div class="timeline-item"><div class="dot"></div><div class="line">called <b>burn_stats</b> &rarr; 22.3k burned (7d)</div></div>
+        </div>
+        <div class="note coin" style="margin:0;"><b>Eliza never moves money.</b> It reads the treasury and proposes off-ramps; multisig signers execute. It never holds keys, never signs, never burns &mdash; burns happen only from customer checkout.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-legend">
+    <span><span class="legend-sw"></span> Wireframe / placeholder</span>
+    <span><span class="legend-sw std"></span> Standard component</span>
+    <span><span class="legend-sw ai"></span> ElizaOS v3 surface</span>
+    <span><span class="legend-sw human"></span> human-made</span>
+    <span><span class="legend-sw coin"></span> crypto / $NOVA / treasury</span>
+    <span>Click the left nav or table rows to move between screens.</span>
+  </div>
+
+  </main>
+</div>
+
+<script>
+  function go(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    var el = document.getElementById(id);
+    if (el) el.classList.add('active');
+    document.querySelectorAll('nav button').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-screen') === id);
+    });
+    document.querySelector('main').scrollTop = 0;
+  }
+</script>
+</body>
+</html>
