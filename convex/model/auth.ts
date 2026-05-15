@@ -11,12 +11,34 @@ type Ctx = QueryCtx | MutationCtx;
 
 export type StaffRole = Doc<"users">["role"];
 
+function getAdminEmails() {
+  const raw = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.CONVEX_ADMIN_EMAILS;
+  return new Set(
+    (raw ?? "")
+      .split(",")
+      .map((email: string) => email.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+function withEffectiveRole(user: Doc<"users">): Doc<"users"> {
+  const email = user.email?.trim().toLowerCase();
+  if (!email || !getAdminEmails().has(email)) return user;
+  return {
+    ...user,
+    role: "admin",
+    elizaAccess: "full",
+    isMultisigSigner: true,
+  };
+}
+
 export async function requireUser(ctx: Ctx): Promise<Doc<"users">> {
   const userId = await getAuthUserId(ctx);
   if (!userId) throw new Error("Not signed in.");
   const user = await ctx.db.get(userId);
   if (!user) throw new Error("User record missing.");
-  return user;
+  return withEffectiveRole(user);
 }
 
 export async function requireRole(
