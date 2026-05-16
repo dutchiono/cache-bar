@@ -10,6 +10,7 @@ import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Settings from "./pages/Settings";
 import Submissions from "./pages/Submissions";
+import Team from "./pages/Team";
 import Treasury from "./pages/Treasury";
 
 const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
@@ -24,7 +25,6 @@ const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
   { path: "/automations", title: "Automations", subtitle: "No-code flow builder" },
   { path: "/storefront", title: "Storefront Preview", subtitle: "Customer-facing shop" },
   { path: "/checkout", title: "Checkout Preview", subtitle: "Card / USDC / $CACHE spend-to-burn" },
-  { path: "/team", title: "Team & Roles", subtitle: "RBAC + multisig signer flag" },
   { path: "/agent", title: "Eliza Agent", subtitle: "Full console — Phase 12" },
 ];
 
@@ -53,6 +53,7 @@ export default function App() {
         <Route path="/creators" element={<Creators />} />
         <Route path="/creators/:id" element={<CreatorDetail />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/team" element={<Team />} />
         <Route path="/treasury" element={<Treasury />} />
         {stubRoutes.map((r) => (
           <Route
