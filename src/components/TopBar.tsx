@@ -5,9 +5,11 @@ import { api } from "../../convex/_generated/api";
 export function TopBar() {
   const { signOut } = useAuthActions();
   const me = useQuery(api.users.getCurrentUser);
+  const treasury = useQuery(api.treasury.overview, {});
 
   const displayName = me?.name ?? me?.email ?? "(no name)";
   const role = me?.role ?? "readonly";
+  const usdcBalance = treasury?.metrics.totalUsdc ?? 0;
 
   return (
     <header className="flex items-center gap-3 border-b border-[var(--cb-line)] bg-[var(--cb-paper-soft)]/88 px-5 backdrop-blur">
@@ -18,9 +20,8 @@ export function TopBar() {
         />
       </div>
 
-      {/* Treasury pill — wired to real balance in Phase 8 */}
       <span title="USDC treasury balance (placeholder)" className="cb-badge border-[rgba(73,108,143,0.4)] bg-[rgba(73,108,143,0.1)] text-[var(--cb-blue)]">
-        Treasury — wire in Phase 8
+        Treasury ${usdcBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })} USDC
       </span>
 
       {/* AI pill — opens Eliza in Phase 12 */}

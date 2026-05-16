@@ -10,6 +10,7 @@ import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Settings from "./pages/Settings";
 import Submissions from "./pages/Submissions";
+import Treasury from "./pages/Treasury";
 
 const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
   { path: "/orders", title: "Orders", subtitle: "Card + USDC, all rails" },
@@ -18,7 +19,6 @@ const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
   { path: "/customers/:id", title: "Customer detail" },
   { path: "/inventory", title: "Inventory & Fulfillment", subtitle: "POD, dropship, supplier funding" },
   { path: "/royalties", title: "Royalties & Payouts", subtitle: "Ledger + payout runs" },
-  { path: "/treasury", title: "Treasury & Off-ramp", subtitle: "USDC multisig + fiat ops" },
   { path: "/token", title: "Token & Burn", subtitle: "$CACHE supply, tiers, burns" },
   { path: "/reports", title: "Reports & Analytics" },
   { path: "/automations", title: "Automations", subtitle: "No-code flow builder" },
@@ -53,6 +53,7 @@ export default function App() {
         <Route path="/creators" element={<Creators />} />
         <Route path="/creators/:id" element={<CreatorDetail />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/treasury" element={<Treasury />} />
         {stubRoutes.map((r) => (
           <Route
             key={r.path}
