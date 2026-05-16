@@ -23,25 +23,25 @@ export function RecordTable<T extends { _id: string }>({
 
   if (rows === undefined) {
     return (
-      <div className="rounded border-2 border-dashed border-neutral-300 p-4 text-sm text-neutral-500">
+      <div className="cb-panel border-dashed p-4 text-sm text-[var(--cb-muted)]">
         Loading…
       </div>
     );
   }
   if (rows.length === 0) {
     return (
-      <div className="rounded border-2 border-dashed border-neutral-300 p-4 text-sm text-neutral-500">
+      <div className="cb-panel border-dashed p-4 text-sm text-[var(--cb-muted)]">
         {empty}
       </div>
     );
   }
   return (
-    <div className="overflow-x-auto rounded-lg border-2 border-black bg-white">
+    <div className="overflow-x-auto rounded-lg border border-[var(--cb-line)] bg-[var(--cb-paper-soft)]">
       <table className="w-full text-sm">
-        <thead className="border-b-2 border-black bg-neutral-50 text-left text-[11px] uppercase tracking-wide text-neutral-500">
+        <thead className="border-b border-[var(--cb-line)] bg-[rgba(21,19,15,0.035)] text-left text-[11px] uppercase tracking-wide text-[var(--cb-muted)]">
           <tr>
             {columns.map((c) => (
-              <th key={c.header} className={`px-3 py-2 ${c.width ?? ""}`}>
+              <th key={c.header} className={`px-4 py-3 ${c.width ?? ""}`}>
                 {c.header}
               </th>
             ))}
@@ -51,11 +51,11 @@ export function RecordTable<T extends { _id: string }>({
           {rows.map((r) => (
             <tr
               key={r._id}
-              className={`border-b border-neutral-200 ${rowHref ? "cursor-pointer hover:bg-neutral-50" : ""}`}
+              className={`border-b border-[var(--cb-line)] last:border-0 ${rowHref ? "cursor-pointer hover:bg-[rgba(182,95,67,0.065)]" : ""}`}
               onClick={rowHref ? () => nav(rowHref(r)) : undefined}
             >
               {columns.map((c, i) => (
-                <td key={i} className="px-3 py-2 align-top">
+                <td key={i} className="px-4 py-3 align-top">
                   {c.cell(r)}
                 </td>
               ))}

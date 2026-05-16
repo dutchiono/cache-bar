@@ -10,32 +10,32 @@ export function TopBar() {
   const role = me?.role ?? "readonly";
 
   return (
-    <header className="flex items-center gap-3 border-b border-zinc-800 bg-black/70 px-4 backdrop-blur">
+    <header className="flex items-center gap-3 border-b border-[var(--cb-line)] bg-[var(--cb-paper-soft)]/88 px-5 backdrop-blur">
       <div className="flex-1">
         <input
           placeholder="Search products, creators, orders..."
-          className="w-full max-w-sm rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 placeholder:text-zinc-500"
+          className="cb-field max-w-md"
         />
       </div>
 
       {/* Treasury pill — wired to real balance in Phase 8 */}
-      <span title="USDC treasury balance (placeholder)" className="rounded-full border border-cyan-500/50 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-200">
+      <span title="USDC treasury balance (placeholder)" className="cb-badge border-[rgba(73,108,143,0.4)] bg-[rgba(73,108,143,0.1)] text-[var(--cb-blue)]">
         Treasury — wire in Phase 8
       </span>
 
       {/* AI pill — opens Eliza in Phase 12 */}
-      <span className="rounded-full border border-fuchsia-500/50 bg-fuchsia-500/10 px-3 py-1 text-xs text-fuchsia-200">
+      <span className="cb-badge border-[rgba(182,95,67,0.38)] bg-[rgba(182,95,67,0.12)] text-[var(--cb-clay)]">
         Eliza — Phase 12
       </span>
 
       <div className="flex items-center gap-2">
-        <span className="text-sm text-zinc-300">{displayName}</span>
-        <span className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] uppercase tracking-wide text-zinc-300">
+        <span className="text-sm font-medium">{displayName}</span>
+        <span className="cb-badge rounded-md px-2 py-0.5 text-[10px]">
           {role}
         </span>
         <button
           onClick={() => void signOut()}
-          className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
+          className="cb-button-secondary min-h-8 px-2 py-1 text-xs"
         >
           Sign out
         </button>

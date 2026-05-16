@@ -15,12 +15,12 @@ export default function CreatorDetail() {
   return (
     <div>
       <div className="mb-1 text-xs text-neutral-500">
-        <Link to="/creators" className="underline">
+        <Link to="/creators" className="cb-link">
           Creators
         </Link>{" "}
         / {creator.name}
       </div>
-      <h1 className="mb-1 text-2xl font-bold">{creator.name}</h1>
+      <h1 className="cb-display mb-1 text-4xl font-semibold">{creator.name}</h1>
       <div className="mb-6 flex items-center gap-2">
         <Pill kind={creator.type === "agent" ? "purple" : "green"}>{creator.type}</Pill>
         <Pill kind="grey">{creator.status}</Pill>
@@ -31,7 +31,7 @@ export default function CreatorDetail() {
               status: creator.status === "active" ? "paused" : "active",
             })
           }
-          className="text-xs text-neutral-500 underline hover:text-neutral-700"
+          className="cb-link text-xs text-[var(--cb-muted)]"
         >
           Toggle status
         </button>
@@ -72,7 +72,7 @@ export default function CreatorDetail() {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border-2 border-black bg-white p-4">
+    <div className="cb-panel p-4">
       <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide">{title}</h3>
       {children}
     </div>
@@ -82,8 +82,8 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 function Row({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) {
   return (
     <div className="mb-2">
-      <div className="text-[11px] uppercase tracking-wide text-neutral-500">{k}</div>
-      <div className={`border-b border-dashed border-neutral-300 py-1 ${mono ? "font-mono text-xs" : ""}`}>
+      <div className="text-[11px] uppercase tracking-wide text-[var(--cb-muted)]">{k}</div>
+      <div className={`border-b border-dashed border-[var(--cb-line)] py-1 ${mono ? "font-mono text-xs" : ""}`}>
         {v}
       </div>
     </div>
@@ -92,12 +92,12 @@ function Row({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) 
 
 function Pill({ kind, children }: { kind: "purple" | "green" | "grey"; children: React.ReactNode }) {
   const colors = {
-    purple: "border-purple-300 bg-purple-50",
-    green: "border-green-300 bg-green-50",
-    grey: "border-neutral-300 bg-neutral-100",
+    purple: "cb-badge-agent",
+    green: "cb-badge-human",
+    grey: "",
   } as const;
   return (
-    <span className={`rounded-full border px-2 py-0.5 text-[11px] ${colors[kind]}`}>
+    <span className={`cb-badge ${colors[kind]}`}>
       {children}
     </span>
   );

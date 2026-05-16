@@ -64,10 +64,10 @@ const agentItem: Item = { to: "/agent", label: "Eliza Agent" };
 
 export function Sidebar() {
   return (
-    <nav className="overflow-y-auto border-r border-zinc-800 bg-black/80 p-2">
+    <nav className="overflow-y-auto border-r border-[var(--cb-line)] bg-[rgba(251,247,239,0.72)] p-3">
       {groups.map((g) => (
-        <div key={g.label}>
-          <div className="px-2 pb-1 pt-3 text-[11px] uppercase tracking-wide text-zinc-500">
+        <div key={g.label} className="mb-2">
+          <div className="cb-kicker px-2 pb-1 pt-3">
             {g.label}
           </div>
           {g.items.map((item) => (
@@ -89,11 +89,11 @@ function SidebarLink({ to, label, accent }: Item & { accent?: boolean }) {
       end={to === "/"}
       className={({ isActive }) =>
         [
-          "block rounded px-2.5 py-1.5 text-sm text-zinc-200",
+          "block rounded-md border px-3 py-2 text-sm font-medium transition",
           isActive
-            ? "border border-fuchsia-500/60 bg-fuchsia-500/15 font-semibold text-zinc-100"
-            : "border border-transparent hover:bg-zinc-900",
-          accent ? "border border-fuchsia-500/50 bg-fuchsia-500/10" : "",
+            ? "border-[var(--cb-charcoal)] bg-[var(--cb-charcoal)] text-[var(--cb-paper-soft)]"
+            : "border-transparent text-[var(--cb-muted)] hover:border-[var(--cb-line)] hover:bg-[var(--cb-paper-soft)] hover:text-[var(--cb-ink)]",
+          accent ? "border-[rgba(182,95,67,0.35)] bg-[rgba(182,95,67,0.1)] text-[var(--cb-clay)]" : "",
         ].join(" ")
       }
     >

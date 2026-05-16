@@ -32,11 +32,11 @@ export function SplitsEditor({ value, onChange, creators }: Props) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+        <h4 className="cb-kicker">
           Royalty splits
         </h4>
         <span
-          className={`rounded px-2 py-0.5 text-xs font-mono ${ok ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+          className={`rounded-md border px-2 py-0.5 text-xs font-mono ${ok ? "border-green-200 bg-green-50 text-green-800" : "border-red-200 bg-red-50 text-red-800"}`}
         >
           {(sumHundredths / 100).toFixed(2)}% {ok ? "✓" : "must = 100"}
         </span>
@@ -53,7 +53,7 @@ export function SplitsEditor({ value, onChange, creators }: Props) {
             className="grid grid-cols-[1.5fr_1fr_80px_30px] items-end gap-2"
           >
             <label className="flex flex-col gap-0.5 text-xs">
-              <span className="text-neutral-600">Payee</span>
+              <span className="cb-label">Payee</span>
               <select
                 value={s.payeeCreatorId ?? ""}
                 onChange={(e) =>
@@ -64,7 +64,7 @@ export function SplitsEditor({ value, onChange, creators }: Props) {
                         : (e.target.value as Id<"creators">),
                   })
                 }
-                className="rounded border border-neutral-400 px-2 py-1"
+                className="cb-field py-1"
               >
                 <option value="">Platform</option>
                 {creators.map((c) => (
@@ -75,16 +75,16 @@ export function SplitsEditor({ value, onChange, creators }: Props) {
               </select>
             </label>
             <label className="flex flex-col gap-0.5 text-xs">
-              <span className="text-neutral-600">Role</span>
+              <span className="cb-label">Role</span>
               <input
                 value={s.role}
                 onChange={(e) => set(i, { role: e.target.value })}
-                className="rounded border border-neutral-400 px-2 py-1"
+                className="cb-field py-1"
                 placeholder="creator / platform / collab"
               />
             </label>
             <label className="flex flex-col gap-0.5 text-xs">
-              <span className="text-neutral-600">%</span>
+              <span className="cb-label">%</span>
               <input
                 type="number"
                 step="0.01"
@@ -94,13 +94,13 @@ export function SplitsEditor({ value, onChange, creators }: Props) {
                 onChange={(e) =>
                   set(i, { percent: Number(e.target.value) || 0 })
                 }
-                className="rounded border border-neutral-400 px-2 py-1 text-right"
+                className="cb-field py-1 text-right"
               />
             </label>
             <button
               type="button"
               onClick={() => remove(i)}
-              className="rounded border border-neutral-400 p-1 text-xs hover:bg-neutral-100"
+              className="cb-button-secondary min-h-8 p-1 text-xs"
               title="Remove"
             >
               ✕
@@ -111,7 +111,7 @@ export function SplitsEditor({ value, onChange, creators }: Props) {
       <button
         type="button"
         onClick={add}
-        className="mt-2 rounded border border-dashed border-neutral-400 px-3 py-1 text-xs hover:bg-neutral-50"
+        className="cb-button-secondary mt-2 min-h-8 border-dashed py-1 text-xs"
       >
         + Add split
       </button>

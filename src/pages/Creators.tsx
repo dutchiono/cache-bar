@@ -77,7 +77,7 @@ export default function Creators() {
       header: "Type",
       cell: (r) => (
         <span
-          className={`rounded-full border px-2 py-0.5 text-[11px] ${r.type === "agent" ? "border-purple-300 bg-purple-50" : "border-green-300 bg-green-50"}`}
+          className={`cb-badge ${r.type === "agent" ? "cb-badge-agent" : "cb-badge-human"}`}
         >
           {r.type}
         </span>
@@ -95,15 +95,15 @@ export default function Creators() {
   ];
 
   return (
-    <div>
+    <div className="space-y-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Creators</h1>
-          <p className="text-sm text-neutral-500">Human and agent creators</p>
+          <h1 className="cb-display text-3xl font-semibold">Creators</h1>
+          <p className="text-sm text-[var(--cb-muted)]">Human and agent creators</p>
         </div>
         <button
           onClick={() => setOpen((o) => !o)}
-          className="rounded border-2 border-black bg-black px-3 py-1.5 text-sm font-semibold text-white"
+          className="cb-button"
         >
           {open ? "Cancel" : "+ New creator"}
         </button>
@@ -112,7 +112,7 @@ export default function Creators() {
       {open && (
         <form
           onSubmit={onSubmit}
-          className="mb-6 rounded-lg border-2 border-black bg-white p-4"
+          className="cb-panel p-4"
         >
           <div className="mb-3 flex gap-2">
             {(["human", "agent"] as const).map((t) => (
@@ -120,7 +120,7 @@ export default function Creators() {
                 key={t}
                 type="button"
                 onClick={() => setType(t)}
-                className={`rounded border-2 px-3 py-1 text-sm ${type === t ? "border-black bg-black text-white" : "border-neutral-300"}`}
+                className={type === t ? "cb-button min-h-8 py-1" : "cb-button-secondary min-h-8 py-1"}
               >
                 {t}
               </button>
@@ -148,14 +148,14 @@ export default function Creators() {
           </div>
 
           <div className="mt-4">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            <div className="cb-kicker mb-2">
               Payout method
             </div>
             <PayoutMethodFields agentLocked={type === "agent"} />
           </div>
 
           {err && (
-            <p className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {err}
             </p>
           )}
@@ -163,7 +163,7 @@ export default function Creators() {
             <button
               type="submit"
               disabled={pending}
-              className="rounded border-2 border-black bg-black px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="cb-button"
             >
               {pending ? "Saving…" : "Create"}
             </button>
@@ -187,8 +187,8 @@ function Field(
   const { label, ...rest } = props;
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="text-xs text-neutral-600">{label}</span>
-      <input {...rest} className="rounded border border-neutral-400 px-2 py-1" />
+      <span className="cb-label">{label}</span>
+      <input {...rest} className="cb-field" />
     </label>
   );
 }
@@ -207,7 +207,7 @@ function PayoutMethodFields({ agentLocked }: { agentLocked: boolean }) {
             type="button"
             onClick={() => !agentLocked && setKind(k)}
             disabled={agentLocked && k !== "usdc_wallet"}
-            className={`rounded border-2 px-3 py-1 text-xs ${kind === k ? "border-black bg-black text-white" : "border-neutral-300"} ${agentLocked && k !== "usdc_wallet" ? "opacity-30" : ""}`}
+            className={`${kind === k ? "cb-button min-h-8 py-1 text-xs" : "cb-button-secondary min-h-8 py-1 text-xs"} ${agentLocked && k !== "usdc_wallet" ? "opacity-30" : ""}`}
           >
             {k}
           </button>
@@ -216,11 +216,11 @@ function PayoutMethodFields({ agentLocked }: { agentLocked: boolean }) {
       {kind === "usdc_wallet" ? (
         <div className="grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs text-neutral-600">Chain</span>
+            <span className="cb-label">Chain</span>
             <select
               name="payoutChain"
               defaultValue="evm"
-              className="rounded border border-neutral-400 px-2 py-1"
+              className="cb-field"
             >
               <option value="evm">Base / EVM</option>
               <option value="solana">Solana</option>

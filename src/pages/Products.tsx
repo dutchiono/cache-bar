@@ -124,7 +124,7 @@ export default function Products() {
       header: "Maker",
       cell: (r) => (
         <span
-          className={`rounded-full border px-2 py-0.5 text-[11px] ${r.makerType === "agent" ? "border-purple-300 bg-purple-50" : "border-green-300 bg-green-50"}`}
+          className={`cb-badge ${r.makerType === "agent" ? "cb-badge-agent" : "cb-badge-human"}`}
         >
           {r.makerType}
         </span>
@@ -145,11 +145,12 @@ export default function Products() {
   ];
 
   return (
-    <div>
-      <div className="mb-4 overflow-hidden rounded-2xl border border-fuchsia-300/40 bg-gradient-to-r from-zinc-950 via-black to-zinc-950">
+    <div className="space-y-5">
+      <div className="cb-panel-dark overflow-hidden">
         <div className="grid gap-3 p-4 md:grid-cols-[1.2fr_1fr]">
           <div>
-            <h2 className="text-xl font-semibold tracking-wide text-zinc-100">
+            <p className="cb-kicker text-[var(--cb-gold)]">Vision Capsule</p>
+            <h2 className="cb-display mt-2 text-3xl font-semibold tracking-wide text-[var(--cb-paper-soft)]">
               Vision Capsule / Demo Direction
             </h2>
             <p className="mt-1 text-sm text-zinc-400">
@@ -159,11 +160,11 @@ export default function Products() {
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 onClick={() => void seedVisionDemo({})}
-                className="rounded-md border border-fuchsia-400/60 bg-fuchsia-500/10 px-3 py-1.5 text-sm font-semibold text-fuchsia-200"
+                className="cb-button bg-[var(--cb-paper-soft)] text-[var(--cb-ink)] hover:bg-white"
               >
                 Seed Vision Demo Product
               </button>
-              <span className="rounded-md border border-zinc-700 px-2.5 py-1 text-xs text-zinc-400">
+              <span className="rounded-md border border-white/15 px-2.5 py-2 text-xs text-zinc-400">
                 Uses: <code>/public/images/waifu.png</code> + <code>/public/images/image.png</code>
               </span>
             </div>
@@ -172,27 +173,27 @@ export default function Products() {
             <img
               src="/images/waifu.png"
               alt="Waifu.fun tee reference"
-              className="h-40 w-full rounded-lg border border-zinc-700 bg-zinc-900 object-contain p-1"
+              className="h-40 w-full rounded-md border border-white/15 bg-black object-contain p-1"
             />
             <img
               src="/images/image.png"
               alt="Capsule collection board reference"
-              className="h-40 w-full rounded-lg border border-zinc-700 bg-zinc-900 object-contain p-1"
+              className="h-40 w-full rounded-md border border-white/15 bg-black object-contain p-1"
             />
           </div>
         </div>
       </div>
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Products</h1>
-          <p className="text-sm text-neutral-500">
+          <h1 className="cb-display text-3xl font-semibold">Products</h1>
+          <p className="text-sm text-[var(--cb-muted)]">
             Catalog — human and agent-made
           </p>
         </div>
         <button
           onClick={() => setOpen((o) => !o)}
-          className="rounded border-2 border-black bg-black px-3 py-1.5 text-sm font-semibold text-white"
+          className="cb-button"
         >
           {open ? "Cancel" : "+ New product"}
         </button>
@@ -201,28 +202,28 @@ export default function Products() {
       {open && (
         <form
           onSubmit={onSubmit}
-          className="mb-6 rounded-lg border-2 border-black bg-white p-4"
+          className="cb-panel p-4"
         >
           <div className="grid grid-cols-3 gap-3">
             <Field label="Title" name="title" required />
             <Field label="Category" name="category" required />
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-xs text-neutral-600">Type</span>
+              <span className="cb-label">Type</span>
               <select
                 name="productType"
                 defaultValue="physical"
-                className="rounded border border-neutral-400 px-2 py-1"
+                className="cb-field"
               >
                 <option value="physical">Physical</option>
                 <option value="digital">Digital</option>
               </select>
             </label>
             <label className="col-span-3 flex flex-col gap-1 text-sm">
-              <span className="text-xs text-neutral-600">Description</span>
+              <span className="cb-label">Description</span>
               <textarea
                 name="description"
                 rows={2}
-                className="rounded border border-neutral-400 px-2 py-1"
+                className="cb-field"
               />
             </label>
             <Field
@@ -241,14 +242,14 @@ export default function Products() {
               placeholder="/images/waifu.png, /images/image.png"
             />
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-xs text-neutral-600">Creator</span>
+              <span className="cb-label">Creator</span>
               <select
                 value={creatorId}
                 onChange={(e) =>
                   setCreatorId(e.target.value as Id<"creators"> | "")
                 }
                 required
-                className="rounded border border-neutral-400 px-2 py-1"
+                className="cb-field"
               >
                 <option value="" disabled>
                   Pick creator…
@@ -270,9 +271,9 @@ export default function Products() {
             </label>
           </div>
 
-          <hr className="my-4 border-neutral-200" />
+          <hr className="my-4 border-[var(--cb-line)]" />
 
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+          <h3 className="cb-kicker mb-2">
             Provenance ({isAgent ? "agent-made" : "human-made"})
           </h3>
           <div className="grid grid-cols-2 gap-3">
@@ -296,14 +297,14 @@ export default function Products() {
                     name="brief"
                     rows={2}
                     required
-                    className="rounded border border-neutral-400 px-2 py-1"
+                    className="cb-field"
                   />
                 </label>
               </>
             )}
           </div>
 
-          <hr className="my-4 border-neutral-200" />
+          <hr className="my-4 border-[var(--cb-line)]" />
 
           <SplitsEditor
             value={splits}
@@ -312,7 +313,7 @@ export default function Products() {
           />
 
           {err && (
-            <p className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {err}
             </p>
           )}
@@ -320,7 +321,7 @@ export default function Products() {
             <button
               type="submit"
               disabled={pending}
-              className="rounded border-2 border-black bg-black px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="cb-button"
             >
               {pending ? "Saving draft…" : "Create draft"}
             </button>
@@ -344,8 +345,8 @@ function Field(
   const { label, ...rest } = props;
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="text-xs text-neutral-600">{label}</span>
-      <input {...rest} className="rounded border border-neutral-400 px-2 py-1" />
+      <span className="cb-label">{label}</span>
+      <input {...rest} className="cb-field" />
     </label>
   );
 }

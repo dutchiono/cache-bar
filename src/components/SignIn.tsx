@@ -37,41 +37,41 @@ export function SignIn() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-100 p-6">
-      <div className="w-full max-w-sm rounded-lg border-2 border-black bg-white p-6">
-        <h1 className="mb-1 text-2xl font-bold">Cache Bar</h1>
-        <p className="mb-5 text-sm text-neutral-500">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--cb-paper)] p-6">
+      <div className="w-full max-w-sm rounded-lg border border-[var(--cb-line)] bg-[var(--cb-paper-soft)] p-6">
+        <h1 className="cb-display mb-1 text-3xl font-semibold">Cache Bar</h1>
+        <p className="mb-5 text-sm text-[var(--cb-muted)]">
           {mode === "signIn" ? "Staff sign in" : "Create a staff account"}
         </p>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-neutral-600">Email</span>
+            <span className="cb-label">Email</span>
             <input
               name="email"
               type="email"
               required
               autoComplete="email"
-              className="rounded border border-neutral-400 px-3 py-2"
+              className="cb-field"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-neutral-600">Password</span>
+            <span className="cb-label">Password</span>
             <input
               name="password"
               type="password"
               required
               autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-              className="rounded border border-neutral-400 px-3 py-2"
+              className="cb-field"
             />
           </label>
           {error && (
-            <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
           )}
           <button
             type="submit"
             disabled={pending}
-            className="rounded border-2 border-black bg-black px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="cb-button"
           >
             {pending
               ? "Please wait…"
@@ -87,7 +87,7 @@ export function SignIn() {
             setMode(mode === "signIn" ? "signUp" : "signIn");
             setError(null);
           }}
-          className="mt-4 w-full text-xs text-neutral-500 underline hover:text-neutral-700"
+          className="cb-link mt-4 w-full text-xs text-[var(--cb-muted)]"
         >
           {mode === "signIn"
             ? "No account? Create one"

@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -13,17 +13,8 @@ export default function ProductDetail() {
     () => (product?.demoImageUrls ?? []).filter((url) => url.trim().length > 0),
     [product?.demoImageUrls],
   );
-  const [activeImage, setActiveImage] = useState<string>("");
-
-  useEffect(() => {
-    if (galleryImages.length === 0) {
-      if (activeImage !== "") setActiveImage("");
-      return;
-    }
-    if (!activeImage || !galleryImages.includes(activeImage)) {
-      setActiveImage(galleryImages[0]);
-    }
-  }, [galleryImages, activeImage]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeImage = galleryImages[activeIndex] ?? galleryImages[0] ?? "";
 
   if (product === undefined)
     return <p className="text-sm text-neutral-500">Loading…</p>;
@@ -32,13 +23,13 @@ export default function ProductDetail() {
   return (
     <div>
       <div className="mb-1 text-xs text-neutral-500">
-        <Link to="/products" className="underline">
+        <Link to="/products" className="cb-link">
           Products
         </Link>{" "}
         / {product.title}
       </div>
-      <h1 className="mb-1 text-2xl font-bold">{product.title}</h1>
-      <div className="mb-6 flex items-center gap-2 text-sm text-neutral-500">
+      <h1 className="cb-display mb-1 text-4xl font-semibold">{product.title}</h1>
+      <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-[var(--cb-muted)]">
         <Pill kind="grey">{product.status}</Pill>
         <Pill kind="grey">{product.productType}</Pill>
         <Pill kind={product.makerType === "agent" ? "purple" : "green"}>
@@ -57,35 +48,35 @@ export default function ProductDetail() {
                 <img
                   src={activeImage}
                   alt={`${product.title} primary`}
-                  className="h-[28rem] w-full rounded border border-zinc-700 bg-zinc-950 object-contain p-2"
+                  className="h-[28rem] w-full rounded-md border border-[var(--cb-line)] bg-[var(--cb-charcoal)] object-contain p-2"
                 />
                 <div className="grid grid-cols-2 gap-2">
-                  {galleryImages.map((url) => (
+                  {galleryImages.map((url, index) => (
                     <button
                       key={url}
-                      onClick={() => setActiveImage(url)}
+                      onClick={() => setActiveIndex(index)}
                       className={[
-                        "rounded border p-1 text-left",
+                        "rounded-md border p-1 text-left",
                         activeImage === url
-                          ? "border-fuchsia-500 bg-fuchsia-500/10"
-                          : "border-zinc-700 bg-zinc-900/60 hover:border-zinc-500",
+                          ? "border-[var(--cb-clay)] bg-[rgba(182,95,67,0.1)]"
+                          : "border-[var(--cb-line)] bg-white/35 hover:border-[var(--cb-charcoal)]",
                       ].join(" ")}
                     >
                       <img
                         src={url}
                         alt={`${product.title} reference`}
-                        className="h-36 w-full rounded bg-zinc-950 object-contain"
+                        className="h-36 w-full rounded bg-[var(--cb-charcoal)] object-contain"
                       />
                     </button>
                   ))}
                 </div>
-                <div className="rounded border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs text-zinc-400">
+                <div className="rounded-md border border-[var(--cb-line)] bg-white/35 px-3 py-2 text-xs text-[var(--cb-muted)]">
                   Vision references loaded from <code>/public/images/waifu.png</code> and{" "}
                   <code>/public/images/image.png</code>.
                 </div>
               </div>
             ) : (
-              <div className="grid h-48 place-items-center rounded border border-dashed border-zinc-700 bg-zinc-950 text-sm text-zinc-500">
+              <div className="grid h-48 place-items-center rounded-md border border-dashed border-[var(--cb-line)] text-sm text-[var(--cb-muted)]">
                 {product.imageStorageIds.length === 0
                   ? "No images uploaded yet"
                   : `${product.imageStorageIds.length} image(s)`}
@@ -93,7 +84,7 @@ export default function ProductDetail() {
             )}
           </Card>
           <Card title="Description">
-            <p className="whitespace-pre-wrap text-sm text-zinc-200">{product.description || "(empty)"}</p>
+            <p className="whitespace-pre-wrap text-sm">{product.description || "(empty)"}</p>
           </Card>
         </div>
 
@@ -124,7 +115,7 @@ export default function ProductDetail() {
 
           <Card title="Royalty splits">
             <table className="w-full text-sm">
-              <thead className="text-left text-[11px] uppercase tracking-wide text-zinc-500">
+              <thead className="text-left text-[11px] uppercase tracking-wide text-[var(--cb-muted)]">
                 <tr>
                   <th className="pb-1">Payee</th>
                   <th className="pb-1">Role</th>
@@ -133,7 +124,7 @@ export default function ProductDetail() {
               </thead>
               <tbody>
                 {product.royaltySplits.map((s, i) => (
-                  <tr key={i} className="border-t border-dashed border-zinc-700">
+                  <tr key={i} className="border-t border-dashed border-[var(--cb-line)]">
                     <td className="py-1">
                       {s.payeeCreatorId ? `Creator ${s.payeeCreatorId}` : "Platform"}
                     </td>
@@ -167,8 +158,8 @@ export default function ProductDetail() {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900/90 p-4">
-      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-300">{title}</h3>
+    <div className="cb-panel p-4">
+      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide">{title}</h3>
       {children}
     </div>
   );
@@ -177,9 +168,9 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 function Row({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) {
   return (
     <div className="mb-2">
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500">{k}</div>
+      <div className="text-[11px] uppercase tracking-wide text-[var(--cb-muted)]">{k}</div>
       <div
-        className={`border-b border-dashed border-zinc-700 py-1 text-zinc-200 ${mono ? "font-mono text-xs" : "text-sm"}`}
+        className={`border-b border-dashed border-[var(--cb-line)] py-1 ${mono ? "font-mono text-xs" : "text-sm"}`}
       >
         {v}
       </div>
@@ -195,14 +186,14 @@ function Pill({
   children: React.ReactNode;
 }) {
   const colors = {
-    purple: "border-fuchsia-500/50 bg-fuchsia-500/10 text-fuchsia-200",
-    green: "border-emerald-500/50 bg-emerald-500/10 text-emerald-200",
-    grey: "border-zinc-700 bg-zinc-800 text-zinc-200",
-    blue: "border-cyan-500/50 bg-cyan-500/10 text-cyan-200",
+    purple: "cb-badge-agent",
+    green: "cb-badge-human",
+    grey: "",
+    blue: "border-[rgba(73,108,143,0.35)] bg-[rgba(73,108,143,0.1)] text-[var(--cb-blue)]",
   } as const;
   return (
     <span
-      className={`rounded-full border px-2 py-0.5 text-[11px] ${colors[kind]}`}
+      className={`cb-badge ${colors[kind]}`}
     >
       {children}
     </span>

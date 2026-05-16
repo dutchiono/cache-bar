@@ -4,20 +4,22 @@ import { TopBar } from "./TopBar";
 
 export function AppShell() {
   return (
-    <div className="grid h-screen grid-cols-[250px_1fr] grid-rows-[56px_1fr] bg-zinc-950 text-zinc-100">
-      <div className="flex items-center gap-2 border-b border-r border-zinc-800 bg-black px-4 font-bold tracking-wide">
-        <span className="grid h-6 w-6 place-items-center rounded border border-fuchsia-500 text-[11px] text-fuchsia-300">
+    <div className="grid h-screen grid-cols-[260px_1fr] grid-rows-[64px_1fr] text-[var(--cb-ink)]">
+      <div className="flex items-center gap-3 border-b border-r border-[var(--cb-line)] bg-[var(--cb-paper-soft)] px-5">
+        <span className="grid h-8 w-8 place-items-center rounded-md border border-[var(--cb-charcoal)] bg-[var(--cb-charcoal)] text-[11px] font-bold text-[var(--cb-paper-soft)]">
           CB
         </span>
-        <span className="text-zinc-100">Cache Bar</span>
-        <span className="rounded border border-zinc-700 px-1.5 py-0.5 text-[10px] font-normal text-zinc-400">
+        <span className="cb-display text-xl font-semibold">Cache Bar</span>
+        <span className="cb-badge rounded-md px-2 py-0.5 text-[10px]">
           ops
         </span>
       </div>
       <TopBar />
       <Sidebar />
-      <main className="overflow-y-auto bg-[radial-gradient(circle_at_20%_0%,rgba(217,70,239,0.12),transparent_32%),radial-gradient(circle_at_80%_10%,rgba(56,189,248,0.12),transparent_34%)] p-6">
-        <Outlet />
+      <main className="overflow-y-auto p-6">
+        <div className="mx-auto max-w-[1500px]">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
