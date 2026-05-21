@@ -10,6 +10,7 @@
 
 import type * as account from "../account.js";
 import type * as auth from "../auth.js";
+import type * as checkout from "../checkout.js";
 import type * as creators from "../creators.js";
 import type * as digitalAssets from "../digitalAssets.js";
 import type * as http from "../http.js";
@@ -31,6 +32,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   account: typeof account;
   auth: typeof auth;
+  checkout: typeof checkout;
   creators: typeof creators;
   digitalAssets: typeof digitalAssets;
   http: typeof http;

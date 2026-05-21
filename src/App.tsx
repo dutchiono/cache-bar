@@ -3,9 +3,11 @@ import { Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ScreenStub } from "./components/ScreenStub";
 import { SignIn } from "./components/SignIn";
+import Checkout from "./pages/Checkout";
 import Creators from "./pages/Creators";
 import CreatorDetail from "./pages/CreatorDetail";
 import Dashboard from "./pages/Dashboard";
+import Orders from "./pages/Orders";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Settings from "./pages/Settings";
@@ -14,7 +16,6 @@ import Team from "./pages/Team";
 import Treasury from "./pages/Treasury";
 
 const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
-  { path: "/orders", title: "Orders", subtitle: "Card + USDC, all rails" },
   { path: "/orders/:id", title: "Order detail" },
   { path: "/customers", title: "Customers (CRM)", subtitle: "With wallets + $CACHE tier" },
   { path: "/customers/:id", title: "Customer detail" },
@@ -24,7 +25,6 @@ const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
   { path: "/reports", title: "Reports & Analytics" },
   { path: "/automations", title: "Automations", subtitle: "No-code flow builder" },
   { path: "/storefront", title: "Storefront Preview", subtitle: "Customer-facing shop" },
-  { path: "/checkout", title: "Checkout Preview", subtitle: "Card / USDC / $CACHE spend-to-burn" },
   { path: "/agent", title: "Eliza Agent", subtitle: "Full console — Phase 12" },
 ];
 
@@ -52,6 +52,8 @@ export default function App() {
         <Route path="/submissions" element={<Submissions />} />
         <Route path="/creators" element={<Creators />} />
         <Route path="/creators/:id" element={<CreatorDetail />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/orders" element={<Orders />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/team" element={<Team />} />
         <Route path="/treasury" element={<Treasury />} />

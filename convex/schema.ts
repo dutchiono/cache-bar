@@ -241,7 +241,7 @@ export default defineSchema({
 
   payments: defineTable({
     orderId: v.id("orders"),
-    rail: v.union(v.literal("card"), v.literal("usdc")),
+    rail: v.union(v.literal("card"), v.literal("usdc"), v.literal("x402")),
     chain: v.optional(chain),
     // card:
     stripePaymentIntentId: v.optional(v.string()),
@@ -250,6 +250,19 @@ export default defineSchema({
     fromAddress: v.optional(v.string()),
     amountUsdc: v.optional(v.number()),
     confirmations: v.optional(v.number()),
+    x402: v.optional(
+      v.object({
+        scheme: v.string(),
+        network: v.string(),
+        asset: v.string(),
+        payTo: v.string(),
+        facilitatorUrl: v.string(),
+        resource: v.string(),
+        paymentId: v.string(),
+        price: v.string(),
+        description: v.string(),
+      }),
+    ),
     status: v.union(
       v.literal("pending"),
       v.literal("confirmed"),
