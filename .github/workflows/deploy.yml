@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: cache-bar-deploy
+  group: cache-deploy
   cancel-in-progress: true
 
 jobs:
