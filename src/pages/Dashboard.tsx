@@ -22,7 +22,7 @@ export default function Dashboard() {
               <div>
                 <p className="cb-kicker text-[var(--cb-gold)]">Commerce command room</p>
                 <h1 className="cb-display mt-3 max-w-2xl text-5xl font-semibold leading-tight">
-                  Cache Bar is the house system for drops, royalties, and creator-led merch.
+                  .cache is the house system for drops, royalties, and creator-led merch.
                 </h1>
               </div>
               <div className="mt-6 flex flex-wrap gap-2">

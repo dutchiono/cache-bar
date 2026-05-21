@@ -179,12 +179,12 @@ export const seedDemo = mutation({
   handler: async (ctx) => {
     await requireRole(ctx, ["admin", "finance"]);
     const existing = await ctx.db.query("treasuryAccounts").collect();
-    if (existing.some((account) => account.label === "Cache Bar Safe - Base USDC")) {
+    if (existing.some((account) => account.label === ".cache Safe - Base USDC")) {
       return { seeded: false };
     }
 
     const safeId = await ctx.db.insert("treasuryAccounts", {
-      label: "Cache Bar Safe - Base USDC",
+      label: ".cache Safe - Base USDC",
       kind: "usdc_multisig",
       chain: "evm",
       address: "0xCacHe0000000000000000000000000000000bAr",
@@ -192,7 +192,7 @@ export const seedDemo = mutation({
       balanceCache: 18420.5,
     });
     const solId = await ctx.db.insert("treasuryAccounts", {
-      label: "Cache Bar Squads - Solana USDC",
+      label: ".cache Squads - Solana USDC",
       kind: "usdc_multisig",
       chain: "solana",
       address: "CACHEbarDemo1111111111111111111111111111",

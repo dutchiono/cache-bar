@@ -39,7 +39,7 @@ export function SignIn() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--cb-paper)] p-6">
       <div className="w-full max-w-sm rounded-lg border border-[var(--cb-line)] bg-[var(--cb-paper-soft)] p-6">
-        <h1 className="cb-display mb-1 text-3xl font-semibold">Cache Bar</h1>
+        <h1 className="cb-display mb-1 text-3xl font-semibold">.cache</h1>
         <p className="mb-5 text-sm text-[var(--cb-muted)]">
           {mode === "signIn" ? "Staff sign in" : "Create a staff account"}
         </p>

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "cache-bar",
+      "name": "dotcache",
       "dependencies": {
         "@convex-dev/auth": "^0.0.92",
         "@dnd-kit/core": "^6.3.1",
