@@ -19,6 +19,7 @@ import type * as model_auth from "../model/auth.js";
 import type * as products from "../products.js";
 import type * as submissions from "../submissions.js";
 import type * as team from "../team.js";
+import type * as token from "../token.js";
 import type * as treasury from "../treasury.js";
 import type * as users from "../users.js";
 import type * as variants from "../variants.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   products: typeof products;
   submissions: typeof submissions;
   team: typeof team;
+  token: typeof token;
   treasury: typeof treasury;
   users: typeof users;
   variants: typeof variants;

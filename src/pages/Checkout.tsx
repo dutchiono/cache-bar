@@ -11,11 +11,14 @@ const money = new Intl.NumberFormat("en-US", {
 
 export default function Checkout() {
   const products = useQuery(api.checkout.storefrontProducts, {});
+  const tokenPrograms = useQuery(api.token.programs, { activeOnly: true });
   const createPaymentIntent = useMutation(api.checkout.createPaymentIntent);
   const [productId, setProductId] = useState<Id<"products"> | "">("");
   const [quantity, setQuantity] = useState(1);
   const [rail, setRail] = useState<"x402" | "usdc">("x402");
   const [network, setNetwork] = useState<"base" | "solana">("base");
+  const [tokenProgramId, setTokenProgramId] = useState<Id<"tokenPrograms"> | "">("");
+  const [burnAmountTokens, setBurnAmountTokens] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckoutResult | null>(null);
@@ -26,7 +29,18 @@ export default function Checkout() {
   );
   const subtotal = (selectedProduct?.basePrice ?? 0) * quantity;
   const shipping = selectedProduct?.productType === "physical" ? 9 : 0;
-  const total = subtotal + shipping;
+  const selectedProgram = useMemo(
+    () => tokenPrograms?.find((program) => program._id === tokenProgramId),
+    [tokenPrograms, tokenProgramId],
+  );
+  const burnDiscount = selectedProgram
+    ? Math.min(
+        burnAmountTokens * selectedProgram.discountPerTokenUsd,
+        selectedProgram.maxDiscountUsd,
+        subtotal,
+      )
+    : 0;
+  const total = subtotal - burnDiscount + shipping;
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,6 +61,9 @@ export default function Checkout() {
         rail,
         network,
         fromAddress: String(form.get("fromAddress") ?? "") || undefined,
+        tokenProgramId: tokenProgramId || undefined,
+        burnAmountTokens: burnAmountTokens > 0 ? burnAmountTokens : undefined,
+        burnWalletAddress: String(form.get("burnWalletAddress") ?? "") || undefined,
       });
       setResult(created);
     } catch (err) {
@@ -124,6 +141,46 @@ export default function Checkout() {
             />
           </div>
 
+          <div className="mt-5 rounded-md border border-[var(--cb-line)] bg-white/35 p-3">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">Token burn discount</h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="block space-y-1">
+                <span className="cb-label">Project token</span>
+                <select
+                  value={tokenProgramId}
+                  onChange={(event) =>
+                    setTokenProgramId(event.target.value as Id<"tokenPrograms"> | "")
+                  }
+                  className="cb-field"
+                >
+                  <option value="">No burn discount</option>
+                  {(tokenPrograms ?? []).map((program) => (
+                    <option key={program._id} value={program._id}>
+                      {program.projectName} ({program.tokenSymbol})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1">
+                <span className="cb-label">Tokens to burn</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.000001"
+                  value={burnAmountTokens}
+                  onChange={(event) => setBurnAmountTokens(Math.max(0, Number(event.target.value) || 0))}
+                  className="cb-field"
+                />
+              </label>
+              <Field
+                label="Burn wallet (optional)"
+                name="burnWalletAddress"
+                placeholder="Wallet that will burn"
+                required={false}
+              />
+            </div>
+          </div>
+
           {error && (
             <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
@@ -155,8 +212,18 @@ export default function Checkout() {
                   </div>
                 </div>
                 <Line label="Subtotal" value={money.format(subtotal)} />
+                <Line label="Burn discount" value={`-${money.format(burnDiscount)}`} />
                 <Line label="Shipping" value={money.format(shipping)} />
                 <Line label="Total USDC" value={money.format(total)} strong />
+                {selectedProgram?.preDropNft?.enabled && (
+                  <div className="rounded-md border border-[var(--cb-line)] bg-white/35 p-3 text-sm">
+                    <div className="font-semibold">{selectedProgram.preDropNft.collectionName}</div>
+                    <div className="mt-1 text-[var(--cb-muted)]">
+                      Pre-drop pass: {money.format(selectedProgram.preDropNft.mintPriceUsdc)} ·{" "}
+                      {selectedProgram.preDropNft.discountPercent}% holder discount
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <Empty>
@@ -196,6 +263,8 @@ type CheckoutResult = {
   orderId: Id<"orders">;
   paymentId: Id<"payments">;
   total: number;
+  burnDiscount: number;
+  tokensSpentBurned: number;
   rail: "usdc" | "x402";
   x402: null | {
     scheme: string;
@@ -215,7 +284,7 @@ function Field(props: React.InputHTMLAttributes<HTMLInputElement> & { label: str
   return (
     <label className="block space-y-1">
       <span className="cb-label">{label}</span>
-      <input required {...rest} className="cb-field" />
+      <input {...rest} required={rest.required ?? true} className="cb-field" />
     </label>
   );
 }

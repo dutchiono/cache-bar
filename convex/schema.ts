@@ -211,6 +211,39 @@ export default defineSchema({
     solBurnMethod: v.string(),
   }),
 
+  tokenPrograms: defineTable({
+    projectName: v.string(),
+    tokenSymbol: v.string(),
+    chain: chain,
+    tokenKind: v.union(
+      v.literal("native"),
+      v.literal("erc20"),
+      v.literal("spl"),
+    ),
+    tokenAddress: v.optional(v.string()),
+    burnTarget: v.string(),
+    burnMechanism: v.union(
+      v.literal("transfer_to_burn"),
+      v.literal("contract_burn"),
+      v.literal("manual_verify"),
+    ),
+    discountPerTokenUsd: v.number(),
+    maxDiscountUsd: v.number(),
+    active: v.boolean(),
+    preDropNft: v.optional(
+      v.object({
+        enabled: v.boolean(),
+        collectionName: v.string(),
+        contractOrMint: v.optional(v.string()),
+        mintPriceUsdc: v.number(),
+        discountPercent: v.number(),
+      }),
+    ),
+    notes: v.optional(v.string()),
+  })
+    .index("by_active", ["active"])
+    .index("by_chain", ["chain"]),
+
   // ---------- Orders, payments, fulfillment ----------
   orders: defineTable({
     number: v.string(),
@@ -276,13 +309,19 @@ export default defineSchema({
   tokenBurns: defineTable({
     orderId: v.id("orders"),
     customerId: v.id("customers"),
+    programId: v.optional(v.id("tokenPrograms")),
     chain: chain,
     amountTokens: v.number(),
     discountValue: v.number(),
-    burnTxHash: v.string(),
+    walletAddress: v.optional(v.string()),
+    status: v.optional(
+      v.union(v.literal("pending"), v.literal("verified"), v.literal("failed")),
+    ),
+    burnTxHash: v.optional(v.string()),
     confirmedAt: v.optional(v.number()),
   })
     .index("by_order", ["orderId"])
+    .index("by_program", ["programId"])
     .index("by_burnTx", ["burnTxHash"]),
 
   orderItems: defineTable({

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { requireRole, requireUser } from "./model/auth";
 
@@ -68,6 +69,9 @@ export const createPaymentIntent = mutation({
     rail: paymentRail,
     network: paymentNetwork,
     fromAddress: v.optional(v.string()),
+    tokenProgramId: v.optional(v.id("tokenPrograms")),
+    burnAmountTokens: v.optional(v.number()),
+    burnWalletAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireUser(ctx);
@@ -83,6 +87,13 @@ export const createPaymentIntent = mutation({
 
     const customer = await findOrCreateCustomer(ctx, args.customerEmail, args.customerName);
     const subtotal = product.basePrice * args.quantity;
+    const shipping = product.productType === "physical" ? 9 : 0;
+    const burnQuote = await quoteBurnDiscount(ctx, {
+      productEligible: product.tokenDiscountEligible,
+      programId: args.tokenProgramId,
+      amountTokens: args.burnAmountTokens,
+      subtotal,
+    });
     const orderId = await ctx.db.insert("orders", {
       number: await nextOrderNumber(ctx),
       customerId: customer,
@@ -90,11 +101,11 @@ export const createPaymentIntent = mutation({
       status: "awaiting_payment",
       subtotal,
       holdTierDiscount: 0,
-      burnDiscount: 0,
-      tokensSpentBurned: 0,
+      burnDiscount: burnQuote.discount,
+      tokensSpentBurned: burnQuote.amountTokens,
       tax: 0,
-      shipping: product.productType === "physical" ? 9 : 0,
-      total: subtotal + (product.productType === "physical" ? 9 : 0),
+      shipping,
+      total: subtotal - burnQuote.discount + shipping,
       currency: "USD",
       placedAt: Date.now(),
     });
@@ -105,7 +116,7 @@ export const createPaymentIntent = mutation({
       makerType: product.makerType,
       quantity: args.quantity,
       unitPrice: product.basePrice,
-      netRevenue: subtotal,
+      netRevenue: subtotal - burnQuote.discount,
       fulfillmentKind:
         product.productType === "digital" ? "digital_delivery" : "print_on_demand",
     });
@@ -113,7 +124,20 @@ export const createPaymentIntent = mutation({
     const network = x402Networks[args.network];
     const payTo = await receivingAddress(ctx, network.chain);
     const paymentId = `pay_${orderId}_${Date.now()}`;
-    const total = subtotal + (product.productType === "physical" ? 9 : 0);
+    const total = subtotal - burnQuote.discount + shipping;
+
+    if (burnQuote.program) {
+      await ctx.db.insert("tokenBurns", {
+        orderId,
+        customerId: customer,
+        programId: burnQuote.program._id,
+        chain: burnQuote.program.chain,
+        amountTokens: burnQuote.amountTokens,
+        discountValue: burnQuote.discount,
+        walletAddress: args.burnWalletAddress,
+        status: "pending",
+      });
+    }
 
     const paymentIdDoc = await ctx.db.insert("payments", {
       orderId,
@@ -143,6 +167,8 @@ export const createPaymentIntent = mutation({
       orderId,
       paymentId: paymentIdDoc,
       total,
+      burnDiscount: burnQuote.discount,
+      tokensSpentBurned: burnQuote.amountTokens,
       rail: args.rail,
       x402:
         args.rail === "x402"
@@ -161,6 +187,37 @@ export const createPaymentIntent = mutation({
     };
   },
 });
+
+async function quoteBurnDiscount(
+  ctx: MutationCtx,
+  {
+    productEligible,
+    programId,
+    amountTokens,
+    subtotal,
+  }: {
+    productEligible: boolean;
+    programId?: Id<"tokenPrograms">;
+    amountTokens?: number;
+    subtotal: number;
+  },
+) {
+  if (!programId || !amountTokens || amountTokens <= 0) {
+    return { discount: 0, amountTokens: 0, program: null };
+  }
+  if (!productEligible) {
+    throw new Error("This product is not eligible for token burn discounts.");
+  }
+  const program = await ctx.db.get(programId);
+  if (!program) throw new Error("Token burn program not found.");
+  if (!program.active) throw new Error("Token burn program is not active.");
+  const discount = Math.min(
+    amountTokens * program.discountPerTokenUsd,
+    program.maxDiscountUsd,
+    subtotal,
+  );
+  return { discount, amountTokens, program };
+}
 
 export const markPayment = mutation({
   args: {
