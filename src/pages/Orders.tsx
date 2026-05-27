@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 type Order = NonNullable<ReturnType<typeof useQuery<typeof api.checkout.recentOrders>>>[number];
 
@@ -124,6 +125,9 @@ function OrderCard({
           <div className="mt-1 text-sm text-[var(--cb-muted)]">
             {order.customer?.name ?? "Unknown customer"} · {order.customer?.email ?? "no email"}
           </div>
+          <Link to={`/app/orders/${order._id}`} className="cb-link mt-2 inline-block text-xs text-[var(--cb-muted)]">
+            Open detail
+          </Link>
         </div>
         <div className="text-right">
           <div className="cb-display text-2xl font-semibold">{money.format(order.total)}</div>

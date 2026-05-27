@@ -77,6 +77,47 @@ export const recentOrders = query({
   },
 });
 
+export const orderDetail = query({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, { orderId }) => {
+    await requireRole(ctx, ["admin", "finance", "support", "readonly"]);
+    const order = await ctx.db.get(orderId);
+    if (!order) return null;
+    const customer = await ctx.db.get(order.customerId);
+    const payments = await ctx.db
+      .query("payments")
+      .withIndex("by_order", (q) => q.eq("orderId", orderId))
+      .collect();
+    const tokenBurns = await ctx.db
+      .query("tokenBurns")
+      .withIndex("by_order", (q) => q.eq("orderId", orderId))
+      .collect();
+    const fulfillments = await ctx.db
+      .query("fulfillments")
+      .withIndex("by_order", (q) => q.eq("orderId", orderId))
+      .collect();
+    const items = await ctx.db
+      .query("orderItems")
+      .withIndex("by_order", (q) => q.eq("orderId", orderId))
+      .collect();
+
+    return {
+      ...order,
+      customer,
+      payments,
+      tokenBurns,
+      items: await Promise.all(
+        items.map(async (item) => ({
+          ...item,
+          product: await ctx.db.get(item.productId),
+          variant: item.variantId ? await ctx.db.get(item.variantId) : null,
+          fulfillments: fulfillments.filter((fulfillment) => fulfillment.orderItemId === item._id),
+        })),
+      ),
+    };
+  },
+});
+
 export const createPaymentIntent = mutation({
   args: paymentIntentArgs,
   handler: async (ctx, args) => {

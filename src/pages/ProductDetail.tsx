@@ -23,7 +23,7 @@ export default function ProductDetail() {
   return (
     <div>
       <div className="mb-1 text-xs text-neutral-500">
-        <Link to="/products" className="cb-link">
+        <Link to="/app/products" className="cb-link">
           Products
         </Link>{" "}
         / {product.title}

@@ -46,3 +46,31 @@ export const upsert = mutation({
     });
   },
 });
+
+export const listOverview = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireRole(ctx, ["admin", "catalog_manager", "fulfillment", "finance", "readonly"]);
+    const rows = await ctx.db.query("inventory").collect();
+    return await Promise.all(
+      rows
+        .sort((a, b) => {
+          const aAvailable = a.onHand - a.reserved;
+          const bAvailable = b.onHand - b.reserved;
+          return aAvailable - bAvailable;
+        })
+        .map(async (row) => {
+          const variant = await ctx.db.get(row.variantId);
+          const product = variant ? await ctx.db.get(variant.productId) : null;
+          const available = row.onHand - row.reserved;
+          return {
+            ...row,
+            available,
+            needsReorder: available <= row.reorderPoint,
+            variant,
+            product,
+          };
+        }),
+    );
+  },
+});

@@ -174,7 +174,7 @@ export default function Creators() {
       <RecordTable<Creator>
         rows={creators}
         columns={columns}
-        rowHref={(r) => `/creators/${r._id}`}
+        rowHref={(r) => `/app/creators/${r._id}`}
         empty="No creators yet. Click '+ New creator' above."
       />
     </div>

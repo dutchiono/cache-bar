@@ -15,7 +15,7 @@ export default function CreatorDetail() {
   return (
     <div>
       <div className="mb-1 text-xs text-neutral-500">
-        <Link to="/creators" className="cb-link">
+        <Link to="/app/creators" className="cb-link">
           Creators
         </Link>{" "}
         / {creator.name}

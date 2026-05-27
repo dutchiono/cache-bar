@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -55,53 +55,33 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckoutResult | null>(null);
 
-  const selectedProduct = products?.find((product) => product._id === selectedProductId) ?? null;
+  const activeProductId =
+    products?.some((product) => product._id === selectedProductId)
+      ? selectedProductId
+      : (products?.[0]?._id ?? "");
+  const selectedProduct = products?.find((product) => product._id === activeProductId) ?? null;
+  const activeVariantId = selectedProduct?.variants.some((variant) => variant._id === selectedVariantId)
+    ? selectedVariantId
+    : (selectedProduct?.variants[0]?._id ?? "");
   const selectedVariant =
-    selectedProduct?.variants.find((variant) => variant._id === selectedVariantId) ?? null;
-  const selectedProgram = tokenPrograms?.find((program) => program._id === tokenProgramId) ?? null;
+    selectedProduct?.variants.find((variant) => variant._id === activeVariantId) ?? null;
+  const tokenDiscountEnabled = Boolean(selectedProduct?.tokenDiscountEligible);
+  const activeTokenProgramId = tokenDiscountEnabled ? tokenProgramId : "";
+  const activeBurnAmountTokens = tokenDiscountEnabled ? burnAmountTokens : 0;
+  const selectedProgram =
+    tokenPrograms?.find((program) => program._id === activeTokenProgramId) ?? null;
   const unitPrice = selectedVariant?.priceOverride ?? selectedProduct?.basePrice ?? 0;
   const subtotal = unitPrice * quantity;
   const shipping = selectedProduct?.productType === "physical" ? 9 : 0;
   const burnDiscount =
-    selectedProgram && selectedProduct?.tokenDiscountEligible
+    selectedProgram && tokenDiscountEnabled
       ? Math.min(
-          burnAmountTokens * selectedProgram.discountPerTokenUsd,
+          activeBurnAmountTokens * selectedProgram.discountPerTokenUsd,
           selectedProgram.maxDiscountUsd,
           subtotal,
         )
       : 0;
   const total = subtotal - burnDiscount + shipping;
-
-  useEffect(() => {
-    if (!products?.length) return;
-    const selectedStillExists = products.some((product) => product._id === selectedProductId);
-    if (!selectedStillExists) {
-      setSelectedProductId(products[0]._id);
-    }
-  }, [products, selectedProductId]);
-
-  useEffect(() => {
-    if (!selectedProduct) {
-      if (selectedVariantId) setSelectedVariantId("");
-      return;
-    }
-    const variants = selectedProduct.variants;
-    if (!variants.length) {
-      if (selectedVariantId) setSelectedVariantId("");
-      return;
-    }
-    const variantStillExists = variants.some((variant) => variant._id === selectedVariantId);
-    if (!variantStillExists) {
-      setSelectedVariantId(variants[0]._id);
-    }
-  }, [selectedProduct, selectedVariantId]);
-
-  useEffect(() => {
-    if (!selectedProduct?.tokenDiscountEligible) {
-      setTokenProgramId("");
-      setBurnAmountTokens(0);
-    }
-  }, [selectedProduct]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -117,19 +97,15 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
     try {
       const created = await createPaymentIntent({
         productId: selectedProduct._id,
-        variantId: selectedVariantId || undefined,
+        variantId: activeVariantId || undefined,
         quantity,
         customerName: String(form.get("customerName") ?? ""),
         customerEmail: String(form.get("customerEmail") ?? ""),
         rail,
         network,
         fromAddress: String(form.get("fromAddress") ?? "") || undefined,
-        tokenProgramId:
-          selectedProduct.tokenDiscountEligible && tokenProgramId ? tokenProgramId : undefined,
-        burnAmountTokens:
-          selectedProduct.tokenDiscountEligible && burnAmountTokens > 0
-            ? burnAmountTokens
-            : undefined,
+        tokenProgramId: tokenDiscountEnabled && activeTokenProgramId ? activeTokenProgramId : undefined,
+        burnAmountTokens: tokenDiscountEnabled && activeBurnAmountTokens > 0 ? activeBurnAmountTokens : undefined,
         burnWalletAddress: String(form.get("burnWalletAddress") ?? "") || undefined,
       });
       setResult(created);
@@ -281,7 +257,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                           <label className="sf-field">
                             <span>Variant</span>
                             <select
-                              value={selectedVariantId}
+                              value={activeVariantId}
                               onChange={(event) =>
                                 setSelectedVariantId(
                                   event.target.value as Id<"productVariants"> | "",
@@ -369,13 +345,13 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                             <label className="sf-field">
                               <span>Token program</span>
                               <select
-                                value={tokenProgramId}
+                                value={activeTokenProgramId}
                                 onChange={(event) =>
                                   setTokenProgramId(
                                     event.target.value as Id<"tokenPrograms"> | "",
                                   )
                                 }
-                                disabled={!selectedProduct.tokenDiscountEligible}
+                                disabled={!tokenDiscountEnabled}
                               >
                                 <option value="">No burn discount</option>
                                 {(tokenPrograms ?? []).map((program) => (
@@ -391,13 +367,13 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                                 type="number"
                                 min="0"
                                 step="0.000001"
-                                value={burnAmountTokens}
+                                value={activeBurnAmountTokens}
                                 onChange={(event) =>
                                   setBurnAmountTokens(
                                     Math.max(0, Number(event.target.value) || 0),
                                   )
                                 }
-                                disabled={!selectedProduct.tokenDiscountEligible}
+                                disabled={!tokenDiscountEnabled}
                               />
                             </label>
                             <label className="sf-field full">
@@ -405,7 +381,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                               <input
                                 name="burnWalletAddress"
                                 placeholder="Wallet that will execute the burn"
-                                disabled={!selectedProduct.tokenDiscountEligible}
+                                disabled={!tokenDiscountEnabled}
                               />
                             </label>
                           </div>

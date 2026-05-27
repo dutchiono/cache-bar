@@ -3,30 +3,27 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ScreenStub } from "./components/ScreenStub";
 import { SignIn } from "./components/SignIn";
+import AgentConsole from "./pages/AgentConsole";
+import Automations from "./pages/Automations";
 import Checkout from "./pages/Checkout";
+import CustomerDetail from "./pages/CustomerDetail";
+import Customers from "./pages/Customers";
 import Creators from "./pages/Creators";
 import CreatorDetail from "./pages/CreatorDetail";
 import Dashboard from "./pages/Dashboard";
+import Inventory from "./pages/Inventory";
+import OrderDetail from "./pages/OrderDetail";
 import Orders from "./pages/Orders";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
+import Reports from "./pages/Reports";
+import Royalties from "./pages/Royalties";
 import Settings from "./pages/Settings";
 import Storefront from "./pages/Storefront";
 import Submissions from "./pages/Submissions";
 import Team from "./pages/Team";
 import TokenBurn from "./pages/TokenBurn";
 import Treasury from "./pages/Treasury";
-
-const stubRoutes: { path: string; title: string; subtitle?: string }[] = [
-  { path: "orders/:id", title: "Order detail" },
-  { path: "customers", title: "Customers (CRM)", subtitle: "With wallets + $CACHE tier" },
-  { path: "customers/:id", title: "Customer detail" },
-  { path: "inventory", title: "Inventory & Fulfillment", subtitle: "POD, dropship, supplier funding" },
-  { path: "royalties", title: "Royalties & Payouts", subtitle: "Ledger + payout runs" },
-  { path: "reports", title: "Reports & Analytics" },
-  { path: "automations", title: "Automations", subtitle: "No-code flow builder" },
-  { path: "agent", title: "Eliza Agent", subtitle: "Full console — Phase 12" },
-];
 
 const legacyAdminRedirects = [
   "products",
@@ -63,17 +60,18 @@ export default function App() {
         <Route path="creators/:id" element={<CreatorDetail />} />
         <Route path="checkout" element={<Checkout />} />
         <Route path="orders" element={<Orders />} />
+        <Route path="orders/:id" element={<OrderDetail />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="customers/:id" element={<CustomerDetail />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="royalties" element={<Royalties />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="automations" element={<Automations />} />
+        <Route path="agent" element={<AgentConsole />} />
         <Route path="settings" element={<Settings />} />
         <Route path="team" element={<Team />} />
         <Route path="token" element={<TokenBurn />} />
         <Route path="treasury" element={<Treasury />} />
-        {stubRoutes.map((r) => (
-          <Route
-            key={r.path}
-            path={r.path}
-            element={<ScreenStub title={r.title} subtitle={r.subtitle} />}
-          />
-        ))}
         <Route path="storefront" element={<Navigate to="/" replace />} />
         <Route
           path="*"

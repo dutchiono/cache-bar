@@ -9,15 +9,20 @@
  */
 
 import type * as account from "../account.js";
+import type * as agent from "../agent.js";
 import type * as auth from "../auth.js";
+import type * as automations from "../automations.js";
 import type * as bootstrap from "../bootstrap.js";
 import type * as checkout from "../checkout.js";
 import type * as creators from "../creators.js";
+import type * as customers from "../customers.js";
 import type * as digitalAssets from "../digitalAssets.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
 import type * as model_auth from "../model/auth.js";
 import type * as products from "../products.js";
+import type * as reports from "../reports.js";
+import type * as royalties from "../royalties.js";
 import type * as submissions from "../submissions.js";
 import type * as team from "../team.js";
 import type * as token from "../token.js";
@@ -33,15 +38,20 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   account: typeof account;
+  agent: typeof agent;
   auth: typeof auth;
+  automations: typeof automations;
   bootstrap: typeof bootstrap;
   checkout: typeof checkout;
   creators: typeof creators;
+  customers: typeof customers;
   digitalAssets: typeof digitalAssets;
   http: typeof http;
   inventory: typeof inventory;
   "model/auth": typeof model_auth;
   products: typeof products;
+  reports: typeof reports;
+  royalties: typeof royalties;
   submissions: typeof submissions;
   team: typeof team;
   token: typeof token;

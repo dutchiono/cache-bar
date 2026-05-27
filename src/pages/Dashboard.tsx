@@ -26,10 +26,10 @@ export default function Dashboard() {
                 </h1>
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
-                <Link to="/products" className="cb-button bg-[var(--cb-paper-soft)] text-[var(--cb-ink)] hover:bg-white">
+                <Link to="/app/products" className="cb-button bg-[var(--cb-paper-soft)] text-[var(--cb-ink)] hover:bg-white">
                   Catalog
                 </Link>
-                <Link to="/submissions" className="cb-button-secondary border-[rgba(247,241,231,0.25)] bg-transparent text-[var(--cb-paper-soft)] hover:bg-[rgba(247,241,231,0.08)]">
+                <Link to="/app/submissions" className="cb-button-secondary border-[rgba(247,241,231,0.25)] bg-transparent text-[var(--cb-paper-soft)] hover:bg-[rgba(247,241,231,0.08)]">
                   Review queue
                 </Link>
               </div>
@@ -57,12 +57,12 @@ export default function Dashboard() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Latest Products" href="/products">
+        <Panel title="Latest Products" href="/app/products">
           <div className="space-y-2">
             {(products ?? []).slice(0, 5).map((product) => (
               <Link
                 key={product._id}
-                to={`/products/${product._id}`}
+                to={`/app/products/${product._id}`}
                 className="flex items-center gap-3 rounded-md border border-[var(--cb-line)] bg-white/35 p-2 transition hover:bg-white/70"
               >
                 {product.demoImageUrls?.[0] ? (
@@ -86,7 +86,7 @@ export default function Dashboard() {
           </div>
         </Panel>
 
-        <Panel title="Submission Flow" href="/submissions">
+        <Panel title="Submission Flow" href="/app/submissions">
           <div className="space-y-3">
             {["Draft", "Submit", "Prescreen", "Approve", "Live"].map((step, index) => (
               <div key={step} className="flex items-center gap-3">
@@ -99,15 +99,15 @@ export default function Dashboard() {
           </div>
         </Panel>
 
-        <Panel title="Next Wiring" href="/agent">
+        <Panel title="Next Wiring" href="/app/agent">
           <div className="space-y-3 text-sm text-[var(--cb-muted)]">
             <div className="rounded-md border border-[var(--cb-line)] bg-white/35 p-3">
               <div className="font-semibold text-[var(--cb-ink)]">Treasury</div>
               <div>Wire balances, off-ramp proposals, supplier payments.</div>
             </div>
             <div className="rounded-md border border-[var(--cb-line)] bg-white/35 p-3">
-              <div className="font-semibold text-[var(--cb-ink)]">Eliza</div>
-              <div>Attach agent actions to product prescreen and creator ops.</div>
+              <div className="font-semibold text-[var(--cb-ink)]">Agent console</div>
+              <div>Threaded operator notes and backend run context are now live.</div>
             </div>
           </div>
         </Panel>

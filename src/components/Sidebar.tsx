@@ -18,7 +18,20 @@ const groups: Group[] = [
   },
   {
     label: "Sales",
-    items: [{ to: "/app/orders", label: "Orders" }],
+    items: [
+      { to: "/app/orders", label: "Orders" },
+      { to: "/app/customers", label: "Customers" },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { to: "/app/inventory", label: "Inventory" },
+      { to: "/app/royalties", label: "Royalties" },
+      { to: "/app/reports", label: "Reports" },
+      { to: "/app/automations", label: "Automations" },
+      { to: "/app/agent", label: "Agent Console" },
+    ],
   },
   {
     label: "Treasury",

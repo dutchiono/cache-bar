@@ -332,7 +332,7 @@ export default function Products() {
       <RecordTable<Product>
         rows={products}
         columns={columns}
-        rowHref={(r) => `/products/${r._id}`}
+        rowHref={(r) => `/app/products/${r._id}`}
         empty="No products yet. Click '+ New product' above (after creating at least one creator)."
       />
     </div>

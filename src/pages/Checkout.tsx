@@ -248,7 +248,7 @@ export default function Checkout() {
                   <CodeLine label="price" value={result.x402.price} />
                 </div>
               )}
-              <Link to="/orders" className="cb-button-secondary mt-3 w-full">
+              <Link to="/app/orders" className="cb-button-secondary mt-3 w-full">
                 Open orders
               </Link>
             </section>
