@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -393,6 +394,21 @@ export const paymentVerificationContext = internalQuery({
   },
 });
 
+export const pendingPaymentSubmissions = internalQuery({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit }) => {
+    const rows = await ctx.db.query("payments").collect();
+    return rows
+      .filter((payment) => payment.status === "pending" && Boolean(payment.txHash?.trim()))
+      .sort((a, b) => b._creationTime - a._creationTime)
+      .slice(0, Math.max(1, Math.min(limit ?? 25, 100)))
+      .map((payment) => ({
+        paymentId: payment._id,
+        txHash: payment.txHash!,
+      }));
+  },
+});
+
 export const recordPaymentSubmission = internalMutation({
   args: {
     paymentId: v.id("payments"),
@@ -408,6 +424,11 @@ export const recordPaymentSubmission = internalMutation({
       fromAddress: fromAddress ?? payment.fromAddress,
       confirmations: confirmations ?? payment.confirmations,
     });
+    if (payment.status === "pending" && txHash.trim()) {
+      await ctx.scheduler.runAfter(2 * 60 * 1000, internal.payments.reconcileSubmittedPayment, {
+        paymentId,
+      });
+    }
   },
 });
 

@@ -15,6 +15,7 @@ import type * as automations from "../automations.js";
 import type * as bootstrap from "../bootstrap.js";
 import type * as checkout from "../checkout.js";
 import type * as creators from "../creators.js";
+import type * as crons from "../crons.js";
 import type * as customers from "../customers.js";
 import type * as digitalAssets from "../digitalAssets.js";
 import type * as http from "../http.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   bootstrap: typeof bootstrap;
   checkout: typeof checkout;
   creators: typeof creators;
+  crons: typeof crons;
   customers: typeof customers;
   digitalAssets: typeof digitalAssets;
   http: typeof http;

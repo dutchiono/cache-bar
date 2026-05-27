@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { action, internalAction, type ActionCtx } from "./_generated/server";
 
 const x402Networks = {
   base: {
@@ -15,12 +16,13 @@ const usdcTransferTopic =
   "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55aeb3b3ef";
 
 type PaymentVerificationContext = {
-  _id: string;
+  _id: Id<"payments">;
   status: "pending" | "confirmed" | "failed" | "refunded";
   chain?: "evm" | "solana";
   amountUsdc?: number;
   fromAddress?: string;
   payTo: string;
+  txHash?: string;
 };
 
 type VerificationResult =
@@ -37,6 +39,20 @@ type VerificationResult =
       amountUsdc?: number;
       fromAddress?: string;
     };
+
+type VerificationResponse =
+  | { status: "confirmed"; reason?: string; confirmations?: number; amountUsdc?: number }
+  | { status: "pending" | "failed" | "refunded"; reason?: string; confirmations?: number; amountUsdc?: number }
+  | { skipped: true };
+
+type PublicVerificationResponse =
+  | { status: "confirmed"; reason?: string; confirmations?: number; amountUsdc?: number }
+  | { status: "pending" | "failed" | "refunded"; reason?: string; confirmations?: number; amountUsdc?: number };
+
+type PendingPaymentSubmission = {
+  paymentId: Id<"payments">;
+  txHash: string;
+};
 
 type SolanaTokenBalance = {
   mint?: string;
@@ -80,71 +96,127 @@ export const verifySubmittedPayment = action({
     paymentId: v.id("payments"),
     txHash: v.string(),
   },
-  handler: async (ctx, { paymentId, txHash }): Promise<
-    | { status: "confirmed"; reason?: string; confirmations?: number; amountUsdc?: number }
-    | { status: "pending" | "failed" | "refunded"; reason?: string; confirmations?: number; amountUsdc?: number }
-  > => {
-    const normalizedTxHash = txHash.trim();
-    if (!normalizedTxHash) throw new Error("Transaction hash is required.");
+  handler: async (ctx, { paymentId, txHash }): Promise<PublicVerificationResponse> => {
+    return (await processPaymentVerification(ctx, paymentId, txHash)) as PublicVerificationResponse;
+  },
+});
 
+export const reconcileSubmittedPayment = internalAction({
+  args: {
+    paymentId: v.id("payments"),
+  },
+  handler: async (ctx, { paymentId }) => {
     const payment = (await ctx.runQuery(internal.checkout.paymentVerificationContext, {
       paymentId,
     })) as PaymentVerificationContext | null;
-    if (!payment) throw new Error("Payment not found.");
-    if (payment.status !== "pending") {
-      return {
-        status: payment.status,
-        reason: `Payment is already ${payment.status}.`,
-      };
+    if (!payment || payment.status !== "pending" || !payment.txHash?.trim()) {
+      return { skipped: true };
     }
-    if (!payment.chain) throw new Error("Payment chain is missing.");
+    return await processPaymentVerification(ctx, paymentId, payment.txHash);
+  },
+});
 
-    const verification =
+export const reconcilePendingPayments = internalAction({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    { limit },
+  ): Promise<{ checked: number; results: VerificationResponse[] }> => {
+    const pending = (await ctx.runQuery(internal.checkout.pendingPaymentSubmissions, {
+      limit: limit ?? 25,
+    })) as PendingPaymentSubmission[];
+    const results: VerificationResponse[] = [];
+    for (const row of pending) {
+      results.push(
+        await processPaymentVerification(ctx, row.paymentId, row.txHash, {
+          swallowRpcErrors: true,
+        }),
+      );
+    }
+    return {
+      checked: pending.length,
+      results,
+    };
+  },
+});
+
+async function processPaymentVerification(
+  ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
+  paymentId: Id<"payments">,
+  txHash: string,
+  options?: { swallowRpcErrors?: boolean },
+): Promise<VerificationResponse> {
+  const normalizedTxHash = txHash.trim();
+  if (!normalizedTxHash) throw new Error("Transaction hash is required.");
+
+  const payment = (await ctx.runQuery(internal.checkout.paymentVerificationContext, {
+    paymentId,
+  })) as PaymentVerificationContext | null;
+  if (!payment) throw new Error("Payment not found.");
+  if (payment.status !== "pending") {
+    return {
+      status: payment.status,
+      reason: `Payment is already ${payment.status}.`,
+    };
+  }
+  if (!payment.chain) throw new Error("Payment chain is missing.");
+
+  let verification: VerificationResult;
+  try {
+    verification =
       payment.chain === "evm"
         ? await verifyEvmUsdcTransfer(normalizedTxHash, payment)
         : await verifySolanaUsdcTransfer(normalizedTxHash, payment);
+  } catch (error) {
+    if (!options?.swallowRpcErrors) throw error;
+    return {
+      status: "pending" as const,
+      reason: error instanceof Error ? error.message : "RPC verification failed.",
+    };
+  }
 
-    await ctx.runMutation(internal.checkout.recordPaymentSubmission, {
+  await ctx.runMutation(internal.checkout.recordPaymentSubmission, {
+    paymentId,
+    txHash: normalizedTxHash,
+    fromAddress: verification.fromAddress ?? payment.fromAddress,
+    confirmations: verification.confirmations,
+  });
+
+  if (verification.status === "confirmed") {
+    await ctx.runMutation(internal.checkout.confirmVerifiedPayment, {
       paymentId,
       txHash: normalizedTxHash,
       fromAddress: verification.fromAddress ?? payment.fromAddress,
       confirmations: verification.confirmations,
     });
-
-    if (verification.status === "confirmed") {
-      await ctx.runMutation(internal.checkout.confirmVerifiedPayment, {
-        paymentId,
-        txHash: normalizedTxHash,
-        fromAddress: verification.fromAddress ?? payment.fromAddress,
-        confirmations: verification.confirmations,
-      });
-      return {
-        status: "confirmed",
-        confirmations: verification.confirmations,
-        amountUsdc: verification.amountUsdc,
-      };
-    }
-
-    if (verification.status === "failed") {
-      await ctx.runMutation(internal.checkout.failVerifiedPayment, {
-        paymentId,
-        txHash: normalizedTxHash,
-      });
-      return {
-        status: "failed",
-        reason: verification.reason,
-        confirmations: verification.confirmations,
-      };
-    }
-
     return {
-      status: "pending",
-      reason: verification.reason,
+      status: "confirmed" as const,
       confirmations: verification.confirmations,
       amountUsdc: verification.amountUsdc,
     };
-  },
-});
+  }
+
+  if (verification.status === "failed") {
+    await ctx.runMutation(internal.checkout.failVerifiedPayment, {
+      paymentId,
+      txHash: normalizedTxHash,
+    });
+    return {
+      status: "failed" as const,
+      reason: verification.reason,
+      confirmations: verification.confirmations,
+    };
+  }
+
+  return {
+    status: "pending" as const,
+    reason: verification.reason,
+    confirmations: verification.confirmations,
+    amountUsdc: verification.amountUsdc,
+  };
+}
 
 async function verifyEvmUsdcTransfer(
   txHash: string,
