@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>.cache — Ambassador Program</title>
+<link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="base.css" />
+
+<style>
+  .amb{padding:140px 40px 100px;max-width:1400px;margin:0 auto;position:relative;z-index:1}
+
+  /* ----- shared head ----- */
+  .amb__head{display:grid;grid-template-columns:1.4fr 1fr;gap:60px;align-items:end;padding-bottom:60px;border-bottom:1px solid var(--line);margin-bottom:80px}
+  .amb__title{font-family:var(--display);font-size:clamp(64px,9vw,160px);line-height:.88;letter-spacing:-.025em;text-transform:uppercase;color:var(--fg);margin-top:24px;display:flex;flex-direction:column}
+  .amb__title em{font-style:normal;color:var(--accent)}
+  .amb__lead{font-size:15px;line-height:1.6;color:var(--fg-2);max-width:420px;justify-self:end;text-align:right}
+
+  /* ============ LANDING ============ */
+  .amb__terms{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:80px}
+  .term{padding:48px 48px 56px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+  .term:first-child{border-left:0;padding-left:0}
+  .term:last-child{padding-right:0}
+  .term__n{font:500 11px/1 var(--mono);letter-spacing:.32em;color:var(--muted);display:flex;align-items:center;gap:14px}
+  .term__n::before{content:"";width:32px;height:1px;background:var(--muted)}
+  .term__big{font-family:var(--display);font-size:90px;line-height:.95;letter-spacing:-.025em;color:var(--fg);margin-top:8px}
+  .term__big.acc{color:var(--accent)}
+  .term__big small{font-family:var(--display);font-size:36px;color:var(--fg-2)}
+  .term__lbl{font:500 11px/1.4 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--fg-2)}
+  .term__desc{font-size:13px;line-height:1.6;color:var(--fg-2);max-width:280px;margin-top:8px}
+
+  .amb__tiers{margin:60px 0 100px;padding:48px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .amb__tiers-head{display:flex;justify-content:space-between;align-items:end;gap:32px;flex-wrap:wrap;margin-bottom:48px}
+  .amb__tiers-head h3{font-family:var(--display);font-size:48px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg)}
+  .amb__tiers-head p{font:500 11px/1.5 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted);max-width:360px;text-align:right}
+  .tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+  .tier{padding:32px 28px;border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;gap:14px;transition:border-color .3s, transform .4s cubic-bezier(.2,.7,.2,1);background:linear-gradient(180deg,#0e0d0b,#0a0a09)}
+  .tier:hover{border-color:var(--fg-2);transform:translateY(-4px)}
+  .tier__nm{font-family:var(--display);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);display:flex;align-items:center;gap:10px}
+  .tier__nm .dot{width:8px;height:8px;border-radius:50%}
+  .tier__rate{font-family:var(--display);font-size:42px;line-height:.95;letter-spacing:-.02em;color:var(--accent)}
+  .tier__min{font:500 10px/1.4 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .tier__perks{display:flex;flex-direction:column;gap:8px;margin-top:auto}
+  .tier__perks li{font:500 10px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--fg-2);padding-left:14px;position:relative}
+  .tier__perks li::before{content:"";position:absolute;left:0;top:7px;width:6px;height:1px;background:var(--muted)}
+
+  /* signup form */
+  .amb__signup{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;padding-top:80px;border-top:1px solid var(--line)}
+  .amb__signup-head h3{font-family:var(--display);font-size:64px;line-height:.95;letter-spacing:-.025em;text-transform:uppercase;color:var(--fg)}
+  .amb__signup-head h3 em{font-style:normal;color:var(--accent)}
+  .amb__signup-head p{margin-top:24px;font-size:15px;line-height:1.6;color:var(--fg-2);max-width:380px}
+  .amb__form{display:flex;flex-direction:column;gap:32px}
+  .amb__form .field{display:flex;flex-direction:column;gap:14px}
+  .amb__form .field label{font:500 11px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .amb__form .field input,.amb__form .field select,.amb__form .field textarea{
+    background:transparent;border:0;outline:none;border-bottom:1px solid var(--line);
+    font:500 22px/1.3 var(--ui);letter-spacing:-.005em;color:var(--fg);padding:0 0 14px;
+    transition:border-color .3s;width:100%;
+  }
+  .amb__form .field input::placeholder,.amb__form .field textarea::placeholder{color:var(--muted-2)}
+  .amb__form .field input:focus,.amb__form .field textarea:focus{border-color:var(--fg)}
+  .amb__form .field textarea{resize:vertical;min-height:80px;font-size:16px}
+  .amb__form .field .hint{font:500 10px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .amb__cta{
+    display:inline-flex;align-items:center;justify-content:space-between;gap:18px;
+    padding:22px 28px;background:var(--fg);color:var(--bg);border-radius:999px;
+    font:500 12px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;
+    transition:background .3s,color .3s;align-self:flex-start;
+  }
+  .amb__cta:hover{background:var(--accent);color:var(--fg)}
+  .amb__cta svg{width:14px;height:14px;transition:transform .3s}
+  .amb__cta:hover svg{transform:translate(4px,0)}
+
+  /* ============ DASHBOARD ============ */
+  .amb__bar{display:grid;grid-template-columns:1fr auto;gap:32px;align-items:end;padding-bottom:32px;border-bottom:1px solid var(--line);margin-bottom:60px}
+  .amb__bar h2{font-family:var(--display);font-size:clamp(48px,7vw,110px);line-height:.92;letter-spacing:-.025em;text-transform:uppercase}
+  .amb__bar h2 em{font-style:normal;color:var(--accent)}
+  .amb__bar .badge{display:inline-flex;align-items:center;gap:10px;padding:8px 14px;background:var(--accent-soft);color:var(--accent);font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;border-radius:999px;margin-bottom:14px}
+  .amb__bar .badge::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent)}
+  .amb__meta{font:500 11px/1.5 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);text-align:right;display:flex;flex-direction:column;gap:6px}
+  .amb__meta strong{color:var(--fg);font-weight:500}
+  .amb__meta .sign-out{color:var(--fg-2);margin-top:10px;transition:color .3s}
+  .amb__meta .sign-out:hover{color:var(--hot)}
+
+  /* referral link box */
+  .ref-box{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:32px;border:1px solid var(--line);border-radius:6px;background:linear-gradient(180deg,#0e0d0b,#0a0a09);margin-bottom:60px}
+  .ref-box .lbl{font:500 10px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:block}
+  .ref-box .url{font-family:var(--mono);font-size:18px;color:var(--fg);letter-spacing:-.005em;word-break:break-all}
+  .ref-box .url .acc{color:var(--accent)}
+  .ref-box button{
+    padding:14px 22px;border:1px solid var(--fg);border-radius:999px;color:var(--fg);
+    font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;
+    transition:all .3s;display:inline-flex;align-items:center;gap:10px;white-space:nowrap;
+  }
+  .ref-box button:hover{background:var(--fg);color:var(--bg)}
+  .ref-box button.copied{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+
+  /* stats */
+  .stat-grid-amb{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:80px}
+  .stat-amb{display:flex;flex-direction:column;gap:14px;padding:32px 0;border-top:1px solid var(--line)}
+  .stat-amb .label{font:500 10px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .stat-amb .val{font-family:var(--display);font-size:64px;line-height:.95;letter-spacing:-.02em;color:var(--fg)}
+  .stat-amb .val.acc{color:var(--accent)}
+  .stat-amb .sub{font:500 11px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--fg-2)}
+  .stat-amb .trend{display:inline-flex;align-items:center;gap:6px;color:var(--acid)}
+  .stat-amb .trend.down{color:var(--hot)}
+
+  /* tabs */
+  .amb__nav{display:flex;gap:36px;flex-wrap:wrap;padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:60px}
+  .amb__nav button{padding:8px 0;font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted);transition:color .3s;border-bottom:1px solid transparent}
+  .amb__nav button:hover{color:var(--fg-2)}
+  .amb__nav button.is-on{color:var(--fg);border-color:var(--fg)}
+  .amb__panel{display:none;animation:fade .4s ease}
+  .amb__panel.is-on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* table */
+  .ref-table h3{font-family:var(--display);font-size:42px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:32px}
+  .ref-table__head,.ref-row{display:grid;grid-template-columns:140px 1fr 120px 120px 120px;gap:24px;align-items:center;padding:20px 4px;border-bottom:1px solid var(--line);font:500 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .ref-table__head{color:var(--muted)}
+  .ref-row{color:var(--fg-2);padding:24px 4px;transition:padding .4s cubic-bezier(.2,.7,.2,1)}
+  .ref-row:hover{padding-left:24px}
+  .ref-row .date{color:var(--fg-2);letter-spacing:.06em}
+  .ref-row .src{font-family:var(--display);font-size:18px;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .ref-row .src small{display:block;font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.2em;color:var(--muted);margin-top:6px}
+  .ref-row .stat{display:inline-flex;align-items:center;gap:6px;color:var(--acid)}
+  .ref-row .stat::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+  .ref-row .stat.pending{color:var(--accent)}
+  .ref-row .stat.click{color:var(--muted)}
+  .ref-row .val{font-family:var(--display);font-size:18px;letter-spacing:-.01em;color:var(--fg);text-align:right;text-transform:none}
+
+  .payout-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:48px}
+  .payout-card{padding:32px;border:1px solid var(--line);border-radius:6px;background:linear-gradient(180deg,#0e0d0b,#0a0a09);display:flex;flex-direction:column;gap:20px}
+  .payout-card h4{font-family:var(--display);font-size:24px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .payout-card .big{font-family:var(--display);font-size:64px;line-height:.95;letter-spacing:-.02em;color:var(--accent)}
+  .payout-card .line{display:flex;justify-content:space-between;font:500 11px/1 var(--mono);letter-spacing:.18em;color:var(--muted);text-transform:uppercase;padding-top:12px;border-top:1px solid var(--line)}
+  .payout-card .line .v{color:var(--fg);letter-spacing:.06em;text-transform:none}
+
+  /* tools / assets panel */
+  .assets-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+  .asset-card{padding:28px;border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;gap:16px;transition:border-color .3s,transform .4s cubic-bezier(.2,.7,.2,1)}
+  .asset-card:hover{border-color:var(--fg-2);transform:translateY(-4px)}
+  .asset-card .preview{aspect-ratio:16/9;background:linear-gradient(160deg,#1d1c19,#0c0c0a);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--fg-2);font:500 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase}
+  .asset-card h5{font-family:var(--display);font-size:20px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .asset-card .dl{font:500 10px/1 var(--mono);letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
+
+  @media (max-width:900px){
+    .amb{padding:120px 24px 60px}
+    .amb__head{grid-template-columns:1fr;gap:24px}
+    .amb__lead{justify-self:start;text-align:left}
+    .amb__terms{grid-template-columns:1fr;gap:0}
+    .term{border-left:0;padding:32px 0;border-top:1px solid var(--line)}
+    .term:first-child{padding-top:32px;border-top:0}
+    .term__big{font-size:64px}
+    .tier-grid,.stat-grid-amb,.payout-grid,.assets-grid{grid-template-columns:1fr 1fr;gap:18px}
+    .amb__signup{grid-template-columns:1fr;gap:48px}
+    .amb__bar{grid-template-columns:1fr}
+    .amb__meta{text-align:left}
+    .ref-box{grid-template-columns:1fr}
+    .ref-table__head{display:none}
+    .ref-row{grid-template-columns:1fr 1fr;gap:14px;padding:20px 0}
+    .ref-row .val{text-align:left}
+  }
+</style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="vignette"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="cache.html" class="nav__brand"><span class="dot"></span><span>.cache</span></a>
+  <div class="nav__center">
+    <a href="cache.html#drop" data-i18n="nav.drop">Drop 001</a>
+    <a href="cache.html#shop" data-i18n="nav.inventory">Inventory</a>
+    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Manifesto</a>
+    <a href="archive.html" data-i18n="nav.archive">Archive</a>
+    <a href="ambassador.html" class="is-on" data-i18n="nav.ambassador">Ambassador</a>
+    <a href="login.html" data-i18n="nav.members">Members</a>
+  </div>
+  <div class="nav__right">
+    <div class="lang" id="lang">
+      <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-current">EN</span>
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <div class="lang__menu" id="lang-menu" role="menu">
+        <button data-lang="en" role="menuitem"><span class="k">EN</span> English</button>
+        <button data-lang="ja" role="menuitem"><span class="k">JA</span> 日本語</button>
+        <button data-lang="de" role="menuitem"><span class="k">DE</span> Deutsch</button>
+        <button data-lang="fr" role="menuitem"><span class="k">FR</span> Français</button>
+        <button data-lang="ko" role="menuitem"><span class="k">KO</span> 한국어</button>
+      </div>
+    </div>
+    <a href="#cart" class="cart-trigger" id="cart-trigger"><span data-i18n="nav.cart">Cart</span> (<span class="count" id="cart-count">0</span>)</a>
+  </div>
+</nav>
+
+<main class="amb" id="amb-main"><!-- rendered by JS --></main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__big">.cache</div>
+  <div class="footer__cols" id="footer-cols"></div>
+  <div class="footer__bottom">
+    <div class="left">
+      <span data-i18n="footer.rights">© .cache 2026</span>
+      <span data-i18n="footer.cities">Berlin / Tokyo</span>
+      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.4</span></span>
+    </div>
+    <div data-i18n="footer.tagline">No Resellers / No Lies</div>
+  </div>
+</footer>
+
+<!-- CART -->
+<div class="cart-backdrop" id="cart-backdrop"></div>
+<aside class="cart" id="cart" aria-hidden="true">
+  <div class="cart__head"><div><h3 data-i18n="cart.title">Your Cache</h3><div class="meta" id="cart-summary">0 items</div></div>
+  <button class="cart__close" id="cart-close" aria-label="Close cart"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.2"/></svg></button></div>
+  <div class="cart__body" id="cart-body"></div>
+  <div class="cart__foot" id="cart-foot">
+    <div class="cart__totals"><span data-i18n="cart.subtotal">Subtotal</span><span class="v" id="cart-subtotal">$0</span></div>
+    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">Checkout</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
+    <div class="cart__notes"><b data-i18n="cart.noteFree">Free</b> <span data-i18n="cart.noteRest">worldwide shipping over $200</span></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><span class="d"></span><span id="toast-msg">Added</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="i18n.js"></script>
+<script src="i18n-pages.js"></script>
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  /* ----- Session helper (shared with login/account/admin) ----- */
+  const AMB_KEY = 'dotcache.amb.v1';
+  const amb = {
+    get session(){ try{ return JSON.parse(localStorage.getItem(AMB_KEY) || 'null'); }catch{ return null; } },
+    join(data){ try{ localStorage.setItem(AMB_KEY, JSON.stringify(data)); }catch{} },
+    leave(){ try{ localStorage.removeItem(AMB_KEY); }catch{} },
+  };
+
+  const TIERS = [
+    { id:'bronze',  name:'Bronze',  rate:'15%', min:'First sale',  dot:'#cd7f32', perks:['Custom referral code','30-day cookie window','Monthly payouts'] },
+    { id:'silver',  name:'Silver',  rate:'18%', min:'$1k shipped', dot:'#c0c4cc', perks:['Everything in Bronze','Member-knit gift','Drop preview 7d early'] },
+    { id:'gold',    name:'Gold',    rate:'20%', min:'$5k shipped', dot:'#c4a479', perks:['Everything in Silver','Custom drop access','Co-sign on Drop 003'] },
+    { id:'studio',  name:'Studio',  rate:'25%', min:'Invite only', dot:'#e8e3d6', perks:['Everything in Gold','Your name on a label','Lifetime archive pricing'] },
+  ];
+
+  /* ----- LANDING + SIGNUP ----- */
+  function renderLanding(){
+    document.getElementById('amb-main').innerHTML = `
+      <div class="amb__head">
+        <div>
+          <div class="section-eyebrow">// Ambassador program · 184 active</div>
+          <h1 class="amb__title">
+            <span>Ship the</span>
+            <em>signal.</em>
+          </h1>
+        </div>
+        <p class="amb__lead">Show the work. Tell the people. Get paid on every piece shipped through your link. No coupons, no hustle — just a clean attribution layer on top of the brand you already wear.</p>
+      </div>
+
+      <div class="amb__terms">
+        <div class="term">
+          <div class="term__n">01 / Commission</div>
+          <div class="term__big acc">15%<small> → 25%</small></div>
+          <div class="term__lbl">Per shipped piece</div>
+          <p class="term__desc">Earn on every order through your link. Rate climbs with tier, peaks at 25% for Studio ambassadors.</p>
+        </div>
+        <div class="term">
+          <div class="term__n">02 / Cookie window</div>
+          <div class="term__big">30<small> days</small></div>
+          <div class="term__lbl">Last-touch attribution</div>
+          <p class="term__desc">Referral sticks for 30 days from first click. Sale credits to the last ambassador the buyer visited through.</p>
+        </div>
+        <div class="term">
+          <div class="term__n">03 / Payouts</div>
+          <div class="term__big">Monthly</div>
+          <div class="term__lbl">USDC · Wire · Crypto</div>
+          <p class="term__desc">Paid on the 1st of every month for the prior month. $50 minimum. No fees, no chargebacks for you.</p>
+        </div>
+      </div>
+
+      <div class="amb__tiers">
+        <div class="amb__tiers-head">
+          <h3>Tier ladder.</h3>
+          <p>Climb by volume. Once you hit a tier, you keep it through the season.</p>
+        </div>
+        <div class="tier-grid">
+          ${TIERS.map(t => `
+            <div class="tier">
+              <div class="tier__nm"><span class="dot" style="background:${t.dot}"></span>${t.name}</div>
+              <div class="tier__rate">${t.rate}</div>
+              <div class="tier__min">${t.min}</div>
+              <ul class="tier__perks">
+                ${t.perks.map(p => `<li>${p}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="amb__signup">
+        <div class="amb__signup-head">
+          <h3>Apply <em>now.</em></h3>
+          <p>Tell us where you'll show the work. We approve every application by hand — usually within 48 hours. Once you're in, you'll see your link, stats, and assets in this same place.</p>
+          <p style="margin-top:24px;font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)">
+            Already an ambassador? <a href="#" id="amb-signin" style="color:var(--fg);border-bottom:1px solid var(--line);transition:border-color .3s">Sign in →</a>
+          </p>
+        </div>
+        <form class="amb__form" id="amb-form" novalidate>
+          <div class="field">
+            <label>Your name or handle</label>
+            <input id="amb-name" required placeholder="@yourhandle">
+            <div class="hint">This becomes your referral code: cache.com/?ref=YOURHANDLE</div>
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input id="amb-email" type="email" required placeholder="you@yourdomain.dev">
+          </div>
+          <div class="field">
+            <label>Where you'll show .cache</label>
+            <textarea id="amb-channels" required placeholder="Twitter, TikTok, your dotfiles repo, the dev meetup you organize..."></textarea>
+            <div class="hint">Real channels only. We check before approving.</div>
+          </div>
+          <div class="field">
+            <label>Audience size (rough)</label>
+            <input id="amb-audience" placeholder="1.2k followers · 400 newsletter subs">
+          </div>
+          <button type="submit" class="amb__cta">
+            <span>Submit Application</span>
+            <svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+        </form>
+      </div>
+    `;
+
+    document.getElementById('amb-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name  = document.getElementById('amb-name').value.trim();
+      const email = document.getElementById('amb-email').value.trim();
+      const channels = document.getElementById('amb-channels').value.trim();
+      const audience = document.getElementById('amb-audience').value.trim();
+      if (!name || !email.includes('@') || !channels) {
+        showToast('Complete required fields');
+        return;
+      }
+      amb.join({
+        name, email, channels, audience,
+        code: name.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'cache',
+        tier: 'bronze',
+        joined: new Date().toISOString().slice(0, 10),
+      });
+      render();
+    });
+
+    document.getElementById('amb-signin').addEventListener('click', (e) => {
+      e.preventDefault();
+      // Demo "sign-in" — pre-fill a fake ambassador
+      amb.join({
+        name: '@friend',
+        email: 'friend@cache.dev',
+        channels: 'Twitter, dotfiles repo, Cozy Devs Discord',
+        audience: '8.4k',
+        code: 'friend',
+        tier: 'silver',
+        joined: '2026.04.02',
+      });
+      render();
+    });
+  }
+
+  /* ----- DASHBOARD ----- */
+  const REFERRALS = [
+    { date:'2026.05.22', src:'Twitter post · drop 001 reveal', skus:['CSH-001','CSH-005'], stat:'shipped', value:32, total:126 },
+    { date:'2026.05.20', src:'Newsletter · daemon shell drop',  skus:['CSH-002'],                    stat:'pending',  value:62, total:248 },
+    { date:'2026.05.18', src:'Discord pin · cozy devs',          skus:['CSH-003'],                    stat:'shipped',  value:0,  total:0   },
+    { date:'2026.05.16', src:'Twitch raid · clawville',          skus:['CSH-009','CSH-012'],          stat:'shipped',  value:18, total:72  },
+    { date:'2026.05.10', src:'Direct link · bio',                skus:['CSH-011'],                    stat:'click',    value:0,  total:0   },
+  ];
+
+  function renderDashboard(){
+    const s = amb.session;
+    const tier = TIERS.find(t => t.id === s.tier) || TIERS[0];
+    const refLink = `cache.dev/?ref=${s.code}`;
+
+    document.getElementById('amb-main').innerHTML = `
+      <div class="amb__bar">
+        <div>
+          <span class="badge">${tier.name.toUpperCase()} · ${tier.rate} commission</span>
+          <h2>${s.name}<em>.</em></h2>
+        </div>
+        <div class="amb__meta">
+          <div><strong>${s.email}</strong></div>
+          <div>Joined ${s.joined}</div>
+          <a href="#" class="sign-out" id="amb-out">Sign out</a>
+        </div>
+      </div>
+
+      <div class="ref-box">
+        <div>
+          <span class="lbl">Your referral link</span>
+          <div class="url"><span class="acc">https://</span>${refLink}</div>
+        </div>
+        <button id="amb-copy">
+          <span>Copy link</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 1H10V7M2 4H8V11H2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="stat-grid-amb">
+        <div class="stat-amb">
+          <span class="label">Clicks · 30d</span>
+          <span class="val">1,284</span>
+          <span class="sub"><span class="trend">▲ 12%</span> vs. prev</span>
+        </div>
+        <div class="stat-amb">
+          <span class="label">Conversions</span>
+          <span class="val">42</span>
+          <span class="sub">3.27% rate</span>
+        </div>
+        <div class="stat-amb">
+          <span class="label">Sales · 30d</span>
+          <span class="val">$3,840</span>
+          <span class="sub"><span class="trend">▲ 24%</span> vs. prev</span>
+        </div>
+        <div class="stat-amb">
+          <span class="label">Pending payout</span>
+          <span class="val acc">$691</span>
+          <span class="sub">Pays Jun 01 · USDC</span>
+        </div>
+      </div>
+
+      <nav class="amb__nav" id="amb-nav">
+        <button class="is-on" data-tab="referrals">Referrals</button>
+        <button data-tab="payouts">Payouts</button>
+        <button data-tab="assets">Assets</button>
+        <button data-tab="profile">Profile</button>
+      </nav>
+
+      <section class="amb__panel is-on" data-panel="referrals">
+        <div class="ref-table">
+          <h3>Recent referrals</h3>
+          <div class="ref-table__head">
+            <span>Date</span><span>Source</span><span>Status</span><span style="text-align:right">Order total</span><span style="text-align:right">Your cut</span>
+          </div>
+          ${REFERRALS.map(r => `
+            <div class="ref-row">
+              <div class="date">${r.date}</div>
+              <div class="src">${r.src}<small>${r.skus.join(' · ')}</small></div>
+              <div class="stat ${r.stat}">${r.stat === 'click' ? 'Click only' : r.stat === 'pending' ? 'Pending' : 'Shipped'}</div>
+              <div class="val">${r.total === 0 ? '—' : '$' + r.total}</div>
+              <div class="val" style="color:var(--accent)">${r.value === 0 ? '—' : '+$' + r.value}</div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+
+      <section class="amb__panel" data-panel="payouts">
+        <h3 class="ref-table h3" style="font-family:var(--display);font-size:42px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:32px">Payouts</h3>
+        <div class="payout-grid">
+          <div class="payout-card">
+            <h4>Next payout</h4>
+            <div class="big">$691</div>
+            <div class="line"><span>Pays</span><span class="v">Jun 01</span></div>
+            <div class="line"><span>Method</span><span class="v">USDC · Base</span></div>
+            <div class="line"><span>Wallet</span><span class="v">0x..a7c3</span></div>
+          </div>
+          <div class="payout-card">
+            <h4>Last payout</h4>
+            <div class="big" style="color:var(--fg)">$524</div>
+            <div class="line"><span>Paid</span><span class="v">May 01 · 09:14 UTC</span></div>
+            <div class="line"><span>Method</span><span class="v">USDC · Base</span></div>
+            <div class="line"><span>Tx</span><span class="v">0x..3f1b</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="amb__panel" data-panel="assets">
+        <h3 style="font-family:var(--display);font-size:42px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:8px">Assets</h3>
+        <p style="font-size:14px;line-height:1.55;color:var(--fg-2);max-width:520px">Brand-safe images, video clips, and copy snippets you can use on your channels. Updated per drop.</p>
+        <div class="assets-grid">
+          ${[
+            ['Drop 001 hero · 16:9','MP4 + PNG · 4K','Drop 001'],
+            ['Daemon Shell · still','PNG · 5K','Product'],
+            ['Member Seal · loop','MP4 · 1080','Brand'],
+            ['Stack Tee · lookbook','PDF · 12pp','Lookbook'],
+            ['Type lockup · pack','SVG · vector','Brand'],
+            ['Copy snippets · v1','TXT · 24 lines','Copy'],
+          ].map(([nm, fmt, lbl]) => `
+            <div class="asset-card">
+              <div class="preview">${lbl}</div>
+              <h5>${nm}</h5>
+              <span style="font:500 10px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">${fmt}</span>
+              <span class="dl">Download →</span>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+
+      <section class="amb__panel" data-panel="profile">
+        <h3 style="font-family:var(--display);font-size:42px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:32px">Profile</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px 80px;max-width:900px">
+          <div class="field"><label>Handle</label><div class="val" style="font:500 18px/1.3 var(--ui);color:var(--fg);padding:4px 0">${s.name}</div></div>
+          <div class="field"><label>Code</label><div class="val" style="font:500 18px/1.3 var(--mono);color:var(--accent);padding:4px 0">${s.code}</div></div>
+          <div class="field"><label>Email</label><div class="val" style="font:500 18px/1.3 var(--ui);color:var(--fg);padding:4px 0">${s.email}</div></div>
+          <div class="field"><label>Tier</label><div class="val" style="font:500 18px/1.3 var(--ui);color:var(--fg);padding:4px 0">${tier.name} · ${tier.rate}</div></div>
+          <div class="field"><label>Channels</label><div class="val" style="font:500 14px/1.5 var(--ui);color:var(--fg-2);padding:4px 0">${s.channels}</div></div>
+          <div class="field"><label>Payout method</label><div class="val" style="font:500 18px/1.3 var(--ui);color:var(--fg);padding:4px 0">USDC · Base · 0x..a7c3</div></div>
+        </div>
+      </section>
+    `;
+
+    document.getElementById('amb-out').addEventListener('click', (e) => {
+      e.preventDefault(); amb.leave(); render();
+    });
+    document.getElementById('amb-copy').addEventListener('click', async (e) => {
+      try { await navigator.clipboard.writeText('https://' + refLink); } catch {}
+      e.currentTarget.classList.add('copied');
+      e.currentTarget.querySelector('span').textContent = 'Copied ✓';
+      setTimeout(() => {
+        e.currentTarget.classList.remove('copied');
+        e.currentTarget.querySelector('span').textContent = 'Copy link';
+      }, 1800);
+    });
+    const navEl = document.getElementById('amb-nav');
+    navEl.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-tab]');
+      if (!b) return;
+      navEl.querySelectorAll('button').forEach(x => x.classList.remove('is-on'));
+      document.querySelectorAll('.amb__panel').forEach(p => p.classList.remove('is-on'));
+      b.classList.add('is-on');
+      document.querySelector(`[data-panel="${b.dataset.tab}"]`).classList.add('is-on');
+    });
+  }
+
+  function render(){
+    if (amb.session) renderDashboard();
+    else renderLanding();
+  }
+  render();
+  window.addEventListener('langchange', render);
+</script>
+</body>
+</html>

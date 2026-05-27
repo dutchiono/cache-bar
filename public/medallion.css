@@ -1,0 +1,142 @@
+/* =========================================================================
+   3D rotating hexagonal member seal
+   Adapted from Jhey Tompkins' 3D cuboid pen — dropped the letter glyphs,
+   kept the hex rim, recolored to .cache tan.
+   ========================================================================= */
+
+.seal-stage {
+  --seal-size: 360px;
+  --shade-one:   hsl(33, 42%, 64%);
+  --shade-two:   hsl(33, 36%, 56%);
+  --shade-three: hsl(33, 32%, 50%);
+  --shade-four:  hsl(33, 30%, 44%);
+  --shade-five:  hsl(32, 28%, 38%);
+  --shade-six:   hsl(30, 26%, 30%);
+  --shade-seven: hsl(28, 22%, 22%);
+  --shade-eight: hsl(26, 18%, 14%);
+
+  position: relative;
+  height: var(--seal-size);
+  width: var(--seal-size);
+  perspective: 1200px;
+}
+.seal-stage,
+.seal-stage *,
+.seal-stage *::before,
+.seal-stage *::after {
+  transform-style: preserve-3d;
+  box-sizing: border-box;
+}
+
+.seal-stage__glow {
+  position: absolute; inset: 0;
+  filter: drop-shadow(0 0 12px var(--shade-one)) brightness(1.04);
+}
+.seal-stage__reflection {
+  position: absolute; inset: 0;
+  filter: drop-shadow(0 0 8px var(--shade-one)) blur(18px);
+  opacity: .35;
+  transform: translate3d(0, 32%, 0) scaleY(-1);
+  mask-image: linear-gradient(to top, #000 0%, #000 30%, transparent 70%);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 30%, transparent 70%);
+}
+
+.seal-scene {
+  position: absolute; inset: 0;
+  transform-origin: 50% 50%;
+  transform: rotateX(-22deg) rotateY(28deg) rotateX(90deg) rotateZ(0deg);
+  animation: seal-rotate 14s infinite linear;
+}
+@keyframes seal-rotate {
+  to {
+    transform: rotateX(-22deg) rotateY(28deg) rotateX(90deg) rotateZ(-360deg);
+  }
+}
+
+/* ----- HEX RIM SCAFFOLD ----- */
+.seal-rim {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 86%; height: 100%;
+  transform: translate(-50%, -50%);
+}
+.seal-rim__segment { position: absolute; height: 50%; width: 6%; }
+.seal-rim__segment:nth-of-type(1) { top: 25%; left: -0.45%; width: 6.5%; }
+.seal-rim__segment:nth-of-type(2) { top: 25%; right: -0.45%; width: 6.5%; }
+.seal-rim__segment:nth-of-type(3) { top: 0; left: 50%;  transform: rotate(60deg);  transform-origin: 0 0; }
+.seal-rim__segment:nth-of-type(4) { top: 0; right: 50%; transform: rotate(-60deg); transform-origin: 100% 0; }
+.seal-rim__segment:nth-of-type(5) { bottom: 0; left: 50%;  transform: rotate(-60deg); transform-origin: 0 100%; }
+.seal-rim__segment:nth-of-type(6) { bottom: 0; right: 50%; transform: rotate(60deg);  transform-origin: 100% 100%; }
+
+/* ----- INNER ".c" MARK (a single horizontal bar that reads as an inset stamp) ----- */
+.seal-mark {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 40%; height: 8%;
+  transform: translate(-50%, -50%);
+}
+.seal-mark__dot {
+  position: absolute;
+  top: 50%; left: 8%;
+  width: 8%; height: 70%;
+  transform: translate(0, -50%);
+}
+.seal-mark__bar {
+  position: absolute;
+  top: 50%; right: 0;
+  width: 80%; height: 50%;
+  transform: translate(0, -50%);
+}
+
+/* ----- CUBOID PRIMITIVE — 6 faces, sized by --thickness (px) ----- */
+.cuboid {
+  position: relative;
+  width: 100%; height: 100%;
+}
+.cuboid__side { position: absolute; }
+.cuboid__side:nth-of-type(1) {  /* top */
+  width: 100%; height: calc(var(--thickness, 8) * 1px);
+  top: 0; transform: translate(0, -50%) rotateX(90deg);
+}
+.cuboid__side:nth-of-type(2) {  /* right */
+  width: calc(var(--thickness, 8) * 1px); height: 100%;
+  top: 50%; right: 0; transform: translate(50%, -50%) rotateY(90deg);
+}
+.cuboid__side:nth-of-type(3) {  /* bottom */
+  width: 100%; height: calc(var(--thickness, 8) * 1px);
+  bottom: 0; transform: translate(0, 50%) rotateX(90deg);
+}
+.cuboid__side:nth-of-type(4) {  /* left */
+  width: calc(var(--thickness, 8) * 1px); height: 100%;
+  top: 50%; left: 0; transform: translate(-50%, -50%) rotateY(90deg);
+}
+.cuboid__side:nth-of-type(5) {  /* front */
+  width: 100%; height: 100%;
+  top: 0; left: 0;
+  transform: translate3d(0, 0, calc(var(--thickness, 8) * 0.5px));
+}
+.cuboid__side:nth-of-type(6) {  /* back */
+  width: 100%; height: 100%;
+  top: 0; left: 0;
+  transform: translate3d(0, 0, calc(var(--thickness, 8) * -0.5px)) rotateY(180deg);
+}
+
+/* ----- RIM COLORWAYS ----- */
+.rim-segment { --thickness: 8; }
+.rim-segment .cuboid__side { background: var(--shade-three); }
+.rim-segment .cuboid__side:nth-of-type(1) { background: var(--shade-two); }       /* top   — bright tan */
+.rim-segment .cuboid__side:nth-of-type(2) { background: var(--shade-seven); }     /* right — deep shadow */
+.rim-segment .cuboid__side:nth-of-type(3) { background: var(--shade-six); }       /* bottom */
+.rim-segment .cuboid__side:nth-of-type(4) { background: var(--shade-one); }       /* left — highlight */
+.rim-segment .cuboid__side:nth-of-type(5) { background: var(--shade-three); }     /* front */
+.rim-segment .cuboid__side:nth-of-type(6) { background: var(--shade-five); }      /* back */
+
+/* ----- MARK COLORWAYS (the ".c" stamp inside the hex) ----- */
+.mark-piece { --thickness: 6; }
+.mark-piece .cuboid__side { background: var(--shade-four); }
+.mark-piece .cuboid__side:nth-of-type(1) { background: var(--shade-two); }
+.mark-piece .cuboid__side:nth-of-type(2) { background: var(--shade-seven); }
+.mark-piece .cuboid__side:nth-of-type(3) { background: var(--shade-six); }
+.mark-piece .cuboid__side:nth-of-type(4) { background: var(--shade-one); }
+.mark-piece .cuboid__side:nth-of-type(5) { background: var(--shade-four); }
+.mark-piece .cuboid__side:nth-of-type(6) { background: var(--shade-six); }

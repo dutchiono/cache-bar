@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>.cache — Account</title>
+<link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="base.css" />
+
+<style>
+  .account{padding:140px 40px 80px;max-width:1400px;margin:0 auto;position:relative;z-index:1}
+
+  .account__head{
+    display:grid;grid-template-columns:1fr auto;gap:60px;align-items:end;
+    padding-bottom:60px;border-bottom:1px solid var(--line);
+  }
+  .account__meta{font:500 11px/1.5 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);text-align:right;display:flex;flex-direction:column;gap:8px}
+  .account__meta strong{color:var(--fg);font-weight:500;font-family:var(--display);font-size:24px;letter-spacing:0;text-transform:none;line-height:1}
+  .account__meta .sign-out{margin-top:16px;color:var(--fg-2);transition:color .3s;display:inline-flex;align-items:center;gap:8px}
+  .account__meta .sign-out:hover{color:var(--hot)}
+
+  .account__title{
+    font-family:var(--display);font-size:clamp(56px,8vw,140px);line-height:.92;letter-spacing:-.025em;
+    text-transform:uppercase;color:var(--fg);
+  }
+  .account__title em{font-style:normal;color:var(--accent)}
+
+  .account__nav{
+    display:flex;gap:36px;flex-wrap:wrap;
+    margin:60px 0 0;
+    padding-bottom:20px;border-bottom:1px solid var(--line);
+  }
+  .account__nav button{
+    padding:8px 0;
+    font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted);
+    transition:color .3s;border-bottom:1px solid transparent;
+  }
+  .account__nav button:hover{color:var(--fg-2)}
+  .account__nav button.is-on{color:var(--fg);border-color:var(--fg)}
+
+  .account__body{padding-top:60px}
+  .account__panel{display:none;animation:fade .5s ease}
+  .account__panel.is-on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ----- Overview ----- */
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-top:40px}
+  .stat-card{display:flex;flex-direction:column;gap:14px;padding:32px 0;border-top:1px solid var(--line)}
+  .stat-card .label{font:500 10px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .stat-card .val{font-family:var(--display);font-size:64px;line-height:.95;letter-spacing:-.02em;color:var(--fg)}
+  .stat-card .val.acc{color:var(--accent)}
+  .stat-card .sub{font:500 11px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--fg-2)}
+
+  .overview-tile{margin-top:60px;padding:40px;border:1px solid var(--line);border-radius:6px;display:grid;grid-template-columns:auto 1fr auto;gap:32px;align-items:center}
+  .overview-tile .icon{width:80px;height:80px;border-radius:6px;background:linear-gradient(160deg,#1d1c19,#0c0c0a);display:flex;align-items:center;justify-content:center;color:var(--fg-2)}
+  .overview-tile .icon svg{width:60%;height:60%}
+  .overview-tile h4{font-family:var(--display);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);margin-bottom:6px}
+  .overview-tile .note{font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .overview-tile .status{font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--accent);text-align:right}
+
+  /* ----- Orders ----- */
+  .orders__head{font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted);display:grid;grid-template-columns:140px 1fr 140px 120px 120px;gap:24px;padding:0 4px 20px;border-bottom:1px solid var(--line)}
+  .order-row{display:grid;grid-template-columns:140px 1fr 140px 120px 120px;gap:24px;padding:24px 4px;border-bottom:1px solid var(--line);align-items:center;transition:padding .4s cubic-bezier(.2,.7,.2,1)}
+  .order-row:hover{padding-left:24px}
+  .order-row .id{font:500 13px/1 var(--mono);color:var(--fg);letter-spacing:.04em}
+  .order-row .items{font-family:var(--display);font-size:18px;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);display:flex;flex-wrap:wrap;gap:6px}
+  .order-row .items small{font:500 9px/1.4 var(--mono);letter-spacing:.2em;color:var(--muted);text-transform:uppercase;display:block;width:100%;margin-top:6px}
+  .order-row .date{font:500 11px/1 var(--mono);color:var(--fg-2);letter-spacing:.06em}
+  .order-row .stat{font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
+  .order-row .stat::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+  .order-row .stat.shipped{color:var(--acid)}
+  .order-row .stat.transit{color:var(--accent)}
+  .order-row .stat.delivered{color:var(--fg-2)}
+  .order-row .total{font:500 13px/1 var(--mono);color:var(--fg);letter-spacing:.06em;text-align:right}
+
+  /* ----- Vote ----- */
+  .vote-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:48px}
+  .vote-card{
+    padding:36px 32px;border:1px solid var(--line);border-radius:6px;
+    display:flex;flex-direction:column;gap:24px;
+    background:linear-gradient(180deg,#0e0d0b,#0a0a09);
+    transition:border-color .3s, transform .4s cubic-bezier(.2,.7,.2,1);
+    cursor:pointer;position:relative;
+  }
+  .vote-card:hover{border-color:var(--fg-2);transform:translateY(-4px)}
+  .vote-card.is-on{border-color:var(--accent)}
+  .vote-card.is-on::after{
+    content:"●";position:absolute;top:24px;right:24px;color:var(--accent);font-size:14px;
+  }
+  .vote-card .art{height:220px;display:flex;align-items:center;justify-content:center;color:var(--fg-2)}
+  .vote-card .art svg{width:70%;height:70%}
+  .vote-card .meta{font:500 10px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+  .vote-card h4{font-family:var(--display);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .vote-card p{font-size:13px;line-height:1.55;color:var(--fg-2)}
+  .vote-card .votes{font:500 11px/1 var(--mono);letter-spacing:.18em;color:var(--accent);margin-top:auto}
+
+  .vote-actions{margin-top:48px;display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap}
+  .vote-status{font:500 11px/1.5 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .vote-status strong{color:var(--fg);font-weight:500;display:block}
+
+  /* ----- Perks ----- */
+  .perks-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:48px;margin-top:48px}
+  .perk-detail{padding:40px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:16px}
+  .perk-detail .n{font:500 10px/1 var(--mono);letter-spacing:.28em;color:var(--muted)}
+  .perk-detail h4{font-family:var(--display);font-size:36px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .perk-detail p{font-size:14px;line-height:1.6;color:var(--fg-2);max-width:380px}
+  .perk-detail .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--accent-soft);color:var(--accent);font:500 9px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;border-radius:999px;width:fit-content;margin-top:auto}
+
+  /* ----- Profile ----- */
+  .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px 80px;margin-top:48px;max-width:900px}
+  .profile-grid .field{padding:24px 0;border-top:1px solid var(--line)}
+  .profile-grid .field .val{font:500 18px/1.3 var(--ui);color:var(--fg);padding:4px 0}
+
+  @media (max-width:900px){
+    .account{padding:120px 24px 60px}
+    .account__head{grid-template-columns:1fr;gap:24px;align-items:start}
+    .account__meta{text-align:left}
+    .stat-grid{grid-template-columns:1fr 1fr;gap:24px}
+    .stat-card .val{font-size:48px}
+    .overview-tile{grid-template-columns:1fr;text-align:left;padding:24px}
+    .overview-tile .status{text-align:left}
+    .orders__head{display:none}
+    .order-row{grid-template-columns:1fr 1fr;gap:14px;padding:24px 0}
+    .order-row .total,.order-row .stat,.order-row .date{text-align:left}
+    .vote-grid{grid-template-columns:1fr;gap:18px}
+    .perks-grid,.profile-grid{grid-template-columns:1fr;gap:0}
+  }
+</style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="vignette"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="cache.html" class="nav__brand">
+    <span class="dot"></span>
+    <span>.cache</span>
+  </a>
+  <div class="nav__center">
+    <a href="cache.html#drop" data-i18n="nav.drop">Drop 001</a>
+    <a href="cache.html#shop" data-i18n="nav.inventory">Inventory</a>
+    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Manifesto</a>
+    <a href="archive.html" data-i18n="nav.archive">Archive</a>
+    <a href="ambassador.html" data-i18n="nav.ambassador">Ambassador</a>
+    <a href="account.html" class="is-on" data-i18n="nav.members">Members</a>
+  </div>
+  <div class="nav__right">
+    <div class="lang" id="lang">
+      <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-current">EN</span>
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <div class="lang__menu" id="lang-menu" role="menu">
+        <button data-lang="en" role="menuitem"><span class="k">EN</span> English</button>
+        <button data-lang="ja" role="menuitem"><span class="k">JA</span> 日本語</button>
+        <button data-lang="de" role="menuitem"><span class="k">DE</span> Deutsch</button>
+        <button data-lang="fr" role="menuitem"><span class="k">FR</span> Français</button>
+        <button data-lang="ko" role="menuitem"><span class="k">KO</span> 한국어</button>
+      </div>
+    </div>
+    <a href="#cart" class="cart-trigger" id="cart-trigger"><span data-i18n="nav.cart">Cart</span> (<span class="count" id="cart-count">0</span>)</a>
+  </div>
+</nav>
+
+<main class="account">
+  <div class="section-eyebrow" data-i18n="account.eyebrow">// Member dashboard</div>
+
+  <div class="account__head" style="margin-top:24px">
+    <h1 class="account__title">
+      <span data-i18n="account.greeting">Welcome back,</span>
+      <em id="user-name">friend</em>.
+    </h1>
+    <div class="account__meta">
+      <div>
+        <strong id="member-num">#184</strong>
+        <span data-i18n="account.memberNum">Member</span>
+      </div>
+      <div><span data-i18n="account.memberSince">Member since</span> · <span id="member-since">2026.03</span></div>
+      <a href="#" class="sign-out" id="sign-out" data-i18n="account.signOut">Sign out</a>
+    </div>
+  </div>
+
+  <nav class="account__nav" id="acc-nav">
+    <button class="is-on" data-tab="overview" data-i18n="account.nav.overview">Overview</button>
+    <button data-tab="orders" data-i18n="account.nav.orders">Orders</button>
+    <button data-tab="perks" data-i18n="account.nav.perks">Perks</button>
+    <button data-tab="vote" data-i18n="account.nav.vote">Vote</button>
+    <button data-tab="profile" data-i18n="account.nav.profile">Profile</button>
+  </nav>
+
+  <div class="account__body">
+
+    <!-- OVERVIEW -->
+    <section class="account__panel is-on" data-panel="overview">
+      <h2 class="display-title" data-i18n="account.overviewTitle">Your stack.</h2>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="label" data-i18n="account.orderShort">Orders shipped</span>
+          <span class="val">04</span>
+          <span class="sub">2026 · ALL DROPS</span>
+        </div>
+        <div class="stat-card">
+          <span class="label" data-i18n="account.savedShort">Saved on archive</span>
+          <span class="val acc">$184</span>
+          <span class="sub">VS. RETAIL</span>
+        </div>
+        <div class="stat-card">
+          <span class="label" data-i18n="account.nextDrop">Next drop in</span>
+          <span class="val">04D</span>
+          <span class="sub" id="next-drop">21:18:42 UTC</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Vote power</span>
+          <span class="val">1</span>
+          <span class="sub">/ 500 MEMBERS</span>
+        </div>
+      </div>
+
+      <div class="overview-tile">
+        <div class="icon" id="ot-icon"></div>
+        <div>
+          <h4 data-i18n="account.memberKnit">Member knit</h4>
+          <div class="note" data-i18n="account.memberKnitNote">Shipped with onboarding</div>
+        </div>
+        <div class="status" id="ot-status">CSH-003 · Delivered 2026.03.12</div>
+      </div>
+    </section>
+
+    <!-- ORDERS -->
+    <section class="account__panel" data-panel="orders">
+      <h2 class="display-title" data-i18n="account.ordersTitle">Order history</h2>
+      <div class="orders__head" style="margin-top:48px">
+        <span data-i18n="account.order">Order</span>
+        <span data-i18n="account.items">Items</span>
+        <span data-i18n="account.placed">Placed</span>
+        <span data-i18n="account.status">Status</span>
+        <span data-i18n="account.total" style="text-align:right">Total</span>
+      </div>
+      <div id="orders-list"></div>
+    </section>
+
+    <!-- PERKS -->
+    <section class="account__panel" data-panel="perks">
+      <h2 class="display-title" data-i18n="account.perksTitle">Member perks</h2>
+      <div class="perks-grid" id="perks-grid"></div>
+    </section>
+
+    <!-- VOTE -->
+    <section class="account__panel" data-panel="vote">
+      <div style="display:flex;justify-content:space-between;align-items:end;gap:32px;flex-wrap:wrap">
+        <div>
+          <h2 class="display-title" data-i18n="account.voteTitle">Vote the next drop</h2>
+          <p style="max-width:520px;margin-top:20px;color:var(--fg-2);font-size:15px;line-height:1.6" data-i18n="account.voteSub">Three silhouettes on the floor. Members pick which ships in Drop 002. Closes in 14 days.</p>
+        </div>
+        <div class="vote-status">
+          <strong>14d 12h</strong> Time remaining
+        </div>
+      </div>
+
+      <div class="vote-grid" id="vote-grid"></div>
+
+      <div class="vote-actions">
+        <button class="btn-line" id="vote-submit" data-i18n="account.voteSubmit">Cast vote</button>
+        <div class="vote-status">
+          <span>Members voted</span>
+          <strong id="votes-cast">312 / 500</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="account__panel" data-panel="profile">
+      <h2 class="display-title">Profile</h2>
+      <div class="profile-grid">
+        <div class="field">
+          <label data-i18n="login.emailLabel">Email</label>
+          <div class="val" id="prof-email">you@yourdomain.dev</div>
+        </div>
+        <div class="field">
+          <label>Display name</label>
+          <div class="val" id="prof-name">friend</div>
+        </div>
+        <div class="field">
+          <label>Country</label>
+          <div class="val">Germany</div>
+        </div>
+        <div class="field">
+          <label>Default size</label>
+          <div class="val">M / Regular</div>
+        </div>
+        <div class="field">
+          <label>Member tier</label>
+          <div class="val">Founding · #184</div>
+        </div>
+        <div class="field">
+          <label>Authentication</label>
+          <div class="val">Local · Last seen now</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__big">.cache</div>
+  <div class="footer__cols" id="footer-cols"></div>
+  <div class="footer__bottom">
+    <div class="left">
+      <span data-i18n="footer.rights">© .cache 2026</span>
+      <span data-i18n="footer.cities">Berlin / Tokyo</span>
+      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.4 — 2026.05.22</span></span>
+    </div>
+    <div data-i18n="footer.tagline">No Resellers / No Lies</div>
+  </div>
+</footer>
+
+<!-- CART -->
+<div class="cart-backdrop" id="cart-backdrop"></div>
+<aside class="cart" id="cart" aria-hidden="true">
+  <div class="cart__head">
+    <div><h3 data-i18n="cart.title">Your Cache</h3><div class="meta" id="cart-summary">0 items</div></div>
+    <button class="cart__close" id="cart-close" aria-label="Close cart"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.2"/></svg></button>
+  </div>
+  <div class="cart__body" id="cart-body"></div>
+  <div class="cart__foot" id="cart-foot">
+    <div class="cart__totals"><span data-i18n="cart.subtotal">Subtotal</span><span class="v" id="cart-subtotal">$0</span></div>
+    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">Checkout</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
+    <div class="cart__notes"><b data-i18n="cart.noteFree">Free</b> <span data-i18n="cart.noteRest">worldwide shipping over $200</span></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><span class="d"></span><span id="toast-msg">Added</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="i18n.js"></script>
+<script src="i18n-pages.js"></script>
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  // Guard: redirect to login if not signed in
+  const sess = cacheSession.user;
+  if (!sess) {
+    location.replace('login.html');
+  }
+
+  // Populate identity
+  const user = sess || { name:'friend', email:'you@yourdomain.dev', memberNum:'184', memberSince:'2026.03' };
+  document.getElementById('user-name').textContent = user.name;
+  document.getElementById('member-num').textContent = '#' + user.memberNum;
+  document.getElementById('member-since').textContent = user.memberSince;
+  document.getElementById('prof-email').textContent = user.email;
+  document.getElementById('prof-name').textContent = user.name;
+
+  // Member knit icon
+  document.getElementById('ot-icon').innerHTML = window.SHAPES.hoodie;
+
+  // Tabs
+  const nav = document.getElementById('acc-nav');
+  nav.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-tab]');
+    if (!b) return;
+    nav.querySelectorAll('button').forEach(x => x.classList.remove('is-on'));
+    document.querySelectorAll('.account__panel').forEach(p => p.classList.remove('is-on'));
+    b.classList.add('is-on');
+    document.querySelector(`[data-panel="${b.dataset.tab}"]`).classList.add('is-on');
+  });
+
+  // Sign out
+  document.getElementById('sign-out').addEventListener('click', (e) => {
+    e.preventDefault();
+    cacheSession.signOut();
+    location.replace('login.html');
+  });
+
+  // Orders mock data
+  const ORDERS = [
+    { id:'ORD-0014', date:'2026.05.18', status:'shipped',    skus:['CSH-001','CSH-005'],          total:126 },
+    { id:'ORD-0009', date:'2026.04.22', status:'delivered',  skus:['CSH-002'],                    total:248 },
+    { id:'ORD-0005', date:'2026.04.02', status:'delivered',  skus:['CSH-009','CSH-011','CSH-012'],total:100 },
+    { id:'ORD-0001', date:'2026.03.12', status:'delivered',  skus:['CSH-003','CSH-010'],          total:0   },
+  ];
+  function renderOrders(){
+    const wrap = document.getElementById('orders-list');
+    const statusLabel = (k) => k==='shipped'? t('account.statusShipped') : k==='transit'? t('account.statusInTransit') : t('account.statusDelivered');
+    wrap.innerHTML = ORDERS.map(o => {
+      const items = o.skus.map(s => PRODUCT_LOOKUP[s]?.name || s).join(', ');
+      return `
+        <div class="order-row">
+          <div class="id">${o.id}</div>
+          <div class="items">${o.skus.length} pieces<small>${items}</small></div>
+          <div class="date">${o.date}</div>
+          <div class="stat ${o.status}">${statusLabel(o.status)}</div>
+          <div class="total">${o.total === 0 ? t('cart.free') : '$' + o.total}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // Perks (member view: deeper detail)
+  function renderPerks(){
+    const wrap = document.getElementById('perks-grid');
+    const perks = t('mem.perks') || [];
+    wrap.innerHTML = perks.map((p, i) => `
+      <div class="perk-detail">
+        <div class="n">${String(i+1).padStart(2,'0')}</div>
+        <h4>${p[0]}</h4>
+        <p>${p[1]}</p>
+        <span class="badge">Active</span>
+      </div>
+    `).join('');
+  }
+
+  // Vote candidates
+  const VOTE_CANDIDATES = [
+    { id:'A', name:'Cache Pullover', meta:'Heavyweight loopback · 16oz', shape:'hoodie', desc:'Boxy crewneck with thermal lining. Designed for cold rooms and long sessions.', votes:142 },
+    { id:'B', name:'Daemon Pant',    meta:'Pleated · technical', shape:'pants',  desc:'High-rise, pleated, twill canvas. Built for sitting eight hours and walking the rest.', votes:108 },
+    { id:'C', name:'Runtime Tote',   meta:'Waterproof · 14L',     shape:'bag',    desc:'Daily carry sized for a 16" frame, a notebook, and the small stuff that matters.', votes:62  },
+  ];
+  let voteChoice = localStorage.getItem('dotcache.vote') || null;
+
+  function renderVote(){
+    const wrap = document.getElementById('vote-grid');
+    wrap.innerHTML = VOTE_CANDIDATES.map(c => `
+      <div class="vote-card ${voteChoice===c.id?'is-on':''}" data-vote="${c.id}">
+        <div class="art">${window.SHAPES[c.shape]}</div>
+        <div class="meta">Candidate ${c.id} · ${c.meta}</div>
+        <h4>${c.name}</h4>
+        <p>${c.desc}</p>
+        <div class="votes">${c.votes} ${t('account.votes')}</div>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('[data-vote]').forEach(c => {
+      c.addEventListener('click', () => {
+        wrap.querySelectorAll('.vote-card').forEach(x => x.classList.remove('is-on'));
+        c.classList.add('is-on');
+        voteChoice = c.dataset.vote;
+      });
+    });
+
+    document.getElementById('vote-submit').addEventListener('click', () => {
+      if (!voteChoice) {
+        showToast(t('account.voteSub'));
+        return;
+      }
+      localStorage.setItem('dotcache.vote', voteChoice);
+      const btn = document.getElementById('vote-submit');
+      btn.innerHTML = `<span>${t('account.voteSubmitted')}</span>`;
+      btn.style.color = 'var(--accent)';
+      btn.style.borderColor = 'var(--accent)';
+      showToast(`${t('account.voteSubmitted')} · ${voteChoice}`);
+    }, { once: false });
+  }
+
+  renderOrders();
+  renderPerks();
+  renderVote();
+
+  window.addEventListener('langchange', () => { renderOrders(); renderPerks(); renderVote(); });
+</script>
+</body>
+</html>

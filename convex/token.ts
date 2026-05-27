@@ -23,6 +23,16 @@ export const programs = query({
   },
 });
 
+export const publicPrograms = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("tokenPrograms")
+      .withIndex("by_active", (idx) => idx.eq("active", true))
+      .collect();
+  },
+});
+
 export const burns = query({
   args: {},
   handler: async (ctx) => {

@@ -6,61 +6,61 @@ type Group = { label: string; items: Item[] };
 const groups: Group[] = [
   {
     label: "Overview",
-    items: [{ to: "/", label: "Dashboard" }],
+    items: [{ to: "/app", label: "Dashboard" }],
   },
   {
     label: "Catalog",
     items: [
-      { to: "/products", label: "Products" },
-      { to: "/submissions", label: "Submissions" },
-      { to: "/creators", label: "Creators" },
+      { to: "/app/products", label: "Products" },
+      { to: "/app/submissions", label: "Submissions" },
+      { to: "/app/creators", label: "Creators" },
     ],
   },
   {
     label: "Sales",
     items: [
-      { to: "/orders", label: "Orders" },
-      { to: "/customers", label: "Customers" },
+      { to: "/app/orders", label: "Orders" },
+      { to: "/app/customers", label: "Customers" },
     ],
   },
   {
     label: "Operations",
     items: [
-      { to: "/inventory", label: "Inventory & Fulfillment" },
-      { to: "/royalties", label: "Royalties & Payouts" },
+      { to: "/app/inventory", label: "Inventory & Fulfillment" },
+      { to: "/app/royalties", label: "Royalties & Payouts" },
     ],
   },
   {
     label: "Treasury",
     items: [
-      { to: "/treasury", label: "Treasury & Off-ramp" },
-      { to: "/token", label: "Token & Burn" },
+      { to: "/app/treasury", label: "Treasury & Off-ramp" },
+      { to: "/app/token", label: "Token & Burn" },
     ],
   },
   {
     label: "Insights",
     items: [
-      { to: "/reports", label: "Reports" },
-      { to: "/automations", label: "Automations" },
+      { to: "/app/reports", label: "Reports" },
+      { to: "/app/automations", label: "Automations" },
     ],
   },
   {
     label: "Storefront",
     items: [
-      { to: "/storefront", label: "Storefront Preview" },
+      { to: "/", label: "Public Storefront" },
       { to: "/checkout", label: "Checkout Preview" },
     ],
   },
   {
     label: "Admin",
     items: [
-      { to: "/team", label: "Team & Roles" },
-      { to: "/settings", label: "Settings" },
+      { to: "/app/team", label: "Team & Roles" },
+      { to: "/app/settings", label: "Settings" },
     ],
   },
 ];
 
-const agentItem: Item = { to: "/agent", label: "Eliza Agent" };
+const agentItem: Item = { to: "/app/agent", label: "Eliza Agent" };
 
 export function Sidebar() {
   return (
@@ -86,7 +86,7 @@ function SidebarLink({ to, label, accent }: Item & { accent?: boolean }) {
   return (
     <NavLink
       to={to}
-      end={to === "/"}
+      end={to === "/" || to === "/app"}
       className={({ isActive }) =>
         [
           "block rounded-md border px-3 py-2 text-sm font-medium transition",

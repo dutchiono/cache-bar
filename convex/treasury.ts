@@ -5,6 +5,7 @@ import { chain } from "./schema";
 
 const transactionType = v.union(
   v.literal("usdc_in"),
+  v.literal("refund_out"),
   v.literal("offramp_out"),
   v.literal("supplier_payment"),
   v.literal("creator_payout"),
@@ -43,7 +44,8 @@ export const overview = query({
       .filter(
         (tx) =>
           tx.status === "pending" &&
-          (tx.type === "offramp_out" ||
+          (tx.type === "refund_out" ||
+            tx.type === "offramp_out" ||
             tx.type === "supplier_payment" ||
             tx.type === "creator_payout"),
       )

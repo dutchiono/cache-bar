@@ -410,6 +410,7 @@ export default defineSchema({
   treasuryTransactions: defineTable({
     type: v.union(
       v.literal("usdc_in"),
+      v.literal("refund_out"),
       v.literal("offramp_out"),
       v.literal("supplier_payment"),
       v.literal("creator_payout"),

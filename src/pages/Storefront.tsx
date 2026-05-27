@@ -1,0 +1,548 @@
+import { useMutation, useQuery } from "convex/react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
+import "../storefront.css";
+
+const money = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+type CheckoutResult = {
+  orderId: Id<"orders">;
+  paymentId: Id<"payments">;
+  total: number;
+  burnDiscount: number;
+  tokensSpentBurned: number;
+  rail: "usdc" | "x402";
+  x402: null | {
+    scheme: string;
+    network: string;
+    asset: string;
+    payTo: string;
+    facilitatorUrl: string;
+    resource: string;
+    paymentId: string;
+    price: string;
+    description: string;
+  };
+};
+
+export default function Storefront({ focusCheckout = false }: { focusCheckout?: boolean }) {
+  const products = useQuery(api.checkout.publicStorefrontProducts, {});
+  const tokenPrograms = useQuery(api.token.publicPrograms, {});
+  const me = useQuery(api.users.getCurrentUser, {});
+  const createPaymentIntent = useMutation(api.checkout.createPublicPaymentIntent);
+
+  const [selectedProductId, setSelectedProductId] = useState<Id<"products"> | "">("");
+  const [selectedVariantId, setSelectedVariantId] = useState<Id<"productVariants"> | "">("");
+  const [quantity, setQuantity] = useState(1);
+  const [rail, setRail] = useState<"x402" | "usdc">("x402");
+  const [network, setNetwork] = useState<"base" | "solana">("base");
+  const [tokenProgramId, setTokenProgramId] = useState<Id<"tokenPrograms"> | "">("");
+  const [burnAmountTokens, setBurnAmountTokens] = useState(0);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<CheckoutResult | null>(null);
+
+  const selectedProduct = products?.find((product) => product._id === selectedProductId) ?? null;
+  const selectedVariant =
+    selectedProduct?.variants.find((variant) => variant._id === selectedVariantId) ?? null;
+  const selectedProgram = tokenPrograms?.find((program) => program._id === tokenProgramId) ?? null;
+  const unitPrice = selectedVariant?.priceOverride ?? selectedProduct?.basePrice ?? 0;
+  const subtotal = unitPrice * quantity;
+  const shipping = selectedProduct?.productType === "physical" ? 9 : 0;
+  const burnDiscount =
+    selectedProgram && selectedProduct?.tokenDiscountEligible
+      ? Math.min(
+          burnAmountTokens * selectedProgram.discountPerTokenUsd,
+          selectedProgram.maxDiscountUsd,
+          subtotal,
+        )
+      : 0;
+  const total = subtotal - burnDiscount + shipping;
+
+  useEffect(() => {
+    if (!products?.length) return;
+    const selectedStillExists = products.some((product) => product._id === selectedProductId);
+    if (!selectedStillExists) {
+      setSelectedProductId(products[0]._id);
+    }
+  }, [products, selectedProductId]);
+
+  useEffect(() => {
+    if (!selectedProduct) {
+      if (selectedVariantId) setSelectedVariantId("");
+      return;
+    }
+    const variants = selectedProduct.variants;
+    if (!variants.length) {
+      if (selectedVariantId) setSelectedVariantId("");
+      return;
+    }
+    const variantStillExists = variants.some((variant) => variant._id === selectedVariantId);
+    if (!variantStillExists) {
+      setSelectedVariantId(variants[0]._id);
+    }
+  }, [selectedProduct, selectedVariantId]);
+
+  useEffect(() => {
+    if (!selectedProduct?.tokenDiscountEligible) {
+      setTokenProgramId("");
+      setBurnAmountTokens(0);
+    }
+  }, [selectedProduct]);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProduct) {
+      setError("Choose a live product first.");
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    setPending(true);
+    setError(null);
+    setResult(null);
+    try {
+      const created = await createPaymentIntent({
+        productId: selectedProduct._id,
+        variantId: selectedVariantId || undefined,
+        quantity,
+        customerName: String(form.get("customerName") ?? ""),
+        customerEmail: String(form.get("customerEmail") ?? ""),
+        rail,
+        network,
+        fromAddress: String(form.get("fromAddress") ?? "") || undefined,
+        tokenProgramId:
+          selectedProduct.tokenDiscountEligible && tokenProgramId ? tokenProgramId : undefined,
+        burnAmountTokens:
+          selectedProduct.tokenDiscountEligible && burnAmountTokens > 0
+            ? burnAmountTokens
+            : undefined,
+        burnWalletAddress: String(form.get("burnWalletAddress") ?? "") || undefined,
+      });
+      setResult(created);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Checkout failed.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="sf-root">
+      <header className="sf-nav">
+        <Link to="/" className="sf-brand">
+          <span className="sf-brand-dot" />
+          <span>.cache</span>
+        </Link>
+        <nav className="sf-nav-links">
+          <a href="#drop">Drop</a>
+          <a href="#shop">Inventory</a>
+          <a href="#members">Membership</a>
+          <a href="#checkout-desk">Checkout</a>
+        </nav>
+        <Link to="/app" className="sf-ops-link">
+          {me ? "Open Ops" : "Ops Sign In"}
+        </Link>
+      </header>
+
+      <main>
+        <section className="sf-hero" id="drop">
+          <div className="sf-hero-grid">
+            <div>
+              <div className="sf-kicker">Public storefront + real backend</div>
+              <h1 className="sf-display">
+                Cache the look.
+                <span> Keep the order flow live.</span>
+              </h1>
+              <p className="sf-lead">
+                The imported frontend is now tied to Convex products, token discount programs,
+                and guest checkout. Your public root sells; your ops app stays under <code>/app</code>.
+              </p>
+              <div className="sf-hero-actions">
+                <a className="sf-button" href={focusCheckout ? "#checkout-desk" : "#shop"}>
+                  {focusCheckout ? "Open payment desk" : "Browse live products"}
+                </a>
+                <Link className="sf-button-ghost" to="/app">
+                  {me ? "Open ops console" : "Staff sign in"}
+                </Link>
+              </div>
+            </div>
+
+            <div className="sf-hero-stack">
+              <div className="sf-metric-card">
+                <span className="sf-metric-label">Live products</span>
+                <strong>{products ? String(products.length).padStart(2, "0") : "--"}</strong>
+              </div>
+              <div className="sf-metric-card">
+                <span className="sf-metric-label">Active token programs</span>
+                <strong>{tokenPrograms ? String(tokenPrograms.length).padStart(2, "0") : "--"}</strong>
+              </div>
+              <div className="sf-hero-image">
+                <img
+                  src={selectedProduct?.demoImageUrls?.[0] ?? "/uploads/1.png"}
+                  alt={selectedProduct?.title ?? ".cache moodboard"}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="sf-section" id="shop">
+          <div className="sf-section-head">
+            <div>
+              <div className="sf-kicker">Live catalog</div>
+              <h2 className="sf-section-title">Frontend view, backend-backed.</h2>
+            </div>
+            <p>
+              Products are pulled from live Convex data instead of hardcoded HTML. Variant pricing,
+              creator attribution, and token discount eligibility all come from the backend.
+            </p>
+          </div>
+
+          {!products ? (
+            <div className="sf-panel">Loading live products...</div>
+          ) : products.length === 0 ? (
+            <div className="sf-empty">
+              <strong>No live products yet.</strong>
+              <span>
+                Publish at least one product in <Link to="/app/products">ops</Link> and it will
+                appear here automatically.
+              </span>
+            </div>
+          ) : (
+            <div className="sf-store-grid">
+              <div className="sf-card-grid">
+                {products.map((product, index) => {
+                  const active = product._id === selectedProductId;
+                  const displayPrice =
+                    product.variants.find((variant) => variant.priceOverride !== undefined)
+                      ?.priceOverride ?? product.basePrice;
+                  return (
+                    <button
+                      key={product._id}
+                      type="button"
+                      className={`sf-product-card ${active ? "is-active" : ""}`}
+                      onClick={() => setSelectedProductId(product._id)}
+                    >
+                      <div className="sf-product-media">
+                        <img
+                          src={product.demoImageUrls?.[0] ?? `/uploads/${(index % 5) + 1}.png`}
+                          alt={product.title}
+                        />
+                      </div>
+                      <div className="sf-product-body">
+                        <div className="sf-product-topline">
+                          <span className="sf-pill">{product.makerType}</span>
+                          <span className="sf-sku">{product.category}</span>
+                        </div>
+                        <h3>{product.title}</h3>
+                        <p>{product.description}</p>
+                        <div className="sf-product-meta">
+                          <span>{money.format(displayPrice)}</span>
+                          <span>
+                            {product.creator?.name ?? "Unassigned creator"}
+                            {product.variants.length > 0 ? ` · ${product.variants.length} variants` : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <aside className="sf-checkout-panel" id="checkout-desk">
+                <div className="sf-panel sticky">
+                  <div className="sf-kicker">Checkout desk</div>
+                  <h2 className="sf-checkout-title">
+                    {selectedProduct ? selectedProduct.title : "Select a product"}
+                  </h2>
+                  <p className="sf-checkout-copy">
+                    Guest checkout now writes real customers, orders, payments, and optional token
+                    burn records into Convex.
+                  </p>
+
+                  <form onSubmit={onSubmit} className="sf-form">
+                    {selectedProduct && (
+                      <>
+                        {selectedProduct.variants.length > 0 && (
+                          <label className="sf-field">
+                            <span>Variant</span>
+                            <select
+                              value={selectedVariantId}
+                              onChange={(event) =>
+                                setSelectedVariantId(
+                                  event.target.value as Id<"productVariants"> | "",
+                                )
+                              }
+                            >
+                              {selectedProduct.variants.map((variant) => (
+                                <option key={variant._id} value={variant._id}>
+                                  {variant.optionLabel}
+                                  {variant.priceOverride !== undefined
+                                    ? ` · ${money.format(variant.priceOverride)}`
+                                    : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+
+                        <div className="sf-form-grid">
+                          <label className="sf-field">
+                            <span>Name</span>
+                            <input name="customerName" placeholder="Buyer name" required />
+                          </label>
+                          <label className="sf-field">
+                            <span>Email</span>
+                            <input
+                              name="customerEmail"
+                              type="email"
+                              placeholder="buyer@example.com"
+                              required
+                            />
+                          </label>
+                          <label className="sf-field">
+                            <span>Quantity</span>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={quantity}
+                              onChange={(event) =>
+                                setQuantity(Math.max(1, Number(event.target.value) || 1))
+                              }
+                            />
+                          </label>
+                          <label className="sf-field">
+                            <span>Wallet (optional)</span>
+                            <input
+                              name="fromAddress"
+                              placeholder="0x... or Solana address"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="sf-toggle-group">
+                          <Toggle
+                            label="Rail"
+                            value={rail}
+                            options={[
+                              { value: "x402", label: "x402" },
+                              { value: "usdc", label: "USDC direct" },
+                            ]}
+                            onChange={(value) => setRail(value as "x402" | "usdc")}
+                          />
+                          <Toggle
+                            label="Network"
+                            value={network}
+                            options={[
+                              { value: "base", label: "Base" },
+                              { value: "solana", label: "Solana" },
+                            ]}
+                            onChange={(value) => setNetwork(value as "base" | "solana")}
+                          />
+                        </div>
+
+                        <div className={`sf-subpanel ${selectedProduct.tokenDiscountEligible ? "" : "is-disabled"}`}>
+                          <div className="sf-subpanel-head">
+                            <strong>Token burn discount</strong>
+                            <span>
+                              {selectedProduct.tokenDiscountEligible
+                                ? "Available on this product"
+                                : "Not enabled for this product"}
+                            </span>
+                          </div>
+                          <div className="sf-form-grid">
+                            <label className="sf-field">
+                              <span>Token program</span>
+                              <select
+                                value={tokenProgramId}
+                                onChange={(event) =>
+                                  setTokenProgramId(
+                                    event.target.value as Id<"tokenPrograms"> | "",
+                                  )
+                                }
+                                disabled={!selectedProduct.tokenDiscountEligible}
+                              >
+                                <option value="">No burn discount</option>
+                                {(tokenPrograms ?? []).map((program) => (
+                                  <option key={program._id} value={program._id}>
+                                    {program.projectName} ({program.tokenSymbol})
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="sf-field">
+                              <span>Tokens to burn</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.000001"
+                                value={burnAmountTokens}
+                                onChange={(event) =>
+                                  setBurnAmountTokens(
+                                    Math.max(0, Number(event.target.value) || 0),
+                                  )
+                                }
+                                disabled={!selectedProduct.tokenDiscountEligible}
+                              />
+                            </label>
+                            <label className="sf-field full">
+                              <span>Burn wallet (optional)</span>
+                              <input
+                                name="burnWalletAddress"
+                                placeholder="Wallet that will execute the burn"
+                                disabled={!selectedProduct.tokenDiscountEligible}
+                              />
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="sf-quote">
+                          <QuoteRow label="Unit price" value={money.format(unitPrice)} />
+                          <QuoteRow label="Subtotal" value={money.format(subtotal)} />
+                          <QuoteRow
+                            label="Burn discount"
+                            value={`-${money.format(burnDiscount)}`}
+                          />
+                          <QuoteRow label="Shipping" value={money.format(shipping)} />
+                          <QuoteRow label="Total" value={money.format(total)} strong />
+                        </div>
+
+                        {error && <div className="sf-error">{error}</div>}
+
+                        <button type="submit" disabled={pending} className="sf-button wide">
+                          {pending ? "Creating payment..." : "Create live payment intent"}
+                        </button>
+                      </>
+                    )}
+                  </form>
+
+                  {result && (
+                    <div className="sf-result">
+                      <div className="sf-kicker">Payment created</div>
+                      <QuoteRow label="Order" value={result.orderId} mono />
+                      <QuoteRow label="Payment" value={result.paymentId} mono />
+                      <QuoteRow label="Rail" value={result.rail} />
+                      {result.x402 && (
+                        <div className="sf-code">
+                          <CodeLine label="network" value={result.x402.network} />
+                          <CodeLine label="asset" value={result.x402.asset} />
+                          <CodeLine label="payTo" value={result.x402.payTo} />
+                          <CodeLine label="price" value={result.x402.price} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </aside>
+            </div>
+          )}
+        </section>
+
+        <section className="sf-section" id="members">
+          <div className="sf-section-head">
+            <div>
+              <div className="sf-kicker">Discount backbone</div>
+              <h2 className="sf-section-title">Token programs are live too.</h2>
+            </div>
+            <p>
+              Active burn programs come directly from Convex, so pricing rules don’t live in the
+              frontend anymore.
+            </p>
+          </div>
+          <div className="sf-program-grid">
+            {(tokenPrograms ?? []).map((program) => (
+              <article key={program._id} className="sf-panel">
+                <div className="sf-product-topline">
+                  <span className="sf-pill">{program.chain}</span>
+                  <span className="sf-sku">{program.tokenKind}</span>
+                </div>
+                <h3>{program.projectName}</h3>
+                <p>
+                  Burn {program.tokenSymbol} for up to {money.format(program.maxDiscountUsd)} off.
+                </p>
+                <div className="sf-program-meta">
+                  <span>{money.format(program.discountPerTokenUsd)} per token</span>
+                  <span>{program.burnMechanism.replaceAll("_", " ")}</span>
+                </div>
+              </article>
+            ))}
+            {tokenPrograms?.length === 0 && (
+              <div className="sf-empty">
+                <strong>No active token programs.</strong>
+                <span>
+                  Seed one in <Link to="/app/token">ops</Link> and it becomes purchasable here.
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function Toggle({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <div className="sf-toggle-label">{label}</div>
+      <div className="sf-toggle">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={value === option.value ? "is-active" : ""}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function QuoteRow({
+  label,
+  value,
+  strong,
+  mono,
+}: {
+  label: string;
+  value: ReactNode;
+  strong?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <div className={`sf-quote-row ${strong ? "is-strong" : ""}`}>
+      <span>{label}</span>
+      <span className={mono ? "sf-mono" : ""}>{value}</span>
+    </div>
+  );
+}
+
+function CodeLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="sf-code-line">
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}

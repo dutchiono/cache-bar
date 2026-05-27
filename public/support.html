@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>.cache — Support · Sizing / Care / Shipping / Returns</title>
+<link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="base.css" />
+
+<style>
+  .support{padding:140px 40px 80px;max-width:1400px;margin:0 auto;position:relative;z-index:1}
+  .support__head{display:grid;grid-template-columns:1.4fr 1fr;gap:60px;align-items:end;padding-bottom:60px;border-bottom:1px solid var(--line)}
+  .support__title{font-family:var(--display);font-size:clamp(72px,11vw,200px);line-height:.86;letter-spacing:-.025em;text-transform:uppercase;color:var(--fg);margin-top:24px;display:flex;flex-direction:column}
+  .support__title em{font-style:normal;color:var(--accent)}
+  .support__lead{font-size:15px;line-height:1.6;color:var(--fg-2);max-width:420px;justify-self:end;text-align:right}
+
+  /* sticky local nav */
+  .support__tabs{
+    position:sticky;top:80px;z-index:30;
+    display:flex;gap:36px;flex-wrap:wrap;align-items:center;
+    padding:24px 0;margin-bottom:80px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#0a0a0af0 70%,#0a0a0a00);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  }
+  .support__tabs a{padding:8px 0;font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted);transition:color .3s;border-bottom:1px solid transparent}
+  .support__tabs a:hover{color:var(--fg-2)}
+  .support__tabs a.is-on{color:var(--fg);border-color:var(--fg)}
+  .support__tabs .right{margin-left:auto;font:500 10px/1 var(--mono);letter-spacing:.22em;color:var(--muted);text-transform:uppercase;display:inline-flex;gap:8px;align-items:center}
+  .support__tabs .right b{color:var(--fg-2);font-weight:500}
+
+  .sec{padding:80px 0;border-bottom:1px solid var(--line);scroll-margin-top:160px;position:relative}
+  .sec:last-of-type{border-bottom:0}
+  .sec__head{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:end;margin-bottom:64px}
+  .sec__head .display-title{margin-top:24px}
+  .sec__head .aside{font-size:15px;line-height:1.6;color:var(--fg-2);max-width:420px;justify-self:end;text-align:right}
+
+  /* ============ SIZING ============ */
+  .size-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:80px;align-items:start}
+  .size-table-wrap{display:flex;flex-direction:column;gap:24px;min-width:0}
+  .size-toggle{display:flex;gap:0;border:1px solid var(--line);border-radius:999px;padding:4px;width:fit-content}
+  .size-toggle button{
+    padding:10px 22px;border-radius:999px;
+    font:500 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);
+    transition:color .3s, background .3s;
+  }
+  .size-toggle button.is-on{background:var(--fg);color:var(--bg)}
+  .size-toggle button:hover:not(.is-on){color:var(--fg)}
+
+  .size-table{width:100%;border-collapse:collapse;font:500 12px/1.4 var(--mono);letter-spacing:.06em;color:var(--fg-2);text-transform:none}
+  .size-table thead th{font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);text-align:left;padding:18px 16px 18px 0;border-bottom:1px solid var(--line)}
+  .size-table thead th:last-child{text-align:right;padding-right:0}
+  .size-table tbody td{padding:20px 16px 20px 0;border-bottom:1px solid var(--line)}
+  .size-table tbody td:first-child{font-family:var(--display);font-size:20px;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .size-table tbody td:last-child{text-align:right;color:var(--fg);padding-right:0}
+  .size-table tbody tr:hover{background:#0e0d0b}
+
+  .size-aside{display:flex;flex-direction:column;gap:24px}
+  .size-illu{
+    padding:32px;border:1px solid var(--line);border-radius:6px;
+    background:linear-gradient(180deg,#0e0d0b,#0a0a09);
+    display:flex;flex-direction:column;gap:18px;align-items:center;
+  }
+  .size-illu svg{width:200px;height:200px;color:var(--accent)}
+  .size-illu .cap{font:500 10px/1.5 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);text-align:center}
+
+  .fit-list{display:flex;flex-direction:column;gap:0}
+  .fit-list .row{
+    display:grid;grid-template-columns:130px 1fr;gap:24px;
+    padding:18px 0;border-top:1px solid var(--line);
+    font:500 11px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  }
+  .fit-list .row .k{color:var(--muted)}
+  .fit-list .row .v{color:var(--fg-2)}
+  .fit-list .row .v b{color:var(--fg);font-weight:500}
+
+  /* ============ CARE ============ */
+  .care-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+  .care-card{
+    padding:48px 40px;border-left:1px solid var(--line);
+    display:flex;flex-direction:column;gap:18px;
+    transition:background .3s;
+  }
+  .care-card:first-child{border-left:0;padding-left:0}
+  .care-card:last-child{padding-right:0}
+  .care-card:hover{background:#0e0d0b}
+  .care-card .icon{
+    width:64px;height:64px;border:1px solid var(--line);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;color:var(--accent);
+    margin-bottom:14px;
+  }
+  .care-card .icon svg{width:28px;height:28px}
+  .care-card h4{font-family:var(--display);font-size:32px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .care-card .meta{font:500 10px/1.4 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+  .care-card p{font-size:14px;line-height:1.6;color:var(--fg-2);max-width:320px}
+  .care-card .rules{display:flex;flex-direction:column;gap:10px;margin-top:8px;padding-top:18px;border-top:1px solid var(--line)}
+  .care-card .rules li{font:500 11px/1.5 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--fg-2);display:flex;gap:12px}
+  .care-card .rules li::before{content:"//";color:var(--muted);flex:none}
+
+  .care-notes{
+    margin-top:60px;padding:40px;border:1px solid var(--line);border-radius:6px;
+    background:linear-gradient(180deg,#0e0d0b,#0a0a09);
+    display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center;
+  }
+  .care-notes .label{font-family:var(--display);font-size:48px;line-height:1;letter-spacing:-.02em;color:var(--accent);text-transform:uppercase}
+  .care-notes p{font-size:14px;line-height:1.6;color:var(--fg-2);max-width:560px}
+  .care-notes p .strong{color:var(--fg)}
+
+  /* ============ SHIPPING ============ */
+  .ship-table{display:flex;flex-direction:column;gap:0}
+  .ship-head,.ship-row{
+    display:grid;grid-template-columns:1.4fr 110px 110px 1fr 110px;gap:24px;align-items:center;
+    padding:24px 8px;border-top:1px solid var(--line);
+  }
+  .ship-row{transition:padding .4s cubic-bezier(.2,.7,.2,1)}
+  .ship-row:hover{padding-left:32px;background:#0e0d0b}
+  .ship-row:last-child{border-bottom:1px solid var(--line)}
+  .ship-head{font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);border-bottom:0}
+  .ship-row .region{font-family:var(--display);font-size:22px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .ship-row .region small{display:block;font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:6px}
+  .ship-row .days{font:500 13px/1 var(--mono);color:var(--fg-2);letter-spacing:.06em}
+  .ship-row .fee{font:500 13px/1 var(--mono);color:var(--fg);letter-spacing:.06em}
+  .ship-row .fee.free{color:var(--acid)}
+  .ship-row .carrier{font:500 11px/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--fg-2)}
+  .ship-row .free-over{font:500 10px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--accent);text-align:right}
+
+  .ship-perks{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:60px}
+  .ship-perk{padding:28px 24px;border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;gap:14px;transition:border-color .3s, transform .4s cubic-bezier(.2,.7,.2,1)}
+  .ship-perk:hover{border-color:var(--fg-2);transform:translateY(-4px)}
+  .ship-perk .n{font:500 10px/1 var(--mono);letter-spacing:.28em;color:var(--muted);text-transform:uppercase}
+  .ship-perk h5{font-family:var(--display);font-size:24px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .ship-perk p{font-size:13px;line-height:1.5;color:var(--fg-2)}
+
+  /* ============ RETURNS ============ */
+  .returns-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:80px;align-items:start}
+  .returns-flow{display:flex;flex-direction:column;gap:0}
+  .returns-flow .step{
+    display:grid;grid-template-columns:60px 1fr auto;gap:24px;align-items:center;
+    padding:28px 8px;border-top:1px solid var(--line);
+    transition:padding .4s cubic-bezier(.2,.7,.2,1);
+  }
+  .returns-flow .step:hover{padding-left:24px;background:#0e0d0b}
+  .returns-flow .step:last-child{border-bottom:1px solid var(--line)}
+  .returns-flow .step__n{font-family:var(--display);font-size:36px;line-height:1;letter-spacing:-.02em;color:var(--accent)}
+  .returns-flow .step__body h4{font-family:var(--display);font-size:24px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);margin-bottom:6px}
+  .returns-flow .step__body p{font-size:13px;line-height:1.5;color:var(--fg-2)}
+  .returns-flow .step__time{font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+
+  .returns-side{display:flex;flex-direction:column;gap:24px;padding:32px;border:1px solid var(--line);border-radius:6px;background:linear-gradient(180deg,#0e0d0b,#0a0a09);position:sticky;top:200px}
+  .returns-side h4{font-family:var(--display);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .returns-side .row{display:grid;grid-template-columns:110px 1fr;gap:18px;padding:16px 0;border-top:1px solid var(--line);font:500 11px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+  .returns-side .row:first-of-type{border-top:0;padding-top:0}
+  .returns-side .row .k{color:var(--muted)}
+  .returns-side .row .v{color:var(--fg-2)}
+  .returns-side .row .v.acc{color:var(--accent)}
+  .returns-side .cta{
+    margin-top:8px;padding:18px 22px;background:var(--fg);color:var(--bg);border-radius:999px;
+    font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;
+    display:inline-flex;align-items:center;justify-content:space-between;gap:14px;
+    transition:background .3s, color .3s;
+  }
+  .returns-side .cta:hover{background:var(--accent);color:var(--fg)}
+  .returns-side .cta svg{transition:transform .3s}
+  .returns-side .cta:hover svg{transform:translate(4px,0)}
+
+  /* ============ FAQ ============ */
+  .faq{margin-top:120px;padding-top:60px;border-top:1px solid var(--line)}
+  .faq h2{font-family:var(--display);font-size:clamp(48px,7vw,108px);line-height:.92;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:48px}
+  .faq__list{display:flex;flex-direction:column;gap:0}
+  .faq__item{border-top:1px solid var(--line);transition:background .3s}
+  .faq__item:last-child{border-bottom:1px solid var(--line)}
+  .faq__item:hover{background:#0e0d0b}
+  .faq__q{
+    width:100%;display:grid;grid-template-columns:60px 1fr 40px;gap:24px;align-items:center;
+    padding:28px 8px;text-align:left;
+    transition:padding .4s cubic-bezier(.2,.7,.2,1);
+  }
+  .faq__item.is-open .faq__q{padding-left:24px}
+  .faq__q .n{font:500 11px/1 var(--mono);letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+  .faq__q .label{font-family:var(--display);font-size:24px;line-height:1.2;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .faq__q .toggle{justify-self:end;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;color:var(--fg-2);transition:transform .3s, color .3s}
+  .faq__item.is-open .faq__q .toggle{transform:rotate(45deg);color:var(--accent)}
+  .faq__a{
+    overflow:hidden;max-height:0;
+    transition:max-height .5s cubic-bezier(.2,.7,.2,1);
+  }
+  .faq__item.is-open .faq__a{max-height:300px}
+  .faq__a-inner{padding:0 8px 32px 84px;font-size:14px;line-height:1.7;color:var(--fg-2);max-width:760px}
+  .faq__a-inner a{color:var(--accent);border-bottom:1px solid var(--accent);padding-bottom:1px}
+
+  /* ---- contact strip ---- */
+  .contact{
+    margin-top:80px;padding:60px 40px;border:1px solid var(--line);border-radius:6px;
+    background:linear-gradient(180deg,#0e0d0b,#0a0a09);
+    display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;
+  }
+  .contact h3{font-family:var(--display);font-size:48px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:14px}
+  .contact h3 em{font-style:normal;color:var(--accent)}
+  .contact p{font:500 11px/1.5 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .contact p b{color:var(--fg-2);font-weight:500}
+
+  @media (max-width:900px){
+    .support{padding:120px 24px 60px}
+    .support__head{grid-template-columns:1fr;gap:24px}
+    .support__lead{justify-self:start;text-align:left}
+    .support__tabs{top:0;padding:18px 0;margin-bottom:48px;gap:24px}
+    .support__tabs .right{display:none}
+    .sec{padding:60px 0;scroll-margin-top:80px}
+    .sec__head{grid-template-columns:1fr;gap:24px;margin-bottom:48px}
+    .sec__head .aside{justify-self:start;text-align:left}
+    .size-grid{grid-template-columns:1fr;gap:48px}
+    .size-table{font-size:11px}
+    .size-table thead th,.size-table tbody td{padding:14px 8px 14px 0}
+    .care-grid{grid-template-columns:1fr;gap:0}
+    .care-card{border-left:0;border-top:1px solid var(--line);padding:36px 0}
+    .care-card:first-child{padding-top:36px;border-top:0}
+    .care-notes{grid-template-columns:1fr;padding:24px}
+    .ship-head{display:none}
+    .ship-row{grid-template-columns:1fr 1fr;gap:14px;padding:24px 0}
+    .ship-row:hover{padding-left:0}
+    .ship-perks{grid-template-columns:1fr 1fr;gap:14px}
+    .returns-grid{grid-template-columns:1fr;gap:48px}
+    .returns-side{position:static}
+    .returns-flow .step{grid-template-columns:1fr;gap:8px}
+    .returns-flow .step:hover{padding-left:8px}
+    .returns-flow .step__time{padding-left:0}
+    .faq__q{grid-template-columns:auto 1fr auto;padding:24px 0}
+    .faq__a-inner{padding:0 0 28px 0}
+    .contact{grid-template-columns:1fr;padding:36px 24px}
+  }
+</style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="vignette"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="cache.html" class="nav__brand"><span class="dot"></span><span>.cache</span></a>
+  <div class="nav__center">
+    <a href="cache.html#drop" data-i18n="nav.drop">Drop 001</a>
+    <a href="cache.html#shop" data-i18n="nav.inventory">Inventory</a>
+    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Manifesto</a>
+    <a href="archive.html" data-i18n="nav.archive">Archive</a>
+    <a href="ambassador.html" data-i18n="nav.ambassador">Ambassador</a>
+    <a href="login.html" data-i18n="nav.members">Members</a>
+  </div>
+  <div class="nav__right">
+    <div class="lang" id="lang">
+      <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-current">EN</span>
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <div class="lang__menu" id="lang-menu" role="menu">
+        <button data-lang="en" role="menuitem"><span class="k">EN</span> English</button>
+        <button data-lang="ja" role="menuitem"><span class="k">JA</span> 日本語</button>
+        <button data-lang="de" role="menuitem"><span class="k">DE</span> Deutsch</button>
+        <button data-lang="fr" role="menuitem"><span class="k">FR</span> Français</button>
+        <button data-lang="ko" role="menuitem"><span class="k">KO</span> 한국어</button>
+      </div>
+    </div>
+    <a href="#cart" class="cart-trigger" id="cart-trigger"><span data-i18n="nav.cart">Cart</span> (<span class="count" id="cart-count">0</span>)</a>
+  </div>
+</nav>
+
+<main class="support">
+
+  <div class="support__head">
+    <div>
+      <div class="section-eyebrow">// Support · No support tickets</div>
+      <h1 class="support__title">
+        <span>How to</span>
+        <em>wear it.</em>
+      </h1>
+    </div>
+    <p class="support__lead">Sizing charts, fabric care, shipping windows, and how to return a piece if it doesn't fit. We answer every message ourselves — usually inside 24 hours, always inside 48.</p>
+  </div>
+
+  <nav class="support__tabs" id="support-tabs">
+    <a href="#sizing" class="is-on">01 / Sizing</a>
+    <a href="#care">02 / Care</a>
+    <a href="#shipping">03 / Shipping</a>
+    <a href="#returns">04 / Returns</a>
+    <span class="right">Live · <b>Avg reply 14h</b></span>
+  </nav>
+
+  <!-- ============ 01. SIZING ============ -->
+  <section class="sec" id="sizing">
+    <div class="sec__head">
+      <div>
+        <div class="section-eyebrow">// 01 — Sizing</div>
+        <h2 class="display-title"><span>Boxy,</span> <span class="acc">true,</span> <span class="ghost">size up for layers.</span></h2>
+      </div>
+      <p class="aside">All measurements in inches and centimeters, taken laid flat. Tees and crews run boxy by design — pick your usual size, or go down one for a slimmer fit. The shell jacket runs true. Knit runs slightly oversized.</p>
+    </div>
+
+    <div class="size-grid">
+      <div class="size-table-wrap">
+        <div class="size-toggle" id="unit-toggle">
+          <button data-unit="cm" class="is-on">CM</button>
+          <button data-unit="in">INCHES</button>
+        </div>
+
+        <table class="size-table" id="size-table">
+          <thead>
+            <tr><th>Size</th><th>Chest</th><th>Length</th><th>Shoulder</th><th>Sleeve</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>XS</td><td data-cm="50" data-in="19.7">50</td><td data-cm="66" data-in="26">66</td><td data-cm="46" data-in="18.1">46</td><td data-cm="21" data-in="8.3">21</td></tr>
+            <tr><td>S</td> <td data-cm="54" data-in="21.3">54</td><td data-cm="68" data-in="26.8">68</td><td data-cm="49" data-in="19.3">49</td><td data-cm="22" data-in="8.7">22</td></tr>
+            <tr><td>M</td> <td data-cm="58" data-in="22.8">58</td><td data-cm="70" data-in="27.6">70</td><td data-cm="52" data-in="20.5">52</td><td data-cm="23" data-in="9.1">23</td></tr>
+            <tr><td>L</td> <td data-cm="62" data-in="24.4">62</td><td data-cm="72" data-in="28.3">72</td><td data-cm="55" data-in="21.7">55</td><td data-cm="24" data-in="9.4">24</td></tr>
+            <tr><td>XL</td><td data-cm="66" data-in="26">66</td>  <td data-cm="74" data-in="29.1">74</td><td data-cm="58" data-in="22.8">58</td><td data-cm="25" data-in="9.8">25</td></tr>
+            <tr><td>XXL</td><td data-cm="70" data-in="27.6">70</td><td data-cm="76" data-in="29.9">76</td><td data-cm="61" data-in="24">61</td>  <td data-cm="26" data-in="10.2">26</td></tr>
+          </tbody>
+        </table>
+
+        <div class="fit-list">
+          <div class="row"><span class="k">Tee · Stack</span><span class="v">Boxy · <b>true to size</b> · go down one for a slim fit</span></div>
+          <div class="row"><span class="k">Hoodie · Knit</span><span class="v">Oversized · pick your usual <b>or go down</b> for a closer fit</span></div>
+          <div class="row"><span class="k">Shell · Daemon</span><span class="v">True to size · <b>fits a thin layer</b> underneath</span></div>
+          <div class="row"><span class="k">Pants</span><span class="v">High-rise · pleated · <b>size by waist</b>, length is tailored</span></div>
+          <div class="row"><span class="k">Headwear</span><span class="v">One size · adjustable strap · fits 56–62cm</span></div>
+        </div>
+      </div>
+
+      <aside class="size-aside">
+        <div class="size-illu">
+          <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round">
+            <path d="M70 30 L60 50 L40 60 L40 130 L60 130 L60 180 L140 180 L140 130 L160 130 L160 60 L140 50 L130 30 L120 35 L100 40 L80 35 Z"/>
+            <line x1="40" y1="80" x2="160" y2="80" stroke-dasharray="2 4" opacity=".6"/>
+            <line x1="60" y1="130" x2="140" y2="130" stroke-dasharray="2 4" opacity=".6"/>
+            <text x="100" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="currentColor">CHEST</text>
+            <text x="100" y="128" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="currentColor">LENGTH</text>
+            <circle cx="60" cy="50" r="1.5" fill="currentColor"/>
+            <circle cx="140" cy="50" r="1.5" fill="currentColor"/>
+          </svg>
+          <span class="cap">Measure laid flat,<br>seam to seam. Doubled = body width.</span>
+        </div>
+        <p style="font-size:13px;line-height:1.6;color:var(--fg-2);padding:0 4px">
+          Between sizes? Pick the smaller one for a structured fit, the larger one for layering. Members get free size exchanges within 14 days — no questions, no paperwork.
+        </p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 02. CARE ============ -->
+  <section class="sec" id="care">
+    <div class="sec__head">
+      <div>
+        <div class="section-eyebrow">// 02 — Care</div>
+        <h2 class="display-title"><span>Wear it</span> <span class="acc">into the ground.</span></h2>
+      </div>
+      <p class="aside">Heavyweight cotton softens with every wash. Treat it carefully and you'll have it for a decade — that's the whole point of buying one of these instead of ten of something else.</p>
+    </div>
+
+    <div class="care-grid">
+      <div class="care-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+            <path d="M4 9c4-4 12-4 16 0v9c0 1-1 2-2 2H6c-1 0-2-1-2-2V9z"/>
+            <path d="M8 14a4 4 0 0 0 8 0"/>
+          </svg>
+        </div>
+        <span class="meta">// Wash · Cotton + knit</span>
+        <h4>Cold. Inside out.</h4>
+        <p>30°C maximum. Inside out preserves the screen-prints and the signed hem. Mild detergent — no fabric softener, no bleach. Wash with similar weights.</p>
+        <ul class="rules">
+          <li>Cold wash · max 30°C</li>
+          <li>No bleach · no softener</li>
+          <li>No tumble dry · ever</li>
+        </ul>
+      </div>
+
+      <div class="care-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+            <path d="M3 16c4-4 8-4 12 0s4 4 6 0"/>
+            <path d="M3 11c4-4 8-4 12 0s4 4 6 0"/>
+          </svg>
+        </div>
+        <span class="meta">// Dry · Air only</span>
+        <h4>Lay flat. Wait.</h4>
+        <p>Hang knits flat to dry — they stretch lengthwise if hung wet. Tees can hang from a wood hanger by the seam. Shell jackets line-dry away from direct sun.</p>
+        <ul class="rules">
+          <li>Knit · flat dry</li>
+          <li>Tee · hang by seam</li>
+          <li>Shell · shade · 24h</li>
+        </ul>
+      </div>
+
+      <div class="care-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+            <path d="M5 18l4-12h6l4 12"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+        </div>
+        <span class="meta">// Iron · Low only</span>
+        <h4>Inverse, low.</h4>
+        <p>Iron inside out, low heat. For the quilted shell, steam from 6 inches away — never press the chambers. Knits don't need iron — steam them on the hanger.</p>
+        <ul class="rules">
+          <li>Iron inverse · low</li>
+          <li>Quilted · steam only</li>
+          <li>Knit · hanger steam</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="care-notes">
+      <div class="label">~ 10 yrs</div>
+      <p><span class="strong">If a seam goes, mail it back.</span> We repair anything we made for the first three years free, and at cost after that. Patches, button replacements, knit re-blocking, hem re-stitch — we do it in the Berlin studio on the first Tuesday of every month.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03. SHIPPING ============ -->
+  <section class="sec" id="shipping">
+    <div class="sec__head">
+      <div>
+        <div class="section-eyebrow">// 03 — Shipping</div>
+        <h2 class="display-title"><span>Tracked, signed,</span> <span class="ghost">flown.</span></h2>
+      </div>
+      <p class="aside">All orders ship within 72 hours from Berlin or Tokyo, whichever is closer to you. Duties included on EU and US orders. Free worldwide over $200.</p>
+    </div>
+
+    <div class="ship-table">
+      <div class="ship-head">
+        <span>Region</span>
+        <span>Standard</span>
+        <span>Express</span>
+        <span>Carrier</span>
+        <span style="text-align:right">Free over</span>
+      </div>
+      <div class="ship-row">
+        <span class="region">European Union<small>27 countries · duty included</small></span>
+        <span class="days">2–4d</span>
+        <span class="fee">$18</span>
+        <span class="carrier">DHL Express · Signed</span>
+        <span class="free-over">$200</span>
+      </div>
+      <div class="ship-row">
+        <span class="region">United States<small>50 states · duty included</small></span>
+        <span class="days">4–6d</span>
+        <span class="fee">$24</span>
+        <span class="carrier">DHL Express · Signed</span>
+        <span class="free-over">$200</span>
+      </div>
+      <div class="ship-row">
+        <span class="region">United Kingdom<small>VAT-inclusive · duty included</small></span>
+        <span class="days">3–5d</span>
+        <span class="fee">$22</span>
+        <span class="carrier">DHL Express · Signed</span>
+        <span class="free-over">$200</span>
+      </div>
+      <div class="ship-row">
+        <span class="region">Japan + Korea<small>From Tokyo studio · domestic carrier</small></span>
+        <span class="days">2–3d</span>
+        <span class="fee free">FREE</span>
+        <span class="carrier">Yamato · Signed</span>
+        <span class="free-over">Always</span>
+      </div>
+      <div class="ship-row">
+        <span class="region">Rest of world<small>Duty paid at customs · DDU</small></span>
+        <span class="days">7–10d</span>
+        <span class="fee">$32</span>
+        <span class="carrier">DHL · Tracked</span>
+        <span class="free-over">$300</span>
+      </div>
+    </div>
+
+    <div class="ship-perks">
+      <div class="ship-perk">
+        <span class="n">01</span>
+        <h5>Hand-packed.</h5>
+        <p>Folded by us in the studio. Recycled card sleeve, glassine paper, jute string. No plastic.</p>
+      </div>
+      <div class="ship-perk">
+        <span class="n">02</span>
+        <h5>Tracked + signed.</h5>
+        <p>Every order signed on delivery. You get a tracking link the moment we hand the box to the carrier.</p>
+      </div>
+      <div class="ship-perk">
+        <span class="n">03</span>
+        <h5>Duties paid.</h5>
+        <p>For EU, US, and UK orders. No surprise customs invoice on your door — we cover it on the way out.</p>
+      </div>
+      <div class="ship-perk">
+        <span class="n">04</span>
+        <h5>Carbon-offset.</h5>
+        <p>We pay the carrier surcharge for verified offset shipping on every package. Audit trail per drop.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04. RETURNS ============ -->
+  <section class="sec" id="returns">
+    <div class="sec__head">
+      <div>
+        <div class="section-eyebrow">// 04 — Returns</div>
+        <h2 class="display-title"><span>30 days,</span> <span class="acc">no questions.</span></h2>
+      </div>
+      <p class="aside">If it doesn't fit, send it back. Members get free return shipping. Everyone else, return shipping is paid at the carrier — we refund within 5 business days of inspection.</p>
+    </div>
+
+    <div class="returns-grid">
+      <div class="returns-flow">
+        <div class="step">
+          <span class="step__n">01</span>
+          <div class="step__body">
+            <h4>Email us</h4>
+            <p>Write to <span style="color:var(--accent)">returns@cache.dev</span> with your order number. We send back a prepaid label (members) or a self-paid one with instructions.</p>
+          </div>
+          <span class="step__time">~ 4 hrs</span>
+        </div>
+        <div class="step">
+          <span class="step__n">02</span>
+          <div class="step__body">
+            <h4>Pack it back</h4>
+            <p>In the original card sleeve if you have it. Glassine and jute optional. Tags don't need to be attached, but the piece must be unworn — laundry-folded is fine.</p>
+          </div>
+          <span class="step__time">Same day</span>
+        </div>
+        <div class="step">
+          <span class="step__n">03</span>
+          <div class="step__body">
+            <h4>Drop at carrier</h4>
+            <p>DHL service point or Yamato kiosk. You'll get a tracking link. Standard transit times apply — 3–10 days depending on region.</p>
+          </div>
+          <span class="step__time">3–10 days</span>
+        </div>
+        <div class="step">
+          <span class="step__n">04</span>
+          <div class="step__body">
+            <h4>We inspect</h4>
+            <p>Pieces get checked against the original spec by the same hands that signed them. Less than 1% fails inspection — we'll be in touch if anything looks off.</p>
+          </div>
+          <span class="step__time">1–2 days</span>
+        </div>
+        <div class="step">
+          <span class="step__n">05</span>
+          <div class="step__body">
+            <h4>Refund issued</h4>
+            <p>To the original card. Usually within 5 business days of inspection. We email you the moment it leaves our books — your bank handles the rest.</p>
+          </div>
+          <span class="step__time">3–5 days</span>
+        </div>
+      </div>
+
+      <aside class="returns-side">
+        <h4>Return at a glance</h4>
+        <div class="row"><span class="k">Window</span><span class="v">30 days from delivery</span></div>
+        <div class="row"><span class="k">Condition</span><span class="v">Unworn · laundry-folded ok</span></div>
+        <div class="row"><span class="k">Members</span><span class="v acc">Free return shipping</span></div>
+        <div class="row"><span class="k">Non-members</span><span class="v">Carrier rate at counter</span></div>
+        <div class="row"><span class="k">Refund</span><span class="v">Original card · 5 days</span></div>
+        <div class="row"><span class="k">Exchanges</span><span class="v acc">Free, members</span></div>
+        <div class="row"><span class="k">Excluded</span><span class="v">Digital · custom · sale</span></div>
+        <a class="cta" href="mailto:returns@cache.dev?subject=Return%20request">
+          Start a return
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg>
+        </a>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="faq" id="faq">
+    <h2>Quick answers.</h2>
+    <div class="faq__list" id="faq-list">
+      <div class="faq__item">
+        <button class="faq__q">
+          <span class="n">01</span>
+          <span class="label">Can I cancel an order after placing it?</span>
+          <span class="toggle"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">Yes, until we hand the box to the carrier. Email <a href="mailto:hello@cache.dev">hello@cache.dev</a> with your order number — usually inside the first 24 hours we can pull and refund. After that it becomes a return.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">
+          <span class="n">02</span>
+          <span class="label">Why don't you restock pieces?</span>
+          <span class="toggle"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">It's the whole point of the format. Each piece is a commit — once it ships, the run closes. Members get archive pricing on retired pieces, but new units aren't manufactured. See the <a href="cache.html#manifesto">manifesto</a>.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">
+          <span class="n">03</span>
+          <span class="label">Do you ship to my country?</span>
+          <span class="toggle"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">We ship worldwide, with the exception of countries currently under trade restriction. If your country doesn't appear at checkout, write to us — we sometimes set up one-off arrangements for members.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">
+          <span class="n">04</span>
+          <span class="label">Are sizes the same across the drops?</span>
+          <span class="toggle"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">Yes. We freeze the size chart at the start of each season and don't drift it. A Medium tee from Drop 001 measures the same as a Medium tee will in Drop 003. If we ever change, we'll publish a v2 chart and tag the affected pieces.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">
+          <span class="n">05</span>
+          <span class="label">My piece arrived with a flaw — what now?</span>
+          <span class="toggle"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">That shouldn't happen — every piece is hand-inspected — but if it did, photo the flaw and email <a href="mailto:returns@cache.dev">returns@cache.dev</a>. We send a replacement or a full refund within 24 hours, no inspection needed. The faulty piece gets repaired and added to the studio archive.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">
+          <span class="n">06</span>
+          <span class="label">Do you offer payment plans?</span>
+          <span class="toggle"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">Not currently. We don't run Klarna, Afterpay, or any installment provider — they take a cut we'd rather pass back to the price. For larger orders we can hold a piece for 5 days while you arrange a transfer — write to us.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- contact strip -->
+  <div class="contact">
+    <div>
+      <h3>Still stuck? <em>Write to us.</em></h3>
+      <p><b>hello@cache.dev</b> · avg reply 14h · twelve humans, no autoresponder</p>
+    </div>
+    <a class="btn-filled" href="mailto:hello@cache.dev">
+      Email the studio
+      <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M9 1L13 5L9 9M13 5H1" stroke="currentColor" stroke-width="1.4"/></svg>
+    </a>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__big">.cache</div>
+  <div class="footer__cols" id="footer-cols"></div>
+  <div class="footer__bottom">
+    <div class="left">
+      <span data-i18n="footer.rights">© .cache 2026</span>
+      <span data-i18n="footer.cities">Berlin / Tokyo</span>
+      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.4</span></span>
+    </div>
+    <div data-i18n="footer.tagline">No Resellers / No Lies</div>
+  </div>
+</footer>
+
+<!-- CART -->
+<div class="cart-backdrop" id="cart-backdrop"></div>
+<aside class="cart" id="cart" aria-hidden="true">
+  <div class="cart__head">
+    <div><h3 data-i18n="cart.title">Your Cache</h3><div class="meta" id="cart-summary">0 items</div></div>
+    <button class="cart__close" id="cart-close" aria-label="Close cart"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.2"/></svg></button>
+  </div>
+  <div class="cart__body" id="cart-body"></div>
+  <div class="cart__foot" id="cart-foot">
+    <div class="cart__totals"><span data-i18n="cart.subtotal">Subtotal</span><span class="v" id="cart-subtotal">$0</span></div>
+    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">Checkout</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
+    <div class="cart__notes"><b data-i18n="cart.noteFree">Free</b> <span data-i18n="cart.noteRest">worldwide shipping over $200</span></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><span class="d"></span><span id="toast-msg">Added</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="i18n.js"></script>
+<script src="i18n-pages.js"></script>
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  // Sticky tab indicator
+  const tabs = [...document.querySelectorAll('#support-tabs a[href^="#"]')];
+  const sections = tabs.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = '#' + entry.target.id;
+        tabs.forEach(a => a.classList.toggle('is-on', a.getAttribute('href') === id));
+      }
+    });
+  }, { rootMargin: '-30% 0px -55% 0px', threshold: 0 });
+  sections.forEach(s => io.observe(s));
+
+  // Unit toggle for size chart
+  const unitWrap = document.getElementById('unit-toggle');
+  unitWrap.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-unit]');
+    if (!b) return;
+    unitWrap.querySelectorAll('button').forEach(x => x.classList.remove('is-on'));
+    b.classList.add('is-on');
+    const unit = b.dataset.unit;
+    document.querySelectorAll('#size-table td[data-cm]').forEach(td => {
+      td.textContent = unit === 'in' ? td.dataset.in : td.dataset.cm;
+    });
+    // Update column header hint
+    const headers = document.querySelectorAll('#size-table thead th');
+    headers.forEach((h, i) => {
+      if (i === 0) return;
+      h.textContent = h.textContent.replace(/\s\(.*$/, '');
+      h.textContent += unit === 'in' ? ' (in)' : ' (cm)';
+    });
+  });
+  // Trigger once for default cm label
+  document.querySelector('#unit-toggle button.is-on').click();
+
+  // FAQ accordion
+  document.getElementById('faq-list').addEventListener('click', (e) => {
+    const q = e.target.closest('.faq__q');
+    if (!q) return;
+    const item = q.parentElement;
+    item.classList.toggle('is-open');
+  });
+</script>
+</body>
+</html>

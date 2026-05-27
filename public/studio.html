@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>.cache — Studio / Process / Press</title>
+<link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="base.css" />
+
+<style>
+  /* ----- shared page chrome ----- */
+  .studio{padding:140px 40px 80px;max-width:1400px;margin:0 auto;position:relative;z-index:1}
+  .studio__head{display:grid;grid-template-columns:1.4fr 1fr;gap:60px;align-items:end;padding-bottom:60px;border-bottom:1px solid var(--line);margin-bottom:0}
+  .studio__title{font-family:var(--display);font-size:clamp(72px,11vw,200px);line-height:.86;letter-spacing:-.025em;text-transform:uppercase;color:var(--fg);margin-top:24px;display:flex;flex-direction:column}
+  .studio__title em{font-style:normal;color:transparent;-webkit-text-stroke:1px var(--fg-2)}
+  .studio__lead{font-size:15px;line-height:1.6;color:var(--fg-2);max-width:420px;justify-self:end;text-align:right}
+
+  /* ----- section nav (sticky tabs) ----- */
+  .studio__tabs{
+    position:sticky;top:80px;z-index:30;
+    display:flex;gap:36px;flex-wrap:wrap;align-items:center;
+    padding:24px 0;margin-bottom:80px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#0a0a0af0 70%,#0a0a0a00);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  }
+  .studio__tabs a{padding:8px 0;font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted);transition:color .3s;border-bottom:1px solid transparent}
+  .studio__tabs a:hover{color:var(--fg-2)}
+  .studio__tabs a.is-on{color:var(--fg);border-color:var(--fg)}
+  .studio__tabs .right{margin-left:auto;font:500 10px/1 var(--mono);letter-spacing:.22em;color:var(--muted);text-transform:uppercase;display:inline-flex;gap:8px;align-items:center}
+  .studio__tabs .right::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--acid);box-shadow:0 0 8px var(--acid)}
+
+  .sec{padding:80px 0;border-bottom:1px solid var(--line);position:relative;scroll-margin-top:160px}
+  .sec:last-child{border-bottom:0}
+  .sec__head{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:end;margin-bottom:80px}
+  .sec__head .display-title{margin-top:24px}
+  .sec__head .aside{font-size:15px;line-height:1.6;color:var(--fg-2);max-width:420px;justify-self:end;text-align:right}
+
+  /* ============ 01. STUDIO ============ */
+  .studio-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:80px;align-items:start}
+  .studio-essay{display:flex;flex-direction:column;gap:24px;font-size:16px;line-height:1.7;color:var(--fg-2);max-width:640px}
+  .studio-essay p{text-wrap:pretty}
+  .studio-essay p .acc{color:var(--accent)}
+  .studio-essay p .strong{color:var(--fg)}
+  .studio-essay .pull{
+    font-family:var(--display);font-size:clamp(28px,3vw,42px);line-height:1.1;letter-spacing:-.01em;text-transform:none;color:var(--fg);
+    padding:24px 0 24px 32px;border-left:1px solid var(--accent);margin:16px 0;
+    text-wrap:balance;
+  }
+  .studio-side{display:flex;flex-direction:column;gap:32px;padding:32px;border:1px solid var(--line);border-radius:6px;background:linear-gradient(180deg,#0e0d0b,#0a0a09);position:sticky;top:200px}
+  .studio-side h4{font:500 10px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--muted);margin-bottom:18px}
+  .studio-side .row{display:grid;grid-template-columns:120px 1fr;gap:24px;padding:16px 0;border-top:1px solid var(--line);font:500 11px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+  .studio-side .row:first-of-type{border-top:0;padding-top:0}
+  .studio-side .row .k{color:var(--muted)}
+  .studio-side .row .v{color:var(--fg)}
+
+  /* ----- studio team grid ----- */
+  .team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:80px}
+  .team-card{padding:28px 24px;border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;gap:14px;transition:border-color .3s, transform .4s cubic-bezier(.2,.7,.2,1)}
+  .team-card:hover{border-color:var(--fg-2);transform:translateY(-4px)}
+  .team-card .avatar{
+    width:64px;height:64px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent-soft));
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--display);font-size:24px;color:var(--bg);
+    text-transform:uppercase;letter-spacing:-.01em;
+  }
+  .team-card .nm{font-family:var(--display);font-size:22px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);margin-top:8px}
+  .team-card .role{font:500 10px/1.4 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+  .team-card .loc{font:500 10px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:auto}
+
+  /* ============ 02. PROCESS ============ */
+  .process-timeline{display:flex;flex-direction:column;gap:0}
+  .step{
+    display:grid;grid-template-columns:120px 1fr 1fr;gap:60px;align-items:start;
+    padding:48px 8px;border-top:1px solid var(--line);
+    transition:padding .4s cubic-bezier(.2,.7,.2,1);
+  }
+  .step:hover{padding-left:32px;background:#0e0d0b}
+  .step:last-child{border-bottom:1px solid var(--line)}
+  .step__n{font-family:var(--display);font-size:80px;line-height:.9;letter-spacing:-.02em;color:transparent;-webkit-text-stroke:1px var(--fg-2);transition:color .4s, -webkit-text-stroke .4s}
+  .step:hover .step__n{color:var(--accent);-webkit-text-stroke:0}
+  .step__body h4{font-family:var(--display);font-size:36px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);margin-bottom:12px}
+  .step__meta{font:500 10px/1.4 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;display:inline-flex;align-items:center;gap:10px}
+  .step__meta::before{content:"";width:24px;height:1px;background:var(--accent)}
+  .step__body p{font-size:14px;line-height:1.6;color:var(--fg-2);max-width:480px}
+  .step__detail{font:500 11px/1.6 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;gap:8px;padding-top:6px}
+  .step__detail .k{color:var(--fg-2);font-weight:500}
+  .step__detail .row{display:grid;grid-template-columns:90px 1fr;gap:18px;align-items:baseline}
+
+  /* fabric stack visualization */
+  .fabric-stack{
+    margin-top:80px;padding:48px;border:1px solid var(--line);border-radius:6px;
+    background:linear-gradient(180deg,#0e0d0b,#0a0a09);
+    display:grid;grid-template-columns:auto 1fr;gap:60px;align-items:center;
+  }
+  .fabric-stack .swatches{display:flex;flex-direction:column;gap:12px;font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase}
+  .fabric-stack .swatch{display:grid;grid-template-columns:80px 1fr 80px;gap:18px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+  .fabric-stack .swatch:first-child{border-top:0;padding-top:0}
+  .fabric-stack .swatch .sw{height:32px;border-radius:3px;border:1px solid #ffffff10}
+  .fabric-stack .swatch .nm{color:var(--fg)}
+  .fabric-stack .swatch .wt{color:var(--muted);text-align:right;font-size:9px}
+  .fabric-stack .copy h4{font-family:var(--display);font-size:36px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);margin-bottom:16px}
+  .fabric-stack .copy p{font-size:14px;line-height:1.6;color:var(--fg-2);max-width:380px}
+
+  /* ============ 03. PRESS ============ */
+  .press-grid{display:flex;flex-direction:column;gap:0}
+  .press-row{
+    display:grid;grid-template-columns:90px 1fr 1.2fr auto;gap:32px;
+    padding:32px 8px;border-top:1px solid var(--line);align-items:center;
+    transition:padding .4s cubic-bezier(.2,.7,.2,1);cursor:pointer;
+  }
+  .press-row:hover{padding-left:32px;background:#0e0d0b}
+  .press-row:last-child{border-bottom:1px solid var(--line)}
+  .press-row__date{font:500 11px/1 var(--mono);letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+  .press-row__pub{font-family:var(--display);font-size:24px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .press-row__pub small{display:block;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:6px}
+  .press-row__title{font-size:15px;line-height:1.5;color:var(--fg-2);max-width:520px}
+  .press-row__title em{font-style:italic;color:var(--accent)}
+  .press-row__cta{font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--fg-2);display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:color .3s, gap .3s cubic-bezier(.2,.7,.2,1)}
+  .press-row:hover .press-row__cta{color:var(--accent);gap:14px}
+  .press-row__cta svg{transition:transform .3s}
+  .press-row:hover .press-row__cta svg{transform:translate(2px,-2px)}
+
+  /* press kit cta */
+  .press-kit{
+    margin-top:80px;padding:48px;border:1px solid var(--line);border-radius:6px;
+    background:linear-gradient(180deg,#0e0d0b,#0a0a09);
+    display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;
+  }
+  .press-kit h4{font-family:var(--display);font-size:48px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:14px}
+  .press-kit p{font:500 11px/1.5 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted);max-width:520px}
+  .press-kit p a{color:var(--accent);text-transform:none;letter-spacing:.04em;font-family:var(--ui);font-size:14px;border-bottom:1px solid var(--accent);padding-bottom:2px}
+
+  /* ============ FINAL CTA STRIP ============ */
+  .cta-strip{
+    margin-top:120px;padding:80px 0;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    text-align:center;display:flex;flex-direction:column;gap:32px;align-items:center;
+  }
+  .cta-strip .eyebrow{margin-bottom:0}
+  .cta-strip h3{font-family:var(--display);font-size:clamp(60px,9vw,160px);line-height:.88;letter-spacing:-.025em;text-transform:uppercase;color:var(--fg);text-wrap:balance}
+  .cta-strip h3 em{font-style:normal;color:var(--accent)}
+  .cta-strip .actions{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+
+  @media (max-width:900px){
+    .studio{padding:120px 24px 60px}
+    .studio__head{grid-template-columns:1fr;gap:24px}
+    .studio__lead{justify-self:start;text-align:left}
+    .studio__tabs{top:0;padding:18px 0;margin-bottom:48px;gap:24px}
+    .studio__tabs .right{display:none}
+    .sec{padding:60px 0;scroll-margin-top:80px}
+    .sec__head{grid-template-columns:1fr;gap:24px;margin-bottom:48px}
+    .sec__head .aside{justify-self:start;text-align:left}
+    .studio-grid{grid-template-columns:1fr;gap:48px}
+    .studio-side{position:static}
+    .team-grid{grid-template-columns:1fr 1fr;gap:14px}
+    .step{grid-template-columns:1fr;gap:18px;padding:32px 0}
+    .step:hover{padding-left:0}
+    .step__n{font-size:48px}
+    .fabric-stack{grid-template-columns:1fr;padding:32px;gap:32px}
+    .press-row{grid-template-columns:1fr;gap:8px;padding:24px 0}
+    .press-row:hover{padding-left:0}
+    .press-kit{grid-template-columns:1fr;padding:32px}
+    .cta-strip{padding:60px 0}
+  }
+</style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="vignette"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="cache.html" class="nav__brand"><span class="dot"></span><span>.cache</span></a>
+  <div class="nav__center">
+    <a href="cache.html#drop" data-i18n="nav.drop">Drop 001</a>
+    <a href="cache.html#shop" data-i18n="nav.inventory">Inventory</a>
+    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Manifesto</a>
+    <a href="archive.html" data-i18n="nav.archive">Archive</a>
+    <a href="ambassador.html" data-i18n="nav.ambassador">Ambassador</a>
+    <a href="login.html" data-i18n="nav.members">Members</a>
+  </div>
+  <div class="nav__right">
+    <div class="lang" id="lang">
+      <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-current">EN</span>
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <div class="lang__menu" id="lang-menu" role="menu">
+        <button data-lang="en" role="menuitem"><span class="k">EN</span> English</button>
+        <button data-lang="ja" role="menuitem"><span class="k">JA</span> 日本語</button>
+        <button data-lang="de" role="menuitem"><span class="k">DE</span> Deutsch</button>
+        <button data-lang="fr" role="menuitem"><span class="k">FR</span> Français</button>
+        <button data-lang="ko" role="menuitem"><span class="k">KO</span> 한국어</button>
+      </div>
+    </div>
+    <a href="#cart" class="cart-trigger" id="cart-trigger"><span data-i18n="nav.cart">Cart</span> (<span class="count" id="cart-count">0</span>)</a>
+  </div>
+</nav>
+
+<main class="studio">
+
+  <div class="studio__head">
+    <div>
+      <div class="section-eyebrow">// Studio · Process · Press</div>
+      <h1 class="studio__title">
+        <span>Behind</span>
+        <em>the cache.</em>
+      </h1>
+    </div>
+    <p class="studio__lead">Twelve people in two cities. One commit per season. We don't run sales, we don't restock, and we don't sell to the resale market — this is how that works in practice.</p>
+  </div>
+
+  <nav class="studio__tabs" id="studio-tabs">
+    <a href="#studio" class="is-on">01 / Studio</a>
+    <a href="#process">02 / Process</a>
+    <a href="#press">03 / Press</a>
+    <span class="right">Studio open · Mon–Thu</span>
+  </nav>
+
+  <!-- ============ 01. STUDIO ============ -->
+  <section class="sec" id="studio">
+    <div class="sec__head">
+      <div>
+        <div class="section-eyebrow">// 01 — Studio</div>
+        <h2 class="display-title"><span>Two cities,</span> <span class="ghost">one commit.</span></h2>
+      </div>
+      <p class="aside">.cache started as a private GitHub org in 2024 — two people, three friends, a shared dotfiles repo. Now it's twelve, split between a converted print shop in Kreuzberg and a tatami-floor studio in Nakameguro. Everything else came after.</p>
+    </div>
+
+    <div class="studio-grid">
+      <div class="studio-essay">
+        <p>We make clothes for people who ship software. That's not a marketing line — it's the literal job. Half the studio writes code in the morning and pattern-cuts in the afternoon. The other half does the reverse.</p>
+
+        <p>Every drop starts as <span class="strong">a thread in a private channel</span>. Someone says: <em>"we should make a tee that's actually opaque."</em> Or: <em>"the hoodie I want for cold rooms doesn't exist."</em> The thread gets a tag. If it survives a season of arguing, it gets a pattern. If the pattern survives a mill visit, it gets a run number.</p>
+
+        <div class="pull">"Once it ships, the run closes. There is no v1.1 of a t-shirt."</div>
+
+        <p>We cap runs at <span class="acc">500 pieces</span> because that's what twelve people can ship — sign, inspect, fold, package — in three weekends without compromising. We tried 800 once. We don't anymore.</p>
+
+        <p>The brand name is a joke our infra engineer made in 2023 — <span class="strong">a cache is a small, fast layer between you and the thing you actually need</span>. We liked that as a description of a wardrobe. We kept it.</p>
+      </div>
+
+      <aside class="studio-side">
+        <h4>// Studio facts</h4>
+        <div class="row"><span class="k">Founded</span><span class="v">2024</span></div>
+        <div class="row"><span class="k">Team</span><span class="v">12 people</span></div>
+        <div class="row"><span class="k">Locations</span><span class="v">Berlin / Tokyo</span></div>
+        <div class="row"><span class="k">Drops shipped</span><span class="v">04</span></div>
+        <div class="row"><span class="k">Total runs</span><span class="v">~2,200 pieces</span></div>
+        <div class="row"><span class="k">Resold</span><span class="v">0</span></div>
+        <div class="row"><span class="k">Mills used</span><span class="v">06 · PT / JP / IT</span></div>
+        <div class="row"><span class="k">Carriers</span><span class="v">DHL · Yamato</span></div>
+      </aside>
+    </div>
+
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="avatar">M</div>
+        <span class="role">Co-founder · Patterns</span>
+        <span class="nm">Mira K.</span>
+        <span class="loc">Berlin · DE</span>
+      </div>
+      <div class="team-card">
+        <div class="avatar">J</div>
+        <span class="role">Co-founder · Infra</span>
+        <span class="nm">Jun S.</span>
+        <span class="loc">Tokyo · JP</span>
+      </div>
+      <div class="team-card">
+        <div class="avatar">L</div>
+        <span class="role">Knitwear</span>
+        <span class="nm">Leon R.</span>
+        <span class="loc">Berlin · DE</span>
+      </div>
+      <div class="team-card">
+        <div class="avatar">A</div>
+        <span class="role">Member Ops</span>
+        <span class="nm">Aiko T.</span>
+        <span class="loc">Tokyo · JP</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02. PROCESS ============ -->
+  <section class="sec" id="process">
+    <div class="sec__head">
+      <div>
+        <div class="section-eyebrow">// 02 — Process</div>
+        <h2 class="display-title"><span>Commit,</span> <span class="ghost">cut,</span> <span class="acc">ship.</span></h2>
+      </div>
+      <p class="aside">Five steps from thread to shipped piece. Average cycle is eleven weeks. The slowest part is the mill, the fastest is packing — we wish it was the other way around.</p>
+    </div>
+
+    <div class="process-timeline">
+      <div class="step">
+        <div class="step__n">01</div>
+        <div class="step__body">
+          <span class="step__meta">Week 1 — 2 · Studio thread</span>
+          <h4>Open the issue.</h4>
+          <p>Someone proposes a piece in our private channel. It gets a tag, a one-line spec, and an opinion vote from the twelve. If it survives the week, it gets a draft pattern.</p>
+        </div>
+        <div class="step__detail">
+          <div class="row"><span class="k">Tooling</span><span>Linear · Notion</span></div>
+          <div class="row"><span class="k">Approve</span><span>9 of 12 needed</span></div>
+          <div class="row"><span class="k">Output</span><span>Spec doc · sketch</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step__n">02</div>
+        <div class="step__body">
+          <span class="step__meta">Week 3 — 5 · Sample</span>
+          <h4>Cut three samples.</h4>
+          <p>We block-print and machine-sew three samples in the Berlin studio. Members in Tokyo wear them for two weeks. If something rips, we fix it. If nothing rips, we still fix something.</p>
+        </div>
+        <div class="step__detail">
+          <div class="row"><span class="k">Patterns</span><span>Hand · Clo3D verify</span></div>
+          <div class="row"><span class="k">Wear test</span><span>14 days · 6 wearers</span></div>
+          <div class="row"><span class="k">Yield</span><span>3 → 1 rev cycle</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step__n">03</div>
+        <div class="step__body">
+          <span class="step__meta">Week 6 — 9 · Mill</span>
+          <h4>Send to mill.</h4>
+          <p>We work with six small mills — three in Portugal, two in Japan, one in northern Italy. Each gets the spec and a sample. We visit before production starts. We don't approve the run remotely.</p>
+        </div>
+        <div class="step__detail">
+          <div class="row"><span class="k">Mills</span><span>06 · PT / JP / IT</span></div>
+          <div class="row"><span class="k">Visit</span><span>Pre-prod required</span></div>
+          <div class="row"><span class="k">Run</span><span>500 max</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step__n">04</div>
+        <div class="step__body">
+          <span class="step__meta">Week 10 · Sign + inspect</span>
+          <h4>Hand-sign, hand-inspect.</h4>
+          <p>The whole studio shows up. Every piece gets pulled, inspected, signed inside the back hem. We catch ~3% defects this way. They go to the studio archive — wear-test stock for the next cycle.</p>
+        </div>
+        <div class="step__detail">
+          <div class="row"><span class="k">Hands</span><span>All 12</span></div>
+          <div class="row"><span class="k">Defects</span><span>~3% caught</span></div>
+          <div class="row"><span class="k">Signed</span><span>Inside back hem</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step__n">05</div>
+        <div class="step__body">
+          <span class="step__meta">Week 11 · Ship + archive</span>
+          <h4>Tag and ship.</h4>
+          <p>Members get 96 hours first. Then it opens to everyone until it's gone. When the last piece ships, we cut a tag — <span style="color:var(--accent)">git tag v1.0</span> — and the run closes. No restock, no apology. The archive page goes live.</p>
+        </div>
+        <div class="step__detail">
+          <div class="row"><span class="k">Carriers</span><span>DHL · Yamato</span></div>
+          <div class="row"><span class="k">Tracked</span><span>Signed delivery</span></div>
+          <div class="row"><span class="k">Tag</span><span>v1.0 · v1.1 · …</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fabric-stack">
+      <div class="swatches">
+        <div class="swatch"><div class="sw" style="background:#d8d4c4"></div><span class="nm">Off-white loopback</span><span class="wt">420 gsm</span></div>
+        <div class="swatch"><div class="sw" style="background:#bdb6a2"></div><span class="nm">Sand brushed cotton</span><span class="wt">340 gsm</span></div>
+        <div class="swatch"><div class="sw" style="background:#c4a479"></div><span class="nm">Accent · oxidized brass</span><span class="wt">Hardware</span></div>
+        <div class="swatch"><div class="sw" style="background:#1f1d17"></div><span class="nm">Asphalt twill</span><span class="wt">380 gsm</span></div>
+        <div class="swatch"><div class="sw" style="background:#0a0a0a;border-color:#3a3833"></div><span class="nm">Carbon bonded</span><span class="wt">280 gsm</span></div>
+      </div>
+      <div class="copy">
+        <h4>Five fabrics. That's it.</h4>
+        <p>We picked five and we don't add. Every piece across every drop comes from this stack. That's how a tee from Drop 001 will still look like a sibling of a hoodie from Drop 004 — same yarn family, same wash, same hand.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03. PRESS ============ -->
+  <section class="sec" id="press">
+    <div class="sec__head">
+      <div>
+        <div class="section-eyebrow">// 03 — Press</div>
+        <h2 class="display-title"><span>Mentions</span> <span class="ghost">on record.</span></h2>
+      </div>
+      <p class="aside">We don't pitch press. Sometimes it pitches us. When we like the writeup, we link it here. When we don't, we don't.</p>
+    </div>
+
+    <div class="press-grid">
+      <div class="press-row">
+        <span class="press-row__date">2026.05.18</span>
+        <span class="press-row__pub">SSENSE Editorial<small>Long-form · 4,200 words</small></span>
+        <span class="press-row__title">"<em>.cache</em> is what happens when developers build a clothing brand the way they ship code: small, signed, and version-tagged."</span>
+        <span class="press-row__cta">Read <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+      </div>
+      <div class="press-row">
+        <span class="press-row__date">2026.04.02</span>
+        <span class="press-row__pub">Hypebeast<small>Drop coverage</small></span>
+        <span class="press-row__title">Spotlight on the Daemon Shell — a hand-quilted technical jacket with a run of 200, sold out to members in under two hours.</span>
+        <span class="press-row__cta">Read <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+      </div>
+      <div class="press-row">
+        <span class="press-row__date">2026.03.10</span>
+        <span class="press-row__pub">Highsnobiety<small>Profile</small></span>
+        <span class="press-row__title">"Quiet, signed, and refusing to scale" — a studio visit with Mira K. and Jun S. on why <em>.cache</em> will never restock a single piece.</span>
+        <span class="press-row__cta">Read <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+      </div>
+      <div class="press-row">
+        <span class="press-row__date">2026.02.14</span>
+        <span class="press-row__pub">032c<small>Print issue 47</small></span>
+        <span class="press-row__title">Feature on the post-streetwear quiet luxury movement, with <em>.cache</em> on the cover plate alongside three other ateliers reshaping the category.</span>
+        <span class="press-row__cta">Read <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+      </div>
+      <div class="press-row">
+        <span class="press-row__date">2025.12.04</span>
+        <span class="press-row__pub">It's Nice That<small>Studio tour · 8 photos</small></span>
+        <span class="press-row__title">Inside the Kreuzberg studio: a converted screen-print shop with a sewing machine where the dark room used to be, and a server rack in the back.</span>
+        <span class="press-row__cta">Read <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+      </div>
+      <div class="press-row">
+        <span class="press-row__date">2025.09.21</span>
+        <span class="press-row__pub">Wallpaper*<small>Wishlist</small></span>
+        <span class="press-row__title">The member knit picked as one of the year's twelve quietly excellent objects — alongside a Naoto Fukasawa lamp and a Vitra rework.</span>
+        <span class="press-row__cta">Read <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+      </div>
+    </div>
+
+    <div class="press-kit">
+      <div>
+        <h4>Press kit, on request.</h4>
+        <p>Logos, brand colors, hi-res product stills, drop dates, and our official copy. We send a fresh kit per drop — write to <a href="mailto:press@cache.dev">press@cache.dev</a> and tell us where it's going.</p>
+      </div>
+      <a class="btn-filled" href="mailto:press@cache.dev?subject=Press%20kit%20request">
+        Request press kit
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M9 1L13 5L9 9M13 5H1" stroke="currentColor" stroke-width="1.4"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <div class="cta-strip">
+    <div class="section-eyebrow eyebrow">// What's next</div>
+    <h3>Pull the keys. <em>Wear the stack.</em></h3>
+    <p style="font:500 11px/1.5 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);max-width:520px">Drop 002 ships September 2026 — apparel, knit, two new fabrics in the stack.</p>
+    <div class="actions">
+      <a href="cache.html#members" class="btn-filled">
+        Become a member
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M9 1L13 5L9 9M13 5H1" stroke="currentColor" stroke-width="1.4"/></svg>
+      </a>
+      <a href="cache.html#shop" class="btn-ghost">
+        See Drop 001
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M9 1L13 5L9 9M13 5H1" stroke="currentColor" stroke-width="1.4"/></svg>
+      </a>
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__big">.cache</div>
+  <div class="footer__cols" id="footer-cols"></div>
+  <div class="footer__bottom">
+    <div class="left">
+      <span data-i18n="footer.rights">© .cache 2026</span>
+      <span data-i18n="footer.cities">Berlin / Tokyo</span>
+      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.4</span></span>
+    </div>
+    <div data-i18n="footer.tagline">No Resellers / No Lies</div>
+  </div>
+</footer>
+
+<!-- CART -->
+<div class="cart-backdrop" id="cart-backdrop"></div>
+<aside class="cart" id="cart" aria-hidden="true">
+  <div class="cart__head">
+    <div><h3 data-i18n="cart.title">Your Cache</h3><div class="meta" id="cart-summary">0 items</div></div>
+    <button class="cart__close" id="cart-close" aria-label="Close cart"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.2"/></svg></button>
+  </div>
+  <div class="cart__body" id="cart-body"></div>
+  <div class="cart__foot" id="cart-foot">
+    <div class="cart__totals"><span data-i18n="cart.subtotal">Subtotal</span><span class="v" id="cart-subtotal">$0</span></div>
+    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">Checkout</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
+    <div class="cart__notes"><b data-i18n="cart.noteFree">Free</b> <span data-i18n="cart.noteRest">worldwide shipping over $200</span></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><span class="d"></span><span id="toast-msg">Added</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="i18n.js"></script>
+<script src="i18n-pages.js"></script>
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  // Sticky tab indicator — track section in view
+  const tabs = [...document.querySelectorAll('#studio-tabs a[href^="#"]')];
+  const sections = tabs.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = '#' + entry.target.id;
+        tabs.forEach(a => a.classList.toggle('is-on', a.getAttribute('href') === id));
+      }
+    });
+  }, { rootMargin: '-30% 0px -55% 0px', threshold: 0 });
+
+  sections.forEach(s => io.observe(s));
+</script>
+</body>
+</html>

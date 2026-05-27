@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>.cache — Checkout</title>
+<link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="base.css" />
+
+<style>
+  .checkout{padding:120px 40px 100px;max-width:1300px;margin:0 auto;position:relative;z-index:1}
+  .checkout__head{display:flex;justify-content:space-between;align-items:end;gap:32px;padding-bottom:40px;border-bottom:1px solid var(--line);margin-bottom:60px;flex-wrap:wrap}
+  .checkout__head .title{font-family:var(--display);font-size:clamp(48px,7vw,108px);line-height:.92;letter-spacing:-.025em;text-transform:uppercase;color:var(--fg);margin-top:24px}
+  .checkout__back{font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted);transition:color .3s}
+  .checkout__back:hover{color:var(--fg)}
+
+  .checkout__steps{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:60px;padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font:500 10px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+  .checkout__steps .step{display:inline-flex;align-items:center;gap:10px;color:var(--muted);transition:color .3s}
+  .checkout__steps .step .n{width:22px;height:22px;border:1px solid var(--muted-2);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px}
+  .checkout__steps .step.is-done{color:var(--fg-2)}
+  .checkout__steps .step.is-done .n{border-color:var(--fg-2);color:var(--accent)}
+  .checkout__steps .step.is-on{color:var(--fg)}
+  .checkout__steps .step.is-on .n{border-color:var(--fg);color:var(--fg);background:var(--fg);color:var(--bg)}
+  .checkout__steps .sep{color:var(--muted-2)}
+
+  .checkout__grid{display:grid;grid-template-columns:1.4fr 1fr;gap:80px;align-items:start}
+  .checkout__main{display:flex;flex-direction:column;gap:48px;min-width:0}
+
+  .ck-card{display:flex;flex-direction:column;gap:24px;padding:36px 0;border-top:1px solid var(--line)}
+  .ck-card:first-child{border-top:0;padding-top:0}
+  .ck-card h3{font-family:var(--display);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .ck-card h3 .num{font:500 11px/1 var(--mono);letter-spacing:.28em;color:var(--muted);text-transform:uppercase}
+
+  .ck-row{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+  .ck-row.full{grid-template-columns:1fr}
+
+  .ck-method{display:flex;flex-direction:column;gap:0}
+  .ck-method label{
+    display:flex;justify-content:space-between;align-items:center;gap:18px;
+    padding:22px 0;border-top:1px solid var(--line);cursor:pointer;
+    transition:padding .4s cubic-bezier(.2,.7,.2,1);
+  }
+  .ck-method label:hover{padding-left:18px}
+  .ck-method label .nm{font-family:var(--display);font-size:18px;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);display:flex;align-items:center;gap:14px}
+  .ck-method label .nm::before{content:"";width:14px;height:14px;border:1px solid var(--muted-2);border-radius:50%;flex:none;transition:all .2s}
+  .ck-method label .desc{font:500 10px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .ck-method label .price{font:500 12px/1 var(--mono);letter-spacing:.06em;color:var(--fg);white-space:nowrap}
+  .ck-method input{position:absolute;opacity:0;pointer-events:none}
+  .ck-method input:checked + label .nm::before{border-color:var(--fg);background:radial-gradient(circle, var(--accent) 0 35%, transparent 40%)}
+  .ck-method input:checked + label{color:var(--fg)}
+
+  .ck-continue{
+    display:inline-flex;align-items:center;justify-content:space-between;gap:18px;
+    padding:24px 28px;background:var(--fg);color:var(--bg);border-radius:999px;
+    font:500 13px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;width:100%;
+    transition:all .3s;
+  }
+  .ck-continue:hover{background:var(--accent);color:var(--fg)}
+  .ck-continue svg{width:14px;height:14px;transition:transform .3s}
+  .ck-continue:hover svg{transform:translate(4px,0)}
+
+  .ck-checkbox{display:flex;align-items:center;gap:14px;padding:14px 0;color:var(--fg-2);font:500 11px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase}
+  .ck-checkbox input{appearance:none;width:18px;height:18px;border:1px solid var(--muted-2);border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;background:transparent;transition:all .2s}
+  .ck-checkbox input:checked{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+  .ck-checkbox input:checked::after{content:"✓";color:var(--bg);font-size:12px}
+
+  /* Summary card */
+  .ck-summary{position:sticky;top:120px;background:linear-gradient(180deg,#0e0d0b,#0a0a09);border:1px solid var(--line);border-radius:6px;padding:32px;display:flex;flex-direction:column;gap:20px}
+  .ck-summary h4{font-family:var(--display);font-size:24px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .ck-line{display:flex;justify-content:space-between;align-items:center;font:500 11px/1.3 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .ck-line .v{color:var(--fg);letter-spacing:.06em;text-transform:none}
+  .ck-totals{display:flex;flex-direction:column;gap:10px;padding-top:18px;border-top:1px solid var(--line)}
+  .ck-total{display:flex;justify-content:space-between;align-items:baseline;font:500 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding-top:10px;border-top:1px solid var(--line);margin-top:10px}
+  .ck-total .v{font-family:var(--display);font-size:28px;letter-spacing:-.01em;color:var(--fg);text-transform:none}
+
+  .ck-items{display:flex;flex-direction:column;gap:14px;max-height:280px;overflow-y:auto}
+  .ck-item{display:grid;grid-template-columns:46px 1fr auto;gap:14px;align-items:center}
+  .ck-item .art{width:46px;height:46px;border-radius:4px;background:linear-gradient(160deg,#1b1a17,#0d0d0b);display:flex;align-items:center;justify-content:center;color:var(--fg-2)}
+  .ck-item .art svg{width:75%;height:75%}
+  .ck-item .nm{font-family:var(--display);font-size:14px;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);line-height:1}
+  .ck-item .nm small{display:block;font-family:var(--mono);font-size:8px;font-weight:500;letter-spacing:.2em;color:var(--muted);margin-top:4px;text-transform:uppercase}
+  .ck-item .pr{font:500 11px/1 var(--mono);color:var(--fg);letter-spacing:.06em;text-align:right;white-space:nowrap}
+
+  .ck-secure{display:flex;align-items:center;gap:10px;font:500 9px/1.4 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding-top:14px;border-top:1px solid var(--line)}
+  .ck-secure svg{width:12px;height:12px;color:var(--accent)}
+
+  /* Empty / confirmed states */
+  .ck-empty,.ck-confirmed{padding:120px 0;text-align:center}
+  .ck-empty .big,.ck-confirmed .big{font-family:var(--display);font-size:clamp(60px,9vw,140px);line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:24px}
+  .ck-empty .big{color:var(--fg-2);text-transform:lowercase}
+  .ck-confirmed .big{color:var(--accent)}
+  .ck-empty p,.ck-confirmed p{font:500 13px/1.6 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted);max-width:520px;margin:0 auto 32px}
+  .ck-confirmed .num{font-family:var(--mono);color:var(--fg-2);font-size:14px;letter-spacing:.22em;margin-bottom:32px}
+  .ck-confirmed a,.ck-empty a{display:inline-flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid var(--fg);color:var(--fg);font:500 11px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;transition:gap .3s cubic-bezier(.2,.7,.2,1), color .3s, border-color .3s}
+  .ck-confirmed a:hover,.ck-empty a:hover{gap:22px;color:var(--accent);border-color:var(--accent)}
+
+  @media (max-width:900px){
+    .checkout{padding:120px 24px 60px}
+    .checkout__grid{grid-template-columns:1fr;gap:48px}
+    .ck-summary{position:static}
+    .ck-row{grid-template-columns:1fr;gap:24px}
+  }
+</style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="vignette"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="cache.html" class="nav__brand">
+    <span class="dot"></span>
+    <span>.cache</span>
+  </a>
+  <div class="nav__center">
+    <a href="cache.html#drop" data-i18n="nav.drop">Drop 001</a>
+    <a href="cache.html#shop" data-i18n="nav.inventory">Inventory</a>
+    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Manifesto</a>
+    <a href="archive.html" data-i18n="nav.archive">Archive</a>
+    <a href="ambassador.html" data-i18n="nav.ambassador">Ambassador</a>
+    <a href="login.html" data-i18n="nav.members">Members</a>
+  </div>
+  <div class="nav__right">
+    <div class="lang" id="lang">
+      <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-current">EN</span>
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <div class="lang__menu" id="lang-menu" role="menu">
+        <button data-lang="en" role="menuitem"><span class="k">EN</span> English</button>
+        <button data-lang="ja" role="menuitem"><span class="k">JA</span> 日本語</button>
+        <button data-lang="de" role="menuitem"><span class="k">DE</span> Deutsch</button>
+        <button data-lang="fr" role="menuitem"><span class="k">FR</span> Français</button>
+        <button data-lang="ko" role="menuitem"><span class="k">KO</span> 한국어</button>
+      </div>
+    </div>
+    <a href="#cart" class="cart-trigger" id="cart-trigger"><span data-i18n="nav.cart">Cart</span> (<span class="count" id="cart-count">0</span>)</a>
+  </div>
+</nav>
+
+<main class="checkout">
+  <div class="checkout__head">
+    <div>
+      <div class="section-eyebrow" data-i18n="checkout.eyebrow">// Commit your order</div>
+      <h1 class="title" data-i18n="checkout.title">Checkout</h1>
+    </div>
+    <a href="cache.html#shop" class="checkout__back" data-i18n="checkout.backCart">← Back to cart</a>
+  </div>
+
+  <div class="checkout__steps" id="ck-steps"><!-- rendered --></div>
+
+  <div id="ck-stage"><!-- step content rendered --></div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__big">.cache</div>
+  <div class="footer__cols" id="footer-cols"></div>
+  <div class="footer__bottom">
+    <div class="left">
+      <span data-i18n="footer.rights">© .cache 2026</span>
+      <span data-i18n="footer.cities">Berlin / Tokyo</span>
+      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.4</span></span>
+    </div>
+    <div data-i18n="footer.tagline">No Resellers / No Lies</div>
+  </div>
+</footer>
+
+<!-- CART -->
+<div class="cart-backdrop" id="cart-backdrop"></div>
+<aside class="cart" id="cart" aria-hidden="true">
+  <div class="cart__head">
+    <div><h3 data-i18n="cart.title">Your Cache</h3><div class="meta" id="cart-summary">0 items</div></div>
+    <button class="cart__close" id="cart-close" aria-label="Close cart"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.2"/></svg></button>
+  </div>
+  <div class="cart__body" id="cart-body"></div>
+  <div class="cart__foot" id="cart-foot">
+    <div class="cart__totals"><span data-i18n="cart.subtotal">Subtotal</span><span class="v" id="cart-subtotal">$0</span></div>
+    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">Checkout</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
+    <div class="cart__notes"><b data-i18n="cart.noteFree">Free</b> <span data-i18n="cart.noteRest">worldwide shipping over $200</span></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><span class="d"></span><span id="toast-msg">Added</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="i18n.js"></script>
+<script src="i18n-pages.js"></script>
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  // -------- helpers --------
+  function priceNum(v){
+    if (typeof v !== 'string') return 0;
+    if (/free|included|gift|member/i.test(v)) return 0;
+    const m = v.match(/\$\s*([\d.]+)/);
+    return m ? parseFloat(m[1]) : 0;
+  }
+
+  let step = 0; // 0 cart, 1 shipping, 2 payment, 3 confirmed
+  let shippingMethod = 'standard';
+  let formData = {};
+
+  function renderSteps(){
+    const labels = t('checkout.steps');
+    const wrap = document.getElementById('ck-steps');
+    wrap.innerHTML = labels.map((l, i) => {
+      const cls = i < step ? 'is-done' : i === step ? 'is-on' : '';
+      return `<span class="step ${cls}"><span class="n">${i+1}</span>${l}</span>${i < labels.length-1 ? '<span class="sep">/</span>' : ''}`;
+    }).join('');
+  }
+
+  function lineItems(){
+    return cacheCart.state.map(line => {
+      const p = PRODUCT_LOOKUP[line.sku];
+      if (!p) return null;
+      return { p, qty: line.qty, sub: priceNum(p.price) * line.qty };
+    }).filter(Boolean);
+  }
+
+  function totals(){
+    const items = lineItems();
+    const subtotal = items.reduce((s, x) => s + x.sub, 0);
+    const shippingCost = subtotal === 0 || subtotal >= 200 ? 0 : (shippingMethod === 'express' ? 24 : 0);
+    const tax = Math.round(subtotal * 0.07);
+    const total = subtotal + shippingCost + tax;
+    return { items, subtotal, shippingCost, tax, total };
+  }
+
+  function summaryHTML(){
+    const { items, subtotal, shippingCost, tax, total } = totals();
+    const free = shippingCost === 0 ? t('checkout.free') : '$' + shippingCost;
+    return `
+      <div class="ck-summary">
+        <h4>${t('checkout.review')}</h4>
+        <div class="ck-items">
+          ${items.map(({p, qty, sub}) => `
+            <div class="ck-item">
+              <div class="art" style="color:${p.gar}">${SHAPES[p.shape]}</div>
+              <div class="nm">${p.name}<small>${p.sku} · ×${qty}</small></div>
+              <div class="pr">${sub === 0 ? t('cart.free') : '$' + sub}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="ck-totals">
+          <div class="ck-line"><span>${t('checkout.subtotal')}</span><span class="v">$${subtotal}</span></div>
+          <div class="ck-line"><span>${t('checkout.shippingFee')}</span><span class="v">${free}</span></div>
+          <div class="ck-line"><span>${t('checkout.tax')}</span><span class="v">$${tax}</span></div>
+          <div class="ck-total"><span>${t('checkout.total')}</span><span class="v">$${total}</span></div>
+        </div>
+        <div class="ck-secure">
+          <svg viewBox="0 0 12 12" fill="none"><path d="M2 5V4a4 4 0 1 1 8 0v1M2 5h8v6H2V5zM6 7v2" stroke="currentColor" stroke-width="1.2"/></svg>
+          ${t('checkout.secure')}
+        </div>
+      </div>`;
+  }
+
+  function renderStage(){
+    const stage = document.getElementById('ck-stage');
+    const items = lineItems();
+
+    if (items.length === 0 && step < 3) {
+      stage.innerHTML = `
+        <div class="ck-empty">
+          <div class="big">${t('checkout.empty')}</div>
+          <p>${t('checkout.emptySub')}</p>
+          <a href="cache.html#shop">${t('cart.browse')}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></a>
+        </div>`;
+      return;
+    }
+
+    if (step === 3) {
+      stage.innerHTML = `
+        <div class="ck-confirmed">
+          <div class="big">${t('checkout.confirmedTitle')}</div>
+          <p>${t('checkout.confirmedSub')}</p>
+          <div class="num">${t('checkout.confirmedOrder')} · ORD-0015 · ${new Date().toISOString().slice(0,10)}</div>
+          <a href="cache.html">${t('checkout.keepShopping')}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></a>
+        </div>`;
+      return;
+    }
+
+    if (step === 0) {
+      // Cart review
+      const itemsHTML = items.map(({p, qty, sub}) => `
+        <div class="ck-item" style="padding:12px 0;border-bottom:1px solid var(--line)">
+          <div class="art" style="color:${p.gar};width:56px;height:56px">${SHAPES[p.shape]}</div>
+          <div class="nm" style="font-size:18px">${p.name}<small>${p.sku} · ×${qty}</small></div>
+          <div class="pr" style="font-size:14px">${sub === 0 ? t('cart.free') : '$' + sub}</div>
+        </div>
+      `).join('');
+      stage.innerHTML = `
+        <div class="checkout__grid">
+          <div class="checkout__main">
+            <div class="ck-card">
+              <h3>${t('checkout.steps')[0]} <span class="num">${items.length} ${items.length === 1 ? 'item' : 'items'}</span></h3>
+              <div>${itemsHTML}</div>
+              <button class="ck-continue" id="ck-next">
+                ${t('checkout.continueShip')}
+                <svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg>
+              </button>
+            </div>
+          </div>
+          ${summaryHTML()}
+        </div>`;
+      document.getElementById('ck-next').addEventListener('click', () => { step = 1; renderAll(); });
+    }
+
+    if (step === 1) {
+      // Shipping
+      stage.innerHTML = `
+        <div class="checkout__grid">
+          <div class="checkout__main">
+            <div class="ck-card">
+              <h3>${t('checkout.contact')} <span class="num">01 / 03</span></h3>
+              <div class="ck-row full">
+                <div class="field"><label>${t('checkout.email')}</label><input type="email" id="f-email" required placeholder="you@yourdomain.dev"></div>
+              </div>
+            </div>
+            <div class="ck-card">
+              <h3>${t('checkout.shipping')} <span class="num">02 / 03</span></h3>
+              <div class="ck-row full"><div class="field"><label>${t('checkout.fullName')}</label><input id="f-name" required></div></div>
+              <div class="ck-row"><div class="field"><label>${t('checkout.country')}</label><input id="f-country" required value="Germany"></div><div class="field"><label>${t('checkout.city')}</label><input id="f-city" required></div></div>
+              <div class="ck-row full"><div class="field"><label>${t('checkout.address1')}</label><input id="f-addr1" required></div></div>
+              <div class="ck-row"><div class="field"><label>${t('checkout.address2')}</label><input id="f-addr2"></div><div class="field"><label>${t('checkout.postal')}</label><input id="f-postal" required></div></div>
+              <div class="ck-row full"><div class="field"><label>${t('checkout.phone')}</label><input id="f-phone" type="tel"></div></div>
+            </div>
+            <div class="ck-card">
+              <h3>${t('checkout.method')} <span class="num">03 / 03</span></h3>
+              <div class="ck-method">
+                <input type="radio" name="ship" id="ship-std" value="standard" ${shippingMethod==='standard'?'checked':''}>
+                <label for="ship-std">
+                  <div>
+                    <div class="nm">${t('checkout.standard')}</div>
+                    <div class="desc">Tracked · signed</div>
+                  </div>
+                  <span class="price">${t('checkout.free')}</span>
+                </label>
+                <input type="radio" name="ship" id="ship-exp" value="express" ${shippingMethod==='express'?'checked':''}>
+                <label for="ship-exp">
+                  <div>
+                    <div class="nm">${t('checkout.express')}</div>
+                    <div class="desc">DHL Express</div>
+                  </div>
+                  <span class="price">$24</span>
+                </label>
+              </div>
+              <button class="ck-continue" id="ck-next">
+                ${t('checkout.continuePay')}
+                <svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg>
+              </button>
+            </div>
+          </div>
+          ${summaryHTML()}
+        </div>`;
+
+      document.querySelectorAll('input[name=ship]').forEach(r => {
+        r.addEventListener('change', (e) => { shippingMethod = e.target.value; renderAll(); });
+      });
+      document.getElementById('ck-next').addEventListener('click', () => {
+        const required = ['f-email', 'f-name', 'f-country', 'f-city', 'f-addr1', 'f-postal'];
+        const missing = required.filter(id => !document.getElementById(id).value.trim());
+        if (missing.length) {
+          showToast('Complete shipping');
+          missing.forEach(id => document.getElementById(id).style.borderColor = 'var(--hot)');
+          setTimeout(() => missing.forEach(id => document.getElementById(id).style.borderColor = ''), 1800);
+          return;
+        }
+        required.forEach(id => formData[id] = document.getElementById(id).value);
+        step = 2; renderAll();
+      });
+    }
+
+    if (step === 2) {
+      // Payment
+      stage.innerHTML = `
+        <div class="checkout__grid">
+          <div class="checkout__main">
+            <div class="ck-card">
+              <h3>${t('checkout.payment')} <span class="num">01 / 01</span></h3>
+              <div class="ck-row full"><div class="field"><label>${t('checkout.cardNum')}</label><input id="f-card" required placeholder="4242 4242 4242 4242"></div></div>
+              <div class="ck-row"><div class="field"><label>${t('checkout.expiry')}</label><input id="f-exp" required placeholder="MM / YY"></div><div class="field"><label>${t('checkout.cvc')}</label><input id="f-cvc" required placeholder="•••"></div></div>
+              <label class="ck-checkbox"><input type="checkbox" checked> ${t('checkout.billingSame')}</label>
+              <button class="ck-continue" id="ck-place">
+                ${t('checkout.place')}
+                <svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg>
+              </button>
+              <div class="ck-secure" style="border-top:0;padding-top:0;justify-content:center">
+                <svg viewBox="0 0 12 12" fill="none"><path d="M2 5V4a4 4 0 1 1 8 0v1M2 5h8v6H2V5z" stroke="currentColor" stroke-width="1.2"/></svg>
+                ${t('checkout.secure')}
+              </div>
+            </div>
+          </div>
+          ${summaryHTML()}
+        </div>`;
+
+      document.getElementById('ck-place').addEventListener('click', () => {
+        const card = document.getElementById('f-card').value.replace(/\s/g,'');
+        if (card.length < 12) {
+          showToast('Card incomplete');
+          document.getElementById('f-card').style.borderColor = 'var(--hot)';
+          setTimeout(() => { document.getElementById('f-card').style.borderColor = ''; }, 1800);
+          return;
+        }
+        // Clear cart
+        cacheCart.clear();
+        step = 3; renderAll();
+      });
+    }
+  }
+
+  function renderAll(){
+    renderSteps();
+    renderStage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  renderAll();
+  window.addEventListener('langchange', renderAll);
+</script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>.cache — Archive</title>
+<link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="base.css" />
+
+<style>
+  .archive{padding:140px 40px 100px;max-width:1400px;margin:0 auto;position:relative;z-index:1}
+  .archive__head{
+    display:grid;grid-template-columns:1.4fr 1fr;gap:60px;align-items:end;
+    padding-bottom:60px;border-bottom:1px solid var(--line);margin-bottom:80px;
+  }
+  .archive__head .title{font-family:var(--display);font-size:clamp(72px,11vw,180px);line-height:.88;letter-spacing:-.025em;text-transform:uppercase;color:var(--fg);margin-top:24px;display:flex;flex-direction:column}
+  .archive__head .title em{font-style:normal;color:transparent;-webkit-text-stroke:1px var(--fg-2)}
+  .archive__lead{font-size:15px;line-height:1.6;color:var(--fg-2);max-width:420px;justify-self:end;text-align:right}
+
+  .archive__drop{
+    display:grid;grid-template-columns:300px 1fr;gap:60px;
+    padding:60px 0;border-top:1px solid var(--line);
+    transition:padding .4s cubic-bezier(.2,.7,.2,1);
+  }
+  .archive__drop:hover{padding-left:24px}
+  .archive__drop:last-child{border-bottom:1px solid var(--line)}
+  .archive__drop-meta{font:500 11px/1.5 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;gap:20px}
+  .archive__drop-meta strong{color:var(--fg);font-weight:500;font-family:var(--display);font-size:28px;letter-spacing:-.01em;line-height:1;text-transform:uppercase}
+  .archive__drop-meta .date{color:var(--fg-2)}
+  .archive__drop-meta .pieces{display:flex;align-items:baseline;gap:8px;font-family:var(--display);font-size:48px;letter-spacing:-.02em;color:var(--fg);text-transform:none;line-height:1}
+  .archive__drop-meta .pieces span{font:500 10px/1 var(--mono);letter-spacing:.24em;color:var(--muted);text-transform:uppercase}
+  .archive__drop-meta .status{display:inline-flex;align-items:center;gap:8px;color:var(--accent)}
+  .archive__drop-meta .status::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+
+  .archive__drop-body{display:flex;flex-direction:column;gap:32px}
+  .archive__drop-title{font-family:var(--display);font-size:clamp(48px,6vw,90px);line-height:.9;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg)}
+  .archive__drop-title em{font-style:normal;color:var(--accent)}
+  .archive__drop-notes{font-size:14px;line-height:1.6;color:var(--fg-2);max-width:560px}
+
+  .archive__pieces{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:8px}
+  .arc-piece{
+    aspect-ratio:1;position:relative;border-radius:6px;overflow:hidden;
+    background:radial-gradient(circle at 50% 35%, var(--accent-soft), transparent 65%),linear-gradient(180deg,#16161300,#0a0a08);
+    display:flex;align-items:center;justify-content:center;color:var(--fg-2);
+    transition:transform .4s cubic-bezier(.2,.7,.2,1);
+    cursor:pointer;
+  }
+  .arc-piece:hover{transform:translateY(-4px)}
+  .arc-piece svg{width:55%;height:55%;opacity:.75;filter:drop-shadow(0 12px 24px #00000060)}
+  .arc-piece .nm{
+    position:absolute;bottom:0;left:0;right:0;padding:14px 14px 12px;
+    font:500 10px/1.3 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--fg-2);
+    background:linear-gradient(180deg, transparent, #00000080);
+    display:flex;justify-content:space-between;gap:10px;
+  }
+  .arc-piece .nm small{display:block;color:var(--muted);margin-top:4px}
+  .arc-piece .nm .pr{color:var(--fg)}
+  .arc-piece::after{
+    content:"SOLD";position:absolute;top:14px;left:14px;
+    font:500 9px/1 var(--mono);letter-spacing:.24em;color:var(--muted);
+    text-transform:uppercase;
+  }
+
+  .archive__cta{
+    display:inline-flex;align-items:center;gap:14px;padding:14px 0;
+    font:500 11px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--fg);
+    border-bottom:1px solid var(--fg);transition:gap .4s cubic-bezier(.2,.7,.2,1), color .3s, border-color .3s;
+    align-self:flex-start;
+  }
+  .archive__cta:hover{gap:24px;color:var(--accent);border-color:var(--accent)}
+
+  /* Upcoming archive cycle CTA */
+  .archive__cycle{
+    margin-top:120px;padding:60px 40px;border:1px solid var(--line);border-radius:6px;
+    display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;
+    background:linear-gradient(180deg,#0e0d0b,#0a0a09);
+  }
+  .archive__cycle h4{font-family:var(--display);font-size:42px;line-height:1;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:12px}
+  .archive__cycle p{font:500 11px/1.5 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .archive__cycle .ticker{font-family:var(--display);font-size:48px;color:var(--accent);letter-spacing:-.02em;line-height:1}
+
+  @media (max-width:900px){
+    .archive{padding:120px 24px 60px}
+    .archive__head{grid-template-columns:1fr;gap:24px;margin-bottom:60px}
+    .archive__lead{justify-self:start;text-align:left}
+    .archive__drop{grid-template-columns:1fr;gap:24px;padding:48px 0}
+    .archive__drop:hover{padding-left:0}
+    .archive__drop-meta{flex-direction:row;flex-wrap:wrap;gap:20px 32px}
+    .archive__pieces{grid-template-columns:1fr 1fr;gap:12px}
+    .archive__cycle{grid-template-columns:1fr;padding:32px;text-align:left}
+    .archive__cycle .ticker{font-size:36px}
+  }
+</style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="vignette"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="cache.html" class="nav__brand">
+    <span class="dot"></span>
+    <span>.cache</span>
+  </a>
+  <div class="nav__center">
+    <a href="cache.html#drop" data-i18n="nav.drop">Drop 001</a>
+    <a href="cache.html#shop" data-i18n="nav.inventory">Inventory</a>
+    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Manifesto</a>
+    <a href="archive.html" class="is-on" data-i18n="nav.archive">Archive</a>
+    <a href="ambassador.html" data-i18n="nav.ambassador">Ambassador</a>
+    <a href="login.html" data-i18n="nav.members">Members</a>
+  </div>
+  <div class="nav__right">
+    <div class="lang" id="lang">
+      <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-current">EN</span>
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <div class="lang__menu" id="lang-menu" role="menu">
+        <button data-lang="en" role="menuitem"><span class="k">EN</span> English</button>
+        <button data-lang="ja" role="menuitem"><span class="k">JA</span> 日本語</button>
+        <button data-lang="de" role="menuitem"><span class="k">DE</span> Deutsch</button>
+        <button data-lang="fr" role="menuitem"><span class="k">FR</span> Français</button>
+        <button data-lang="ko" role="menuitem"><span class="k">KO</span> 한국어</button>
+      </div>
+    </div>
+    <a href="#cart" class="cart-trigger" id="cart-trigger"><span data-i18n="nav.cart">Cart</span> (<span class="count" id="cart-count">0</span>)</a>
+  </div>
+</nav>
+
+<main class="archive">
+  <div class="archive__head">
+    <div>
+      <div class="section-eyebrow" data-i18n="archive.eyebrow">// Archive · 03 drops shipped</div>
+      <h1 class="title">
+        <span data-i18n="archive.titleA">The</span>
+        <em data-i18n="archive.titleB">archive.</em>
+      </h1>
+    </div>
+    <p class="archive__lead" data-i18n="archive.lead">Drops that shipped. Once committed, never restocked. Members can pull items back at archive prices on the first Monday of each month.</p>
+  </div>
+
+  <div id="archive-list"><!-- drops --></div>
+
+  <div class="archive__cycle">
+    <div>
+      <h4 data-i18n="archive.upNext">Next archive opens</h4>
+      <p data-i18n="archive.upNextSub">First Monday of next month</p>
+    </div>
+    <div class="ticker" id="cycle-ticker">12D : 04H : 18M</div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__big">.cache</div>
+  <div class="footer__cols" id="footer-cols"></div>
+  <div class="footer__bottom">
+    <div class="left">
+      <span data-i18n="footer.rights">© .cache 2026</span>
+      <span data-i18n="footer.cities">Berlin / Tokyo</span>
+      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.4</span></span>
+    </div>
+    <div data-i18n="footer.tagline">No Resellers / No Lies</div>
+  </div>
+</footer>
+
+<!-- CART -->
+<div class="cart-backdrop" id="cart-backdrop"></div>
+<aside class="cart" id="cart" aria-hidden="true">
+  <div class="cart__head">
+    <div><h3 data-i18n="cart.title">Your Cache</h3><div class="meta" id="cart-summary">0 items</div></div>
+    <button class="cart__close" id="cart-close" aria-label="Close cart"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.2"/></svg></button>
+  </div>
+  <div class="cart__body" id="cart-body"></div>
+  <div class="cart__foot" id="cart-foot">
+    <div class="cart__totals"><span data-i18n="cart.subtotal">Subtotal</span><span class="v" id="cart-subtotal">$0</span></div>
+    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">Checkout</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
+    <div class="cart__notes"><b data-i18n="cart.noteFree">Free</b> <span data-i18n="cart.noteRest">worldwide shipping over $200</span></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><span class="d"></span><span id="toast-msg">Added</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="i18n.js"></script>
+<script src="i18n-pages.js"></script>
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  function renderArchive(){
+    const wrap = document.getElementById('archive-list');
+    wrap.innerHTML = ARCHIVE.map(drop => {
+      const pieces = drop.items.map(sku => {
+        const p = PRODUCT_LOOKUP[sku];
+        if (!p) return '';
+        return `
+          <div class="arc-piece" style="color:${p.gar}" onclick="location.href='product.html?sku=${p.sku}'">
+            ${SHAPES[p.shape]}
+            <div class="nm">
+              <div>${p.name}<small>${p.sku}</small></div>
+              <div class="pr">${p.price}</div>
+            </div>
+          </div>`;
+      }).join('');
+      return `
+        <article class="archive__drop">
+          <div class="archive__drop-meta">
+            <div><strong>${drop.title}</strong></div>
+            <div class="date">${drop.season} · ${drop.date}</div>
+            <div class="pieces">${String(drop.pieces).padStart(2,'0')} <span>${t('archive.pieces')}</span></div>
+            <div class="status">${drop.sold}/${drop.pieces} ${t('archive.sold')}</div>
+          </div>
+          <div class="archive__drop-body">
+            <h2 class="archive__drop-title">${drop.title}<br><em>${drop.season}</em></h2>
+            <p class="archive__drop-notes">${drop.notes}</p>
+            <div class="archive__pieces">${pieces}</div>
+            <a href="cache.html#members" class="archive__cta">${t('archive.memberOnly')} — ${t('archive.viewDrop')} <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M9 1L13 5L9 9M13 5H1" stroke="currentColor" stroke-width="1.4"/></svg></a>
+          </div>
+        </article>`;
+    }).join('');
+  }
+  renderArchive();
+  window.addEventListener('langchange', renderArchive);
+
+  // Simple cycle ticker — counts down to first Monday of next month
+  function nextFirstMonday(){
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth()+1, 1);
+    while(d.getDay() !== 1) d.setDate(d.getDate()+1);
+    return d;
+  }
+  const target = nextFirstMonday();
+  function tick(){
+    const diff = Math.max(0, target - new Date());
+    const days = Math.floor(diff / 86400000);
+    const hrs = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    document.getElementById('cycle-ticker').textContent =
+      String(days).padStart(2,'0') + 'D : ' + String(hrs).padStart(2,'0') + 'H : ' + String(mins).padStart(2,'0') + 'M';
+  }
+  tick(); setInterval(tick, 30000);
+</script>
+</body>
+</html>

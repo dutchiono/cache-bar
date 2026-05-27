@@ -13,6 +13,8 @@ const money = new Intl.NumberFormat("en-US", {
 export default function Orders() {
   const orders = useQuery(api.checkout.recentOrders, {});
   const markPayment = useMutation(api.checkout.markPayment);
+  const cancelOrder = useMutation(api.checkout.cancelOrder);
+  const refundOrder = useMutation(api.checkout.refundOrder);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +29,33 @@ export default function Orders() {
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update payment.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function cancel(orderId: Id<"orders">) {
+    setBusy(orderId);
+    setError(null);
+    try {
+      await cancelOrder({ orderId });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to cancel order.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function refund(orderId: Id<"orders">) {
+    setBusy(orderId);
+    setError(null);
+    try {
+      await refundOrder({
+        orderId,
+        txHashOrRef: `manual-refund-${orderId}`,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to refund order.");
     } finally {
       setBusy(null);
     }
@@ -55,6 +84,8 @@ export default function Orders() {
             order={order}
             busy={busy}
             onMark={mark}
+            onCancel={cancel}
+            onRefund={refund}
           />
         ))}
         {orders?.length === 0 && (
@@ -71,10 +102,14 @@ function OrderCard({
   order,
   busy,
   onMark,
+  onCancel,
+  onRefund,
 }: {
   order: Order;
   busy: string | null;
   onMark: (paymentId: Id<"payments">, status: "confirmed" | "failed") => void;
+  onCancel: (orderId: Id<"orders">) => void;
+  onRefund: (orderId: Id<"orders">) => void;
 }) {
   const payment = order.payments[0];
   return (
@@ -124,6 +159,14 @@ function OrderCard({
           <button
             type="button"
             disabled={busy !== null}
+            onClick={() => onCancel(order._id)}
+            className="cb-button-secondary min-h-8 px-3 py-1 text-xs"
+          >
+            {busy === order._id ? "Cancelling..." : "Cancel order"}
+          </button>
+          <button
+            type="button"
+            disabled={busy !== null}
             onClick={() => onMark(payment._id, "failed")}
             className="cb-button-secondary min-h-8 px-3 py-1 text-xs"
           >
@@ -136,6 +179,19 @@ function OrderCard({
             className="cb-button min-h-8 px-3 py-1 text-xs"
           >
             {busy === payment._id ? "Confirming..." : "Mark confirmed"}
+          </button>
+        </div>
+      )}
+
+      {payment && payment.status === "confirmed" && order.status !== "refunded" && (
+        <div className="mt-3 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            disabled={busy !== null}
+            onClick={() => onRefund(order._id)}
+            className="cb-button-secondary min-h-8 px-3 py-1 text-xs"
+          >
+            {busy === order._id ? "Refunding..." : "Refund order"}
           </button>
         </div>
       )}

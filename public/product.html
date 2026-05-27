@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>.cache — Piece</title>
+<link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="base.css" />
+
+<style>
+  .pdp{padding:120px 40px 100px;max-width:1400px;margin:0 auto;position:relative;z-index:1}
+  .pdp__back{margin-bottom:40px}
+
+  .pdp__main{display:grid;grid-template-columns:1.2fr 1fr;gap:60px;align-items:start}
+
+  /* Gallery */
+  .pdp__gallery{position:sticky;top:120px;display:flex;flex-direction:column;gap:18px}
+  .pdp__hero{
+    position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;
+    background:radial-gradient(circle at 30% 25%, var(--accent-soft) 0%, transparent 55%), linear-gradient(180deg,#161614,#0a0a09);
+    display:flex;align-items:center;justify-content:center;color:var(--garment,#bdb6a2);
+  }
+  .pdp__hero svg{width:62%;height:62%;filter:drop-shadow(0 24px 40px #00000080)}
+  .pdp__hero .corner{position:absolute;top:24px;left:24px;font:500 10px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+  .pdp__hero .corner.r{left:auto;right:24px;text-align:right}
+  .pdp__thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .pdp__thumbs button{
+    aspect-ratio:1;border-radius:4px;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;color:var(--fg-2);
+    background:linear-gradient(180deg,#16161300,#0a0a08);
+    transition:border-color .3s;
+  }
+  .pdp__thumbs button:hover,.pdp__thumbs button.is-on{border-color:var(--fg)}
+  .pdp__thumbs button svg{width:55%;height:55%}
+  .pdp__thumbs .view360{font:500 10px/1.2 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted);text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px}
+
+  /* Info */
+  .pdp__info{display:flex;flex-direction:column;gap:32px;min-width:0}
+  .pdp__cat{font:500 11px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:14px}
+  .pdp__cat::before{content:"";width:32px;height:1px;background:var(--muted)}
+  .pdp__name{font-family:var(--display);font-size:clamp(56px,7vw,108px);line-height:.92;letter-spacing:-.025em;text-transform:uppercase;color:var(--fg)}
+  .pdp__name .acc{color:var(--accent)}
+  .pdp__meta{display:flex;gap:24px;flex-wrap:wrap;align-items:center;font:500 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .pdp__meta .price{font-family:var(--display);font-size:32px;letter-spacing:-.01em;color:var(--fg);text-transform:none}
+  .pdp__meta .stock{display:inline-flex;align-items:center;gap:8px;color:var(--acid)}
+  .pdp__meta .stock::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+  .pdp__meta .stock.low{color:var(--hot)}
+  .pdp__meta .stock.out{color:var(--muted)}
+  .pdp__meta .stock.digital{color:var(--accent)}
+  .pdp__intro{font-size:15px;line-height:1.6;color:var(--fg-2);max-width:520px}
+
+  .pdp__size{display:flex;flex-direction:column;gap:14px;padding-top:24px;border-top:1px solid var(--line)}
+  .pdp__size-head{display:flex;justify-content:space-between;align-items:baseline;font:500 11px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase}
+  .pdp__size-head .label{color:var(--fg)}
+  .pdp__size-head .val{color:var(--fg-2);font-weight:500}
+  .pdp__size-head .guide{color:var(--muted);transition:color .3s}
+  .pdp__size-head .guide:hover{color:var(--fg)}
+  .pdp__sizes{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .pdp__sizes button{
+    padding:16px 0;border:1px solid var(--line);border-radius:4px;
+    font:500 12px/1 var(--mono);letter-spacing:.18em;color:var(--fg-2);
+    transition:border-color .3s, color .3s, background .3s;
+  }
+  .pdp__sizes button:hover{border-color:var(--fg-2);color:var(--fg)}
+  .pdp__sizes button.is-on{border-color:var(--fg);color:var(--fg);background:#15140f}
+  .pdp__sizes button.is-disabled{color:var(--muted-2);text-decoration:line-through;cursor:not-allowed;border-color:var(--line)}
+  .pdp__sizes button.is-disabled:hover{border-color:var(--line);color:var(--muted-2)}
+
+  /* Color swatches */
+  .pdp__colors{display:flex;flex-wrap:wrap;gap:14px}
+  .pdp__colors button{
+    width:42px;height:42px;border-radius:50%;
+    position:relative;
+    background:var(--swatch, #888);
+    transition:transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s;
+    border:1px solid #ffffff14;
+  }
+  .pdp__colors button::after{
+    content:"";position:absolute;inset:-6px;border-radius:50%;
+    border:1px solid transparent;
+    transition:border-color .3s;
+  }
+  .pdp__colors button:hover::after{border-color:var(--muted-2)}
+  .pdp__colors button.is-on::after{border-color:var(--fg)}
+  .pdp__colors button.is-on{transform:scale(1.05)}
+
+  /* Format selector (book) */
+  .pdp__formats{display:flex;flex-direction:column;gap:0}
+  .pdp__formats label{
+    display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;
+    padding:22px 4px;border-top:1px solid var(--line);cursor:pointer;
+    transition:padding .4s cubic-bezier(.2,.7,.2,1);
+  }
+  .pdp__formats label:hover{padding-left:18px}
+  .pdp__formats label .dot{
+    width:14px;height:14px;border-radius:50%;border:1px solid var(--muted-2);flex:none;
+    transition:all .2s;
+  }
+  .pdp__formats label .nm{
+    font-family:var(--display);font-size:22px;line-height:1;letter-spacing:-.01em;
+    text-transform:uppercase;color:var(--fg);
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .pdp__formats label .nm small{font:500 10px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .pdp__formats label .pr{font:500 13px/1 var(--mono);letter-spacing:.06em;color:var(--fg);white-space:nowrap}
+  .pdp__formats input{position:absolute;opacity:0;pointer-events:none}
+  .pdp__formats input:checked + label .dot{border-color:var(--fg);background:radial-gradient(circle, var(--accent) 0 36%, transparent 40%)}
+
+  .pdp__qty{display:flex;align-items:center;gap:18px;padding:24px 0;border-top:1px solid var(--line);font:500 11px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+  .pdp__qty-control{display:inline-flex;align-items:center;gap:14px;border:1px solid var(--line);padding:8px 14px;border-radius:999px;color:var(--fg)}
+  .pdp__qty-control button{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:var(--fg-2);transition:color .2s}
+  .pdp__qty-control button:hover{color:var(--fg)}
+  .pdp__qty-control span{font-variant-numeric:tabular-nums;min-width:14px;text-align:center}
+
+  .pdp__add{
+    margin-top:8px;display:inline-flex;align-items:center;justify-content:space-between;gap:18px;
+    padding:24px 28px;background:var(--fg);color:var(--bg);border-radius:999px;
+    font:500 13px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase;
+    transition:background .3s, color .3s;width:100%;
+  }
+  .pdp__add:hover{background:var(--accent);color:var(--fg)}
+  .pdp__add.is-out{background:var(--bg);color:var(--muted);border:1px solid var(--line);cursor:not-allowed}
+  .pdp__add.is-out:hover{background:var(--bg);color:var(--muted)}
+  .pdp__add svg{width:14px;height:14px;transition:transform .3s}
+  .pdp__add:hover svg{transform:translate(4px,0)}
+
+  /* Spec sheets */
+  .pdp__specs{margin-top:80px;padding-top:60px;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(2,1fr);gap:60px 80px}
+  .pdp__spec h3{font-family:var(--display);font-size:28px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg);margin-bottom:24px}
+  .pdp__spec .row{display:grid;grid-template-columns:120px 1fr;gap:24px;padding:18px 0;border-top:1px solid var(--line);font:500 11px/1.5 var(--mono);letter-spacing:.16em;text-transform:uppercase}
+  .pdp__spec .row .k{color:var(--muted)}
+  .pdp__spec .row .v{color:var(--fg)}
+  .pdp__care{display:flex;flex-direction:column;gap:14px}
+  .pdp__care li{display:flex;gap:14px;align-items:flex-start;font:500 11px/1.5 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--fg-2);padding:14px 0;border-top:1px solid var(--line)}
+  .pdp__care li::before{content:"";display:inline-block;width:18px;height:1px;background:var(--muted);margin-top:8px;flex:none}
+
+  /* Related */
+  .pdp__related{margin-top:120px;padding-top:60px;border-top:1px solid var(--line)}
+  .pdp__related h3{font-family:var(--display);font-size:clamp(40px,5vw,72px);line-height:.95;letter-spacing:-.02em;text-transform:uppercase;color:var(--fg);margin-bottom:48px}
+  .pdp__related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .rel-card{display:flex;flex-direction:column;gap:18px;border-radius:6px;padding:24px;background:linear-gradient(180deg,#0e0d0b,#0a0a09);border:1px solid var(--line);transition:transform .4s cubic-bezier(.2,.7,.2,1), border-color .3s}
+  .rel-card:hover{transform:translateY(-4px);border-color:var(--fg-2)}
+  .rel-card .art{aspect-ratio:1;border-radius:4px;background:radial-gradient(circle at 50% 35%, var(--accent-soft), transparent 65%);display:flex;align-items:center;justify-content:center;color:var(--fg-2)}
+  .rel-card .art svg{width:55%;height:55%}
+  .rel-card .nm{font-family:var(--display);font-size:22px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:var(--fg)}
+  .rel-card .mt{display:flex;justify-content:space-between;align-items:baseline;font:500 11px/1 var(--mono);letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+  .rel-card .mt .pr{color:var(--fg);font-weight:500}
+
+  @media (max-width:1000px){
+    .pdp__main{grid-template-columns:1fr;gap:48px}
+    .pdp__gallery{position:static}
+    .pdp__specs{grid-template-columns:1fr;gap:40px}
+    .pdp__related-grid{grid-template-columns:1fr 1fr;gap:16px}
+  }
+  @media (max-width:560px){
+    .pdp__sizes{grid-template-columns:repeat(3,1fr)}
+    .pdp__related-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="vignette"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="cache.html" class="nav__brand">
+    <span class="dot"></span>
+    <span>.cache</span>
+  </a>
+  <div class="nav__center">
+    <a href="cache.html#drop" data-i18n="nav.drop">Drop 001</a>
+    <a href="cache.html#shop" class="is-on" data-i18n="nav.inventory">Inventory</a>
+    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Manifesto</a>
+    <a href="archive.html" data-i18n="nav.archive">Archive</a>
+    <a href="ambassador.html" data-i18n="nav.ambassador">Ambassador</a>
+    <a href="login.html" data-i18n="nav.members">Members</a>
+  </div>
+  <div class="nav__right">
+    <div class="lang" id="lang">
+      <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-current">EN</span>
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 1L4 4L7 1" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <div class="lang__menu" id="lang-menu" role="menu">
+        <button data-lang="en" role="menuitem"><span class="k">EN</span> English</button>
+        <button data-lang="ja" role="menuitem"><span class="k">JA</span> 日本語</button>
+        <button data-lang="de" role="menuitem"><span class="k">DE</span> Deutsch</button>
+        <button data-lang="fr" role="menuitem"><span class="k">FR</span> Français</button>
+        <button data-lang="ko" role="menuitem"><span class="k">KO</span> 한국어</button>
+      </div>
+    </div>
+    <a href="#cart" class="cart-trigger" id="cart-trigger"><span data-i18n="nav.cart">Cart</span> (<span class="count" id="cart-count">0</span>)</a>
+  </div>
+</nav>
+
+<main class="pdp" id="pdp">
+  <a href="cache.html#shop" class="link-back pdp__back" data-i18n="product.back">← Back to inventory</a>
+  <div id="pdp-body"><!-- rendered by JS --></div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__big">.cache</div>
+  <div class="footer__cols" id="footer-cols"></div>
+  <div class="footer__bottom">
+    <div class="left">
+      <span data-i18n="footer.rights">© .cache 2026</span>
+      <span data-i18n="footer.cities">Berlin / Tokyo</span>
+      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.4</span></span>
+    </div>
+    <div data-i18n="footer.tagline">No Resellers / No Lies</div>
+  </div>
+</footer>
+
+<!-- CART -->
+<div class="cart-backdrop" id="cart-backdrop"></div>
+<aside class="cart" id="cart" aria-hidden="true">
+  <div class="cart__head">
+    <div><h3 data-i18n="cart.title">Your Cache</h3><div class="meta" id="cart-summary">0 items</div></div>
+    <button class="cart__close" id="cart-close" aria-label="Close cart"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.2"/></svg></button>
+  </div>
+  <div class="cart__body" id="cart-body"></div>
+  <div class="cart__foot" id="cart-foot">
+    <div class="cart__totals"><span data-i18n="cart.subtotal">Subtotal</span><span class="v" id="cart-subtotal">$0</span></div>
+    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">Checkout</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
+    <div class="cart__notes"><b data-i18n="cart.noteFree">Free</b> <span data-i18n="cart.noteRest">worldwide shipping over $200</span></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><span class="d"></span><span id="toast-msg">Added</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="i18n.js"></script>
+<script src="i18n-pages.js"></script>
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const sku = params.get('sku') || 'CSH-001';
+  const p = PRODUCT_LOOKUP[sku] || PRODUCT_LOOKUP['CSH-001'];
+
+  document.title = `.cache — ${p.name}`;
+  const body = document.getElementById('pdp-body');
+
+  const isDigital = p.cat === 'digital';
+  const hasFormats = Array.isArray(p.formats) && p.formats.length;
+  const hasColors = Array.isArray(p.colors) && p.colors.length;
+  const isOut = p.stock === 'out';
+  const stockClass = p.stock === 'ok' ? '' : p.stock === 'digital' ? 'digital' : p.stock;
+  const stockLabel = p.stock === 'ok' ? t('inv.inStock')
+                   : p.stock === 'low' ? t('inv.lowStock')
+                   : p.stock === 'digital' ? t('inv.instant')
+                   : t('inv.soldOut');
+
+  // size set
+  let sizes;
+  if (Array.isArray(p.sizes)) sizes = p.sizes;
+  else if (isDigital || hasFormats) sizes = null; // no size for digital/book
+  else if (['cap','beanie','bag','card','mug','patch'].includes(p.shape)) sizes = [t('product.sizeOne')];
+  else sizes = t('product.sizesAll');
+
+  // state
+  let qty = 1;
+  let selectedSize  = sizes ? sizes[Math.min(2, sizes.length - 1)] : null;
+  let selectedColor = hasColors ? p.colors[0] : null;
+  let selectedFmt   = hasFormats ? p.formats[1].id : null; // default to physical for book
+
+  const related = PRODUCTS.filter(x => x.cat === p.cat && x.sku !== p.sku && !x.formats).slice(0, 3);
+
+  function priceCurrent(){
+    if (hasFormats) {
+      const f = p.formats.find(x => x.id === selectedFmt);
+      return f ? f.price : p.price;
+    }
+    return p.price;
+  }
+  function priceCurrentNum(){
+    if (hasFormats) {
+      const f = p.formats.find(x => x.id === selectedFmt);
+      return f ? f.priceNum : 0;
+    }
+    const m = (p.price || '').match(/\$\s*([\d.]+)/);
+    return m ? parseFloat(m[1]) : 0;
+  }
+
+  function addCta(){
+    if (isOut) return t('product.soldOut');
+    if (hasFormats) {
+      return selectedFmt === 'digital' ? t('product.download') : t('product.add');
+    }
+    return isDigital ? t('product.download') : t('product.add');
+  }
+
+  // ---------- markup ----------
+  body.innerHTML = `
+    <div class="pdp__main">
+      <div class="pdp__gallery">
+        <div class="pdp__hero" id="pdp-hero" style="--garment:${p.gar}">
+          <span class="corner">${p.sku}</span>
+          <span class="corner r">// Front view</span>
+          <div style="color:${p.gar}; width:100%; height:100%; display:flex; align-items:center; justify-content:center">
+            ${SHAPES[p.shape]}
+          </div>
+        </div>
+        <div class="pdp__thumbs" id="pdp-thumbs">
+          <button class="is-on" data-view="front" style="color:${p.gar}">${SHAPES[p.shape]}</button>
+          <button data-view="back"   style="color:${p.gar}">${SHAPES[p.shape]}</button>
+          <button data-view="detail" style="color:${p.gar}">${SHAPES[p.shape]}</button>
+          <button class="view360">360°<br>VIEW</button>
+        </div>
+      </div>
+
+      <div class="pdp__info">
+        <div class="pdp__cat">${p.cat === 'apparel' ? t('inv.apparel') : p.cat === 'cap' ? t('inv.headwear') : p.cat === 'obj' ? t('inv.objects') : t('inv.digital')}${p.badge ? ' · ' + p.badge : ''}</div>
+        <h1 class="pdp__name">${p.name}</h1>
+        ${p.subtitle ? `<p style="font-size:18px;line-height:1.4;color:var(--fg-2);max-width:520px;margin-top:-12px">${p.subtitle}</p>` : ''}
+        <div class="pdp__meta">
+          <span class="price" id="pdp-price">${priceCurrent()}</span>
+          <span class="stock ${stockClass}">${stockLabel}</span>
+          <span>· ${p.sku}</span>
+        </div>
+        <p class="pdp__intro">
+          ${isDigital
+            ? `Instant download · No physical shipment · DRM-free.`
+            : hasFormats
+              ? `Choose your format. Digital ships instantly; physical is numbered and bound in a run of ${p.run}.`
+              : `A piece of Drop 001. Made in a numbered run of ${p.run}, signed and committed. Once it ships, the run closes — there is no restock.`}
+        </p>
+
+        ${hasFormats ? `
+        <div class="pdp__size">
+          <div class="pdp__size-head">
+            <span class="label">${t('product.formatLabel')}</span>
+            <a href="#" class="guide">${t('product.formatGuide')} →</a>
+          </div>
+          <div class="pdp__formats" id="pdp-formats">
+            ${p.formats.map(f => `
+              <input type="radio" name="fmt" id="fmt-${f.id}" value="${f.id}" ${f.id===selectedFmt?'checked':''}>
+              <label for="fmt-${f.id}">
+                <span class="dot"></span>
+                <span class="nm">${f.name}<small>${f.desc}</small></span>
+                <span class="pr">${f.price}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+
+        ${hasColors ? `
+        <div class="pdp__size">
+          <div class="pdp__size-head">
+            <span class="label">${t('product.colorLabel')}</span>
+            <span class="val" id="color-val">${selectedColor}</span>
+          </div>
+          <div class="pdp__colors" id="pdp-colors">
+            ${p.colors.map((c, i) => `
+              <button data-color="${c}" class="${i===0?'is-on':''}" style="--swatch:${PALETTE[c] || '#888'}" aria-label="${c}"></button>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+
+        ${sizes ? `
+        <div class="pdp__size">
+          <div class="pdp__size-head">
+            <span class="label">${t('product.sizeLabel')}</span>
+            <a href="#" class="guide">${t('product.sizeGuide')} →</a>
+          </div>
+          <div class="pdp__sizes" id="pdp-sizes">
+            ${sizes.map((s, i) => `<button data-size="${s}" class="${s===selectedSize ? 'is-on' : ''}">${s}</button>`).join('')}
+          </div>
+        </div>
+        ` : ''}
+
+        <div class="pdp__qty">
+          <span>${t('product.qty')}</span>
+          <div class="pdp__qty-control" id="pdp-qty">
+            <button data-q="-">−</button>
+            <span id="qty-val">1</span>
+            <button data-q="+">+</button>
+          </div>
+        </div>
+
+        <button class="pdp__add ${isOut?'is-out':''}" id="pdp-add">
+          <span id="pdp-add-text">${addCta()} · ${priceCurrent()}</span>
+          <svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="pdp__specs">
+      <div class="pdp__spec">
+        <h3>${t('product.specs')}</h3>
+        <div class="row"><span class="k">${t('product.composition')}</span><span class="v">${p.composition || '14oz brushed cotton'}</span></div>
+        <div class="row"><span class="k">${t('product.madeIn')}</span><span class="v">${p.madeIn || 'Lisbon, PT'}</span></div>
+        <div class="row"><span class="k">${t('product.run')}</span><span class="v">${p.run || '500 pieces'}</span></div>
+        <div class="row"><span class="k">${t('product.ships')}</span><span class="v">${p.ships || 'Within 3 days'}</span></div>
+        <div class="row"><span class="k">SKU</span><span class="v">${p.sku}</span></div>
+      </div>
+      <div class="pdp__spec">
+        <h3>${isDigital ? t('product.digitalIncludes') : hasFormats ? t('product.digitalIncludes') : t('product.care')}</h3>
+        <ul class="pdp__care">
+          ${(isDigital
+            ? ['License · personal use', 'Lifetime updates within season', 'Direct download · no DRM', 'Refunds within 7 days · ask']
+            : hasFormats
+              ? ['Digital · PDF + ePub bundle', 'Physical · 240pp linen hardcover · numbered', 'Both ship via signed tracked mail', 'Members get 20% off the bundle']
+              : t('product.careLines')
+          ).map(line => `<li>${line}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+
+    ${related.length > 0 ? `
+    <div class="pdp__related">
+      <h3>${t('product.related')}</h3>
+      <div class="pdp__related-grid">
+        ${related.map(r => `
+          <a class="rel-card" href="product.html?sku=${r.sku}">
+            <div class="art" style="color:${r.gar}">${SHAPES[r.shape]}</div>
+            <div class="nm">${r.name}</div>
+            <div class="mt"><span>${r.sku}</span><span class="pr">${r.price}</span></div>
+          </a>
+        `).join('')}
+      </div>
+    </div>` : ''}
+  `;
+
+  // ---------- wire qty ----------
+  const qtyVal = document.getElementById('qty-val');
+  document.getElementById('pdp-qty').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-q]');
+    if (!b) return;
+    qty = Math.max(1, Math.min(10, qty + (b.dataset.q === '+' ? 1 : -1)));
+    qtyVal.textContent = qty;
+  });
+
+  // ---------- wire size ----------
+  const sizesWrap = document.getElementById('pdp-sizes');
+  if (sizesWrap) {
+    sizesWrap.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-size]');
+      if (!b || b.classList.contains('is-disabled')) return;
+      sizesWrap.querySelectorAll('button').forEach(x => x.classList.remove('is-on'));
+      b.classList.add('is-on');
+      selectedSize = b.dataset.size;
+    });
+  }
+
+  // ---------- wire color ----------
+  const colorsWrap = document.getElementById('pdp-colors');
+  if (colorsWrap) {
+    colorsWrap.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-color]');
+      if (!b) return;
+      colorsWrap.querySelectorAll('button').forEach(x => x.classList.remove('is-on'));
+      b.classList.add('is-on');
+      selectedColor = b.dataset.color;
+      document.getElementById('color-val').textContent = selectedColor;
+    });
+  }
+
+  // ---------- wire format ----------
+  const fmtWrap = document.getElementById('pdp-formats');
+  function syncPriceUI(){
+    document.getElementById('pdp-price').textContent = priceCurrent();
+    document.getElementById('pdp-add-text').textContent = `${addCta()} · ${priceCurrent()}`;
+  }
+  if (fmtWrap) {
+    fmtWrap.querySelectorAll('input[name=fmt]').forEach(r => {
+      r.addEventListener('change', () => {
+        selectedFmt = r.value;
+        syncPriceUI();
+      });
+    });
+  }
+
+  // ---------- add to cart ----------
+  document.getElementById('pdp-add').addEventListener('click', () => {
+    if (isOut) return;
+    const variant = {};
+    if (selectedSize)  variant.size = selectedSize;
+    if (selectedColor) variant.color = selectedColor;
+    if (selectedFmt)   variant.format = selectedFmt;
+    cacheCart.add(p.sku, qty, Object.keys(variant).length ? variant : null);
+    setTimeout(openCart, 300);
+  });
+
+  // Ignore the initial langchange that fires when shared.js bootstraps;
+  // only reload when the user actually changes language.
+  let _langInit = true;
+  window.addEventListener('langchange', () => {
+    if (_langInit) { _langInit = false; return; }
+    location.reload();
+  });
+</script>
+</body>
+</html>
