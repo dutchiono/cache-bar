@@ -14,6 +14,16 @@ const paymentIntentArgs = {
   quantity: v.number(),
   customerName: v.string(),
   customerEmail: v.string(),
+  shippingAddress: v.optional(
+    v.object({
+      line1: v.string(),
+      line2: v.optional(v.string()),
+      city: v.string(),
+      region: v.string(),
+      postalCode: v.string(),
+      country: v.string(),
+    }),
+  ),
   rail: paymentRail,
   network: paymentNetwork,
   fromAddress: v.optional(v.string()),
@@ -142,6 +152,14 @@ async function createPaymentIntentRecord(
     quantity: number;
     customerName: string;
     customerEmail: string;
+    shippingAddress?: {
+      line1: string;
+      line2?: string;
+      city: string;
+      region: string;
+      postalCode: string;
+      country: string;
+    };
     rail: "usdc" | "x402";
     network: "base" | "solana";
     fromAddress?: string;
@@ -173,6 +191,10 @@ async function createPaymentIntentRecord(
   const unitPrice = variant?.priceOverride ?? product.basePrice;
   const subtotal = unitPrice * args.quantity;
   const shipping = product.productType === "physical" ? 9 : 0;
+  const shippingAddress =
+    product.productType === "physical"
+      ? normalizeShippingAddress(args.shippingAddress)
+      : undefined;
   const fulfillmentKind =
     product.productType === "digital" ? "digital_delivery" : "print_on_demand";
 
@@ -197,6 +219,7 @@ async function createPaymentIntentRecord(
     tokensSpentBurned: burnQuote.amountTokens,
     tax: 0,
     shipping,
+    shippingAddress,
     total: subtotal - burnQuote.discount + shipping,
     currency: "USD",
     placedAt: Date.now(),
@@ -270,6 +293,12 @@ async function createPaymentIntentRecord(
     burnDiscount: burnQuote.discount,
     tokensSpentBurned: burnQuote.amountTokens,
     rail: args.rail,
+    instruction: {
+      network: network.caip2,
+      asset: network.asset,
+      payTo,
+      amount: `$${total.toFixed(2)}`,
+    },
     x402:
       args.rail === "x402"
         ? {
@@ -908,4 +937,36 @@ async function receivingAddressForReader(
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function normalizeShippingAddress(
+  shippingAddress:
+    | {
+        line1: string;
+        line2?: string;
+        city: string;
+        region: string;
+        postalCode: string;
+        country: string;
+      }
+    | undefined,
+) {
+  if (!shippingAddress) {
+    throw new Error("Shipping address is required for physical products.");
+  }
+
+  const normalized = {
+    line1: shippingAddress.line1.trim(),
+    line2: shippingAddress.line2?.trim() || undefined,
+    city: shippingAddress.city.trim(),
+    region: shippingAddress.region.trim(),
+    postalCode: shippingAddress.postalCode.trim(),
+    country: shippingAddress.country.trim(),
+  };
+
+  if (!normalized.line1 || !normalized.city || !normalized.region || !normalized.postalCode || !normalized.country) {
+    throw new Error("Shipping address is incomplete.");
+  }
+
+  return normalized;
 }

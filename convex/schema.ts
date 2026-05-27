@@ -265,6 +265,16 @@ export default defineSchema({
     tokensSpentBurned: v.number(),
     tax: v.number(),
     shipping: v.number(),
+    shippingAddress: v.optional(
+      v.object({
+        line1: v.string(),
+        line2: v.optional(v.string()),
+        city: v.string(),
+        region: v.string(),
+        postalCode: v.string(),
+        country: v.string(),
+      }),
+    ),
     total: v.number(),
     currency: v.string(),
     placedAt: v.number(),

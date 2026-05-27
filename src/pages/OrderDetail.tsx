@@ -95,6 +95,20 @@ export default function OrderDetail() {
         </Card>
       </section>
 
+      {order.shippingAddress && (
+        <Card title="Shipping">
+          <div className="grid gap-1 text-sm">
+            <div>{order.customer?.name ?? "Customer"}</div>
+            <div>{order.shippingAddress.line1}</div>
+            {order.shippingAddress.line2 && <div>{order.shippingAddress.line2}</div>}
+            <div>
+              {order.shippingAddress.city}, {order.shippingAddress.region} {order.shippingAddress.postalCode}
+            </div>
+            <div>{order.shippingAddress.country}</div>
+          </div>
+        </Card>
+      )}
+
       <Card title="Token Burns">
         <div className="space-y-2">
           {order.tokenBurns.map((burn: OrderBurn) => (
