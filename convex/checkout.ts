@@ -177,11 +177,6 @@ async function createPaymentIntentRecord(
     kind: fulfillmentKind,
     status: "pending",
   });
-  await createRoyaltyLedgerEntries(ctx, {
-    product,
-    orderItemId,
-    netRevenue,
-  });
 
   const network = x402Networks[args.network];
   const payTo = await receivingAddress(ctx, network.chain);
@@ -325,12 +320,14 @@ export const markPayment = mutation({
       status: status === "confirmed" ? "paid" : "awaiting_payment",
     });
     if (status === "confirmed" && !wasConfirmed) {
+      await ensureRoyaltyLedgerEntriesForOrder(ctx, payment.orderId);
       await syncCustomerOnPaidOrder(ctx, payment.orderId);
       await recordTreasuryInflow(ctx, paymentId, payment, txHash);
     }
     if (status === "failed") {
       await releaseInventoryReservationForOrder(ctx, payment.orderId);
       await markOrderBurnsFailed(ctx, payment.orderId);
+      await failOpenFulfillments(ctx, payment.orderId);
     }
   },
 });
@@ -369,6 +366,7 @@ export const cancelOrder = mutation({
     });
     await releaseInventoryReservationForOrder(ctx, orderId);
     await markOrderBurnsFailed(ctx, orderId);
+    await failOpenFulfillments(ctx, orderId);
     await addCustomerActivity(ctx, order.customerId, {
       type: "note",
       body: `Order ${order.number} cancelled.${reason?.trim() ? ` Reason: ${reason.trim()}` : ""}`,
@@ -413,6 +411,8 @@ export const refundOrder = mutation({
     });
     await releaseInventoryReservationForOrder(ctx, orderId);
     await markUnverifiedBurnsFailed(ctx, orderId);
+    await failOpenFulfillments(ctx, orderId);
+    await createRefundRoyaltyReversals(ctx, orderId);
     await reverseCustomerRevenueForRefund(ctx, order);
     await addCustomerActivity(ctx, order.customerId, {
       type: "note",
@@ -514,6 +514,65 @@ async function createRoyaltyLedgerEntries(
       amount,
       accruedAt,
     });
+  }
+}
+
+async function ensureRoyaltyLedgerEntriesForOrder(
+  ctx: MutationCtx,
+  orderId: Id<"orders">,
+) {
+  const items = await ctx.db
+    .query("orderItems")
+    .withIndex("by_order", (q) => q.eq("orderId", orderId))
+    .collect();
+
+  for (const item of items) {
+    const existing = await ctx.db
+      .query("royaltyLedger")
+      .withIndex("by_orderItem", (q) => q.eq("orderItemId", item._id))
+      .collect();
+    if (existing.some((entry) => entry.amount >= 0)) continue;
+
+    const product = await ctx.db.get(item.productId);
+    if (!product) continue;
+    await createRoyaltyLedgerEntries(ctx, {
+      product,
+      orderItemId: item._id,
+      netRevenue: item.netRevenue,
+    });
+  }
+}
+
+async function createRefundRoyaltyReversals(
+  ctx: MutationCtx,
+  orderId: Id<"orders">,
+) {
+  const items = await ctx.db
+    .query("orderItems")
+    .withIndex("by_order", (q) => q.eq("orderId", orderId))
+    .collect();
+  for (const item of items) {
+    const entries = await ctx.db
+      .query("royaltyLedger")
+      .withIndex("by_orderItem", (q) => q.eq("orderItemId", item._id))
+      .collect();
+    const positiveEntries = entries.filter((entry) => entry.amount > 0);
+    const hasRefundReversal = entries.some((entry) => entry.amount < 0);
+    if (positiveEntries.length === 0 || hasRefundReversal) continue;
+
+    for (const entry of positiveEntries) {
+      await ctx.db.insert("royaltyLedger", {
+        orderItemId: entry.orderItemId,
+        productId: entry.productId,
+        payeeCreatorId: entry.payeeCreatorId,
+        role: `${entry.role} refund`,
+        percent: entry.percent,
+        basisAmount: -entry.basisAmount,
+        amount: -entry.amount,
+        accruedAt: Date.now(),
+        payoutId: entry.payoutId,
+      });
+    }
   }
 }
 
@@ -641,6 +700,22 @@ async function recordTreasuryRefund(
   await ctx.db.patch(account._id, {
     balanceCache: roundMoney(account.balanceCache - amount),
   });
+}
+
+async function failOpenFulfillments(
+  ctx: MutationCtx,
+  orderId: Id<"orders">,
+) {
+  const fulfillments = await ctx.db
+    .query("fulfillments")
+    .withIndex("by_order", (q) => q.eq("orderId", orderId))
+    .collect();
+  for (const fulfillment of fulfillments) {
+    if (fulfillment.status === "delivered" || fulfillment.status === "failed") continue;
+    await ctx.db.patch(fulfillment._id, {
+      status: "failed",
+    });
+  }
 }
 
 async function addCustomerActivity(

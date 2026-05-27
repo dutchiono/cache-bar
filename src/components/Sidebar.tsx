@@ -18,30 +18,13 @@ const groups: Group[] = [
   },
   {
     label: "Sales",
-    items: [
-      { to: "/app/orders", label: "Orders" },
-      { to: "/app/customers", label: "Customers" },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { to: "/app/inventory", label: "Inventory & Fulfillment" },
-      { to: "/app/royalties", label: "Royalties & Payouts" },
-    ],
+    items: [{ to: "/app/orders", label: "Orders" }],
   },
   {
     label: "Treasury",
     items: [
       { to: "/app/treasury", label: "Treasury & Off-ramp" },
       { to: "/app/token", label: "Token & Burn" },
-    ],
-  },
-  {
-    label: "Insights",
-    items: [
-      { to: "/app/reports", label: "Reports" },
-      { to: "/app/automations", label: "Automations" },
     ],
   },
   {
@@ -60,8 +43,6 @@ const groups: Group[] = [
   },
 ];
 
-const agentItem: Item = { to: "/app/agent", label: "Eliza Agent" };
-
 export function Sidebar() {
   return (
     <nav className="overflow-y-auto border-r border-[var(--cb-line)] bg-[rgba(251,247,239,0.72)] p-3">
@@ -75,9 +56,6 @@ export function Sidebar() {
           ))}
         </div>
       ))}
-      <div className="mt-3">
-        <SidebarLink {...agentItem} accent />
-      </div>
     </nav>
   );
 }

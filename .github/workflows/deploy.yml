@@ -32,6 +32,11 @@ jobs:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: bunx convex deploy
 
+      - name: Seed storefront data
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: bunx convex run bootstrap:ensureStorefront
+
       - name: Build
         env:
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}

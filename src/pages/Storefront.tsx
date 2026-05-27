@@ -11,6 +11,13 @@ const money = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
+const preciseMoney = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 type CheckoutResult = {
   orderId: Id<"orders">;
   paymentId: Id<"payments">;
@@ -406,13 +413,13 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
 
                         <div className="sf-quote">
                           <QuoteRow label="Unit price" value={money.format(unitPrice)} />
-                          <QuoteRow label="Subtotal" value={money.format(subtotal)} />
+                          <QuoteRow label="Subtotal" value={preciseMoney.format(subtotal)} />
                           <QuoteRow
                             label="Burn discount"
-                            value={`-${money.format(burnDiscount)}`}
+                            value={`-${preciseMoney.format(burnDiscount)}`}
                           />
-                          <QuoteRow label="Shipping" value={money.format(shipping)} />
-                          <QuoteRow label="Total" value={money.format(total)} strong />
+                          <QuoteRow label="Shipping" value={preciseMoney.format(shipping)} />
+                          <QuoteRow label="Total" value={preciseMoney.format(total)} strong />
                         </div>
 
                         {error && <div className="sf-error">{error}</div>}
@@ -466,10 +473,10 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 </div>
                 <h3>{program.projectName}</h3>
                 <p>
-                  Burn {program.tokenSymbol} for up to {money.format(program.maxDiscountUsd)} off.
+                  Burn {program.tokenSymbol} for up to {preciseMoney.format(program.maxDiscountUsd)} off.
                 </p>
                 <div className="sf-program-meta">
-                  <span>{money.format(program.discountPerTokenUsd)} per token</span>
+                  <span>{preciseMoney.format(program.discountPerTokenUsd)} per token</span>
                   <span>{program.burnMechanism.replaceAll("_", " ")}</span>
                 </div>
               </article>
