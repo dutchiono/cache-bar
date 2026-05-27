@@ -22,6 +22,15 @@
   color: inherit;
 }
 
+.sf-root a.sf-button {
+  color: #111110;
+}
+
+.sf-root a.sf-button-ghost,
+.sf-root a.sf-nav-cta {
+  color: var(--sf-fg);
+}
+
 .sf-root code,
 .sf-mono {
   font-family: "JetBrains Mono", ui-monospace, monospace;
@@ -32,7 +41,7 @@
   top: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 16px;
   padding: 24px 40px;
@@ -42,7 +51,7 @@
 
 .sf-brand,
 .sf-nav-links,
-.sf-ops-link {
+.sf-nav-cta {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px;
   letter-spacing: 0.22em;
@@ -72,18 +81,25 @@
 }
 
 .sf-nav-links a,
-.sf-ops-link {
+.sf-nav-cta {
   color: var(--sf-fg-soft);
   text-decoration: none;
 }
 
 .sf-nav-links a:hover,
-.sf-ops-link:hover {
+.sf-nav-cta:hover {
   color: var(--sf-fg);
 }
 
-.sf-ops-link {
+.sf-nav-cta {
   justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--sf-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .sf-hero,
@@ -176,8 +192,10 @@
   color: #111110;
 }
 
-.sf-button:hover:not(:disabled) {
+.sf-button:hover:not(:disabled),
+.sf-button:focus-visible {
   background: var(--sf-accent-2);
+  color: #111110;
 }
 
 .sf-button:disabled {
@@ -191,9 +209,11 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
-.sf-button-ghost:hover {
+.sf-button-ghost:hover,
+.sf-button-ghost:focus-visible {
   border-color: rgba(236, 229, 214, 0.25);
   background: rgba(255, 255, 255, 0.06);
+  color: var(--sf-fg);
 }
 
 .sf-button.wide {
@@ -265,6 +285,14 @@
 
 .sf-store-grid {
   align-items: start;
+}
+
+.sf-launch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 1440px;
+  margin: 0 auto;
 }
 
 .sf-card-grid {
@@ -342,6 +370,33 @@
 
 .sf-panel {
   padding: 24px;
+}
+
+.sf-launch-card {
+  display: grid;
+  gap: 14px;
+  text-decoration: none;
+}
+
+.sf-launch-card h3 {
+  margin: 0;
+  font-family: "Anton", "Bebas Neue", system-ui, sans-serif;
+  font-size: 34px;
+  line-height: 0.96;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.sf-launch-card p {
+  margin: 0;
+}
+
+.sf-launch-actions {
+  display: flex;
+  gap: 14px;
+  max-width: 1440px;
+  margin: 24px auto 0;
+  flex-wrap: wrap;
 }
 
 .sf-checkout-panel .sticky {
@@ -527,7 +582,8 @@
   .sf-hero-grid,
   .sf-store-grid,
   .sf-section-head,
-  .sf-program-grid {
+  .sf-program-grid,
+  .sf-launch-grid {
     grid-template-columns: 1fr;
   }
 
@@ -553,7 +609,7 @@
     justify-self: start;
   }
 
-  .sf-ops-link {
+  .sf-nav-cta {
     justify-self: start;
   }
 

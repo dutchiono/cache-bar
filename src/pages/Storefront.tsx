@@ -49,7 +49,6 @@ type StorefrontTokenProgram = NonNullable<
 export default function Storefront({ focusCheckout = false }: { focusCheckout?: boolean }) {
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
   const tokenPrograms = useQuery(api.token.publicPrograms, {});
-  const me = useQuery(api.users.getCurrentUser, {});
   const createPaymentIntent = useMutation(api.checkout.createPublicPaymentIntent);
   const verifySubmittedPayment = useAction(api.payments.verifySubmittedPayment);
 
@@ -86,6 +85,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   const unitPrice = selectedVariant?.priceOverride ?? selectedProduct?.basePrice ?? 0;
   const subtotal = unitPrice * quantity;
   const shipping = selectedProduct?.productType === "physical" ? 9 : 0;
+  const liveCreatorCount = new Set(
+    (products ?? []).map((product) => product.creator?._id).filter((value): value is Id<"creators"> => Boolean(value)),
+  ).size;
   const burnDiscount =
     selectedProgram && tokenDiscountEnabled
       ? Math.min(
@@ -168,13 +170,11 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
           <span>.cache</span>
         </Link>
         <nav className="sf-nav-links">
-          <a href="#drop">Drop</a>
           <a href="#shop">Shop</a>
           <a href="#checkout-desk">Checkout</a>
+          <a href="#launch">Start a drop</a>
         </nav>
-        <Link to="/app" className="sf-ops-link">
-          {me ? "Open Ops" : "Ops Sign In"}
-        </Link>
+        <a href="#launch" className="sf-nav-cta">Launch</a>
       </header>
 
       <main>
@@ -183,20 +183,18 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
             <div>
               <div className="sf-kicker">.cache storefront</div>
               <h1 className="sf-display">
-                current drop.
-                <span> live checkout.</span>
+                shop live drops.
+                <span> launch your own.</span>
               </h1>
               <p className="sf-lead">
-                Shop the live catalog, pick a variant, and pay on Base or Solana. Staff tooling stays
-                in <code>/app</code>; this page is only the customer-facing storefront.
+                Buy live products from human and agent creators, or use .cache to build a catalog,
+                set creator splits, and launch a storefront from the ops app.
               </p>
               <div className="sf-hero-actions">
                 <a className="sf-button" href={focusCheckout ? "#checkout-desk" : "#shop"}>
-                  {focusCheckout ? "Open payment desk" : "Browse live products"}
+                  {focusCheckout ? "Go to checkout" : "Browse products"}
                 </a>
-                <Link className="sf-button-ghost" to="/app">
-                  {me ? "Open ops console" : "Staff sign in"}
-                </Link>
+                <a className="sf-button-ghost" href="#launch">Start a drop</a>
               </div>
             </div>
 
@@ -206,8 +204,8 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 <strong>{products ? String(products.length).padStart(2, "0") : "--"}</strong>
               </div>
               <div className="sf-metric-card">
-                <span className="sf-metric-label">Discount programs</span>
-                <strong>{tokenPrograms ? String(tokenPrograms.length).padStart(2, "0") : "--"}</strong>
+                <span className="sf-metric-label">Live creators</span>
+                <strong>{products ? String(liveCreatorCount).padStart(2, "0") : "--"}</strong>
               </div>
               <div className="sf-hero-image">
                 <img
@@ -289,7 +287,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                     {selectedProduct ? selectedProduct.title : "Select a product"}
                   </h2>
                   <p className="sf-checkout-copy">
-                    Choose a rail, submit the payment, and confirm it with the tx hash.
+                    Choose a payment rail, create the intent, then submit the tx hash for chain verification.
                   </p>
 
                   <form onSubmit={onSubmit} className="sf-form">
@@ -496,6 +494,41 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
           )}
         </section>
 
+        <section className="sf-section" id="launch">
+          <div className="sf-section-head">
+            <div>
+              <div className="sf-kicker">For creators and operators</div>
+              <h2 className="sf-section-title">launch your own drop.</h2>
+            </div>
+            <p>
+              .cache is not just a buyer-facing storefront. The ops app handles creator onboarding,
+              product setup, royalty splits, submission review, and the live storefront preview.
+            </p>
+          </div>
+
+          <div className="sf-launch-grid">
+            <Link to="/app/products" className="sf-panel sf-launch-card">
+              <div className="sf-kicker">1. Build catalog</div>
+              <h3>Create products and variants.</h3>
+              <p>Draft physical or digital products, price them, and control which rails and discounts they support.</p>
+            </Link>
+            <Link to="/app/creators" className="sf-panel sf-launch-card">
+              <div className="sf-kicker">2. Set creators</div>
+              <h3>Assign ownership and splits.</h3>
+              <p>Manage human and agent creators, payout targets, and royalty allocation before anything goes live.</p>
+            </Link>
+            <Link to="/app/submissions" className="sf-panel sf-launch-card">
+              <div className="sf-kicker">3. Review and publish</div>
+              <h3>Push approved drops live.</h3>
+              <p>Run the review queue, approve submissions, and publish products directly into the storefront.</p>
+            </Link>
+          </div>
+
+          <div className="sf-launch-actions">
+            <Link to="/app" className="sf-button">Staff sign in</Link>
+            <Link to="/checkout" className="sf-button-ghost">Preview checkout</Link>
+          </div>
+        </section>
       </main>
     </div>
   );

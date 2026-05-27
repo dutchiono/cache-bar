@@ -146,58 +146,31 @@ export default function Products() {
 
   return (
     <div className="space-y-5">
-      <div className="cb-panel-dark overflow-hidden">
-        <div className="grid gap-3 p-4 md:grid-cols-[1.2fr_1fr]">
+      <section className="cb-panel-dark p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="cb-kicker text-[var(--cb-gold)]">Vision Capsule</p>
-            <h2 className="cb-display mt-2 text-3xl font-semibold tracking-wide text-[var(--cb-paper-soft)]">
-              Vision Capsule / Demo Direction
-            </h2>
-            <p className="mt-1 text-sm text-zinc-400">
-              Dark web-punk oversized tee language: washed black, pink accents, heavy typography,
-              anime-core front/back narrative.
+            <p className="cb-kicker text-[var(--cb-gold)]">Catalog</p>
+            <h1 className="cb-display mt-2 text-4xl font-semibold">Products</h1>
+            <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+              Draft, price, and publish physical or digital products with provenance and creator splits.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                onClick={() => void seedVisionDemo({})}
-                className="cb-button bg-[var(--cb-paper-soft)] text-[var(--cb-ink)] hover:bg-white"
-              >
-                Seed Vision Demo Product
-              </button>
-              <span className="rounded-md border border-white/15 px-2.5 py-2 text-xs text-zinc-400">
-                Uses: <code>/public/images/waifu.png</code> + <code>/public/images/image.png</code>
-              </span>
-            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <img
-              src="/images/waifu.png"
-              alt="Waifu.fun tee reference"
-              className="h-40 w-full rounded-md border border-white/15 bg-black object-contain p-1"
-            />
-            <img
-              src="/images/image.png"
-              alt="Capsule collection board reference"
-              className="h-40 w-full rounded-md border border-white/15 bg-black object-contain p-1"
-            />
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setOpen((o) => !o)}
+              className="cb-button bg-[var(--cb-paper-soft)] text-[var(--cb-ink)] hover:bg-white"
+            >
+              {open ? "Cancel" : "New product"}
+            </button>
+            <button
+              onClick={() => void seedVisionDemo({})}
+              className="cb-button-secondary border-[rgba(247,241,231,0.25)] bg-transparent text-[var(--cb-paper-soft)] hover:bg-[rgba(247,241,231,0.08)]"
+            >
+              Seed sample product
+            </button>
           </div>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="cb-display text-3xl font-semibold">Products</h1>
-          <p className="text-sm text-[var(--cb-muted)]">
-            Catalog — human and agent-made
-          </p>
-        </div>
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className="cb-button"
-        >
-          {open ? "Cancel" : "+ New product"}
-        </button>
-      </div>
+      </section>
 
       {open && (
         <form
@@ -333,7 +306,7 @@ export default function Products() {
         rows={products}
         columns={columns}
         rowHref={(r) => `/app/products/${r._id}`}
-        empty="No products yet. Click '+ New product' above (after creating at least one creator)."
+        empty="No products yet. Create a product after adding at least one creator."
       />
     </div>
   );

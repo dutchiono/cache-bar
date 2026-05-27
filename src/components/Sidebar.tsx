@@ -12,12 +12,12 @@ const groups: Group[] = [
     label: "Catalog",
     items: [
       { to: "/app/products", label: "Products" },
-      { to: "/app/submissions", label: "Submissions" },
+      { to: "/app/submissions", label: "Review Queue" },
       { to: "/app/creators", label: "Creators" },
     ],
   },
   {
-    label: "Sales",
+    label: "Commerce",
     items: [
       { to: "/app/orders", label: "Orders" },
       { to: "/app/customers", label: "Customers" },
@@ -26,8 +26,8 @@ const groups: Group[] = [
   {
     label: "Operations",
     items: [
-      { to: "/app/inventory", label: "Inventory" },
-      { to: "/app/royalties", label: "Royalties" },
+      { to: "/app/inventory", label: "Inventory & Fulfillment" },
+      { to: "/app/royalties", label: "Royalties & Payouts" },
       { to: "/app/reports", label: "Reports" },
       { to: "/app/automations", label: "Automations" },
       { to: "/app/agent", label: "Agent Console" },
@@ -43,7 +43,7 @@ const groups: Group[] = [
   {
     label: "Storefront",
     items: [
-      { to: "/", label: "Public Storefront" },
+      { to: "/", label: "Live Storefront" },
       { to: "/checkout", label: "Checkout Preview" },
     ],
   },

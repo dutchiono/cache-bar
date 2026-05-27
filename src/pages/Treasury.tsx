@@ -57,7 +57,7 @@ export default function Treasury() {
       <section className="cb-panel-dark p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="cb-kicker text-[var(--cb-gold)]">Phase 8</p>
+            <p className="cb-kicker text-[var(--cb-gold)]">Treasury operations</p>
             <h1 className="cb-display mt-2 text-4xl font-semibold">Treasury & Off-ramp</h1>
             <p className="mt-2 max-w-2xl text-sm text-zinc-400">
               Multisig balances, fiat ops, pending payouts, and off-ramp proposals in one place.
@@ -68,7 +68,7 @@ export default function Treasury() {
             disabled={busy !== null}
             className="cb-button bg-[var(--cb-paper-soft)] text-[var(--cb-ink)] hover:bg-white"
           >
-            {busy === "seed" ? "Seeding..." : "Seed Demo Treasury"}
+            {busy === "seed" ? "Seeding..." : "Seed sample treasury"}
           </button>
         </div>
         {error && <p className="mt-4 rounded-md border border-red-300/40 bg-red-500/10 px-3 py-2 text-sm text-red-100">{error}</p>}

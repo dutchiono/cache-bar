@@ -1,5 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
+import { Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 
 export function TopBar() {
@@ -15,19 +16,21 @@ export function TopBar() {
     <header className="flex items-center gap-3 border-b border-[var(--cb-line)] bg-[var(--cb-paper-soft)]/88 px-5 backdrop-blur">
       <div className="flex-1">
         <input
-          placeholder="Search products, creators, orders..."
+          placeholder="Search products, orders, creators, customers"
           className="cb-field max-w-md"
         />
       </div>
 
-      <span title="USDC treasury balance (placeholder)" className="cb-badge border-[rgba(73,108,143,0.4)] bg-[rgba(73,108,143,0.1)] text-[var(--cb-blue)]">
+      <span title="USDC treasury balance" className="cb-badge border-[rgba(73,108,143,0.4)] bg-[rgba(73,108,143,0.1)] text-[var(--cb-blue)]">
         Treasury ${usdcBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })} USDC
       </span>
 
-      {/* AI pill — opens Eliza in Phase 12 */}
-      <span className="cb-badge border-[rgba(182,95,67,0.38)] bg-[rgba(182,95,67,0.12)] text-[var(--cb-clay)]">
-        Eliza — Phase 12
-      </span>
+      <Link
+        to="/app/agent"
+        className="cb-badge border-[rgba(182,95,67,0.38)] bg-[rgba(182,95,67,0.12)] text-[var(--cb-clay)]"
+      >
+        Agent Console
+      </Link>
 
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">{displayName}</span>
