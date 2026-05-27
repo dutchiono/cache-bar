@@ -57,6 +57,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   const [quantity, setQuantity] = useState(1);
   const [rail, setRail] = useState<"x402" | "usdc">("x402");
   const [network, setNetwork] = useState<"base" | "solana">("base");
+  const [showAdvancedPayment, setShowAdvancedPayment] = useState(false);
   const [tokenProgramId, setTokenProgramId] = useState<Id<"tokenPrograms"> | "">("");
   const [burnAmountTokens, setBurnAmountTokens] = useState(0);
   const [pending, setPending] = useState(false);
@@ -97,6 +98,8 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
         )
       : 0;
   const total = subtotal - burnDiscount + shipping;
+  const paymentMethodLabel = network === "base" ? "USDC on Base" : "USDC on Solana";
+  const checkoutModeLabel = rail === "x402" ? "Wallet checkout" : "Direct transfer";
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -287,7 +290,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                     {selectedProduct ? selectedProduct.title : "Select a product"}
                   </h2>
                   <p className="sf-checkout-copy">
-                    Choose a payment rail, create the intent, then submit the tx hash for chain verification.
+                    Enter your details, choose where you want to pay from, and we will generate the wallet payment instructions for you.
                   </p>
 
                   <form onSubmit={onSubmit} className="sf-form">
@@ -351,18 +354,16 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                           </label>
                         </div>
 
-                        <div className="sf-toggle-group">
+                        <div className="sf-subpanel">
+                          <div className="sf-subpanel-head">
+                            <strong>Payment method</strong>
+                            <span>{paymentMethodLabel}</span>
+                          </div>
+                          <p className="sf-subpanel-copy">
+                            Choose the network you want to pay on. After payment, paste the transaction hash so we can confirm the order.
+                          </p>
                           <Toggle
-                            label="Rail"
-                            value={rail}
-                            options={[
-                              { value: "x402", label: "x402" },
-                              { value: "usdc", label: "USDC direct" },
-                            ]}
-                            onChange={(value) => setRail(value as "x402" | "usdc")}
-                          />
-                          <Toggle
-                            label="Network"
+                            label="Pay on"
                             value={network}
                             options={[
                               { value: "base", label: "Base" },
@@ -370,20 +371,43 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                             ]}
                             onChange={(value) => setNetwork(value as "base" | "solana")}
                           />
+
+                          <button
+                            type="button"
+                            className="sf-text-button"
+                            onClick={() => setShowAdvancedPayment((value) => !value)}
+                          >
+                            {showAdvancedPayment ? "Hide advanced payment options" : "Show advanced payment options"}
+                          </button>
+
+                          {showAdvancedPayment && (
+                            <Toggle
+                              label="Checkout mode"
+                              value={rail}
+                              options={[
+                                { value: "x402", label: "Wallet checkout" },
+                                { value: "usdc", label: "Direct transfer" },
+                              ]}
+                              onChange={(value) => setRail(value as "x402" | "usdc")}
+                            />
+                          )}
                         </div>
 
                         <div className={`sf-subpanel ${selectedProduct.tokenDiscountEligible ? "" : "is-disabled"}`}>
                           <div className="sf-subpanel-head">
-                            <strong>Discount program</strong>
+                            <strong>Token discount</strong>
                             <span>
                               {selectedProduct.tokenDiscountEligible
                                 ? "Available for this product"
                                 : "Not available for this product"}
                             </span>
                           </div>
+                          <p className="sf-subpanel-copy">
+                            Optional. If this drop supports a token discount, you can spend tokens here for extra savings on this order.
+                          </p>
                           <div className="sf-form-grid">
                             <label className="sf-field">
-                              <span>Token program</span>
+                              <span>Discount token</span>
                               <select
                                 value={activeTokenProgramId}
                                 onChange={(event) =>
@@ -393,7 +417,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                                 }
                                 disabled={!tokenDiscountEnabled}
                               >
-                                <option value="">No burn discount</option>
+                                <option value="">No token discount</option>
                                 {(tokenPrograms ?? []).map((program) => (
                                   <option key={program._id} value={program._id}>
                                     {program.projectName} ({program.tokenSymbol})
@@ -402,7 +426,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                               </select>
                             </label>
                             <label className="sf-field">
-                              <span>Tokens to burn</span>
+                              <span>Amount to spend</span>
                               <input
                                 type="number"
                                 min="0"
@@ -417,21 +441,31 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                               />
                             </label>
                             <label className="sf-field full">
-                              <span>Burn wallet (optional)</span>
+                              <span>Token wallet (optional)</span>
                               <input
                                 name="burnWalletAddress"
-                                placeholder="Wallet that will execute the burn"
+                                placeholder="Wallet holding the discount token"
                                 disabled={!tokenDiscountEnabled}
                               />
                             </label>
                           </div>
+                          {selectedProgram && (
+                            <div className="sf-inline-note">
+                              {selectedProgram.tokenSymbol} discount rate: {preciseMoney.format(selectedProgram.discountPerTokenUsd)} off per token, up to {money.format(selectedProgram.maxDiscountUsd)}.
+                            </div>
+                          )}
+                          {activeBurnAmountTokens > 0 && (
+                            <div className="sf-inline-note">
+                              Spent tokens are permanently removed and are not returned during refunds.
+                            </div>
+                          )}
                         </div>
 
                         <div className="sf-quote">
                           <QuoteRow label="Unit price" value={money.format(unitPrice)} />
                           <QuoteRow label="Subtotal" value={preciseMoney.format(subtotal)} />
                           <QuoteRow
-                            label="Burn discount"
+                            label="Token discount"
                             value={`-${preciseMoney.format(burnDiscount)}`}
                           />
                           <QuoteRow label="Shipping" value={preciseMoney.format(shipping)} />
@@ -441,7 +475,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         {error && <div className="sf-error">{error}</div>}
 
                         <button type="submit" disabled={pending} className="sf-button wide">
-                          {pending ? "Creating payment..." : "Create live payment intent"}
+                          {pending ? "Preparing payment..." : "Continue to payment"}
                         </button>
                       </>
                     )}
@@ -449,26 +483,35 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
 
                   {result && (
                     <div className="sf-result">
-                      <div className="sf-kicker">Payment created</div>
-                      <QuoteRow label="Order" value={result.orderId} mono />
-                      <QuoteRow label="Payment" value={result.paymentId} mono />
-                      <QuoteRow label="Rail" value={result.rail} />
-                      {result.x402 && (
-                        <div className="sf-code">
-                          <CodeLine label="network" value={result.x402.network} />
-                          <CodeLine label="asset" value={result.x402.asset} />
-                          <CodeLine label="payTo" value={result.x402.payTo} />
-                          <CodeLine label="price" value={result.x402.price} />
-                        </div>
-                      )}
+                      <div className="sf-kicker">Payment ready</div>
                       <div className="sf-subpanel">
                         <div className="sf-subpanel-head">
-                          <strong>Submit tx hash</strong>
-                          <span>The backend checks the chain before the order is marked paid.</span>
+                          <strong>Payment instructions</strong>
+                          <span>{checkoutModeLabel}</span>
                         </div>
+                        <p className="sf-subpanel-copy">
+                          Send {preciseMoney.format(result.total)} in USDC on {network === "base" ? "Base" : "Solana"}, then paste the transaction hash below so we can confirm the order.
+                        </p>
+                        {result.x402 && (
+                          <div className="sf-code">
+                            <CodeLine label="Pay on" value={result.x402.network} />
+                            <CodeLine label="Asset" value={result.x402.asset} />
+                            <CodeLine label="Send to" value={result.x402.payTo} />
+                            <CodeLine label="Amount" value={result.x402.price} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="sf-subpanel">
+                        <div className="sf-subpanel-head">
+                          <strong>Confirm payment</strong>
+                          <span>We only mark the order paid after the chain check passes.</span>
+                        </div>
+                        <p className="sf-subpanel-copy">
+                          Paste the wallet transaction hash or Solana signature after you send the payment.
+                        </p>
                         <div className="sf-form-grid">
                           <label className="sf-field full">
-                            <span>Transaction hash / signature</span>
+                            <span>Payment transaction hash</span>
                             <input
                               value={verificationTxHash}
                               onChange={(event) => setVerificationTxHash(event.target.value)}
@@ -483,7 +526,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                           className="sf-button wide"
                           onClick={() => void onVerifyPayment()}
                         >
-                          {verifying ? "Verifying payment..." : "Verify onchain payment"}
+                          {verifying ? "Checking payment..." : "Check payment"}
                         </button>
                       </div>
                     </div>
