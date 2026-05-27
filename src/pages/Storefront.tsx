@@ -169,8 +169,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
         </Link>
         <nav className="sf-nav-links">
           <a href="#drop">Drop</a>
-          <a href="#shop">Inventory</a>
-          <a href="#members">Membership</a>
+          <a href="#shop">Shop</a>
           <a href="#checkout-desk">Checkout</a>
         </nav>
         <Link to="/app" className="sf-ops-link">
@@ -182,14 +181,14 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
         <section className="sf-hero" id="drop">
           <div className="sf-hero-grid">
             <div>
-              <div className="sf-kicker">Public storefront + real backend</div>
+              <div className="sf-kicker">.cache storefront</div>
               <h1 className="sf-display">
-                Cache the look.
-                <span> Keep the order flow live.</span>
+                current drop.
+                <span> live checkout.</span>
               </h1>
               <p className="sf-lead">
-                The imported frontend is now tied to Convex products, token discount programs,
-                and guest checkout. Your public root sells; your ops app stays under <code>/app</code>.
+                Shop the live catalog, pick a variant, and pay on Base or Solana. Staff tooling stays
+                in <code>/app</code>; this page is only the customer-facing storefront.
               </p>
               <div className="sf-hero-actions">
                 <a className="sf-button" href={focusCheckout ? "#checkout-desk" : "#shop"}>
@@ -207,7 +206,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 <strong>{products ? String(products.length).padStart(2, "0") : "--"}</strong>
               </div>
               <div className="sf-metric-card">
-                <span className="sf-metric-label">Active token programs</span>
+                <span className="sf-metric-label">Discount programs</span>
                 <strong>{tokenPrograms ? String(tokenPrograms.length).padStart(2, "0") : "--"}</strong>
               </div>
               <div className="sf-hero-image">
@@ -224,11 +223,11 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
           <div className="sf-section-head">
             <div>
               <div className="sf-kicker">Live catalog</div>
-              <h2 className="sf-section-title">Frontend view, backend-backed.</h2>
+              <h2 className="sf-section-title">shop the current drop.</h2>
             </div>
             <p>
-              Products are pulled from live Convex data instead of hardcoded HTML. Variant pricing,
-              creator attribution, and token discount eligibility all come from the backend.
+              Everything shown here comes from the live catalog: pricing, variants, creator credit,
+              and any discount eligibility.
             </p>
           </div>
 
@@ -246,7 +245,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
             <div className="sf-store-grid">
               <div className="sf-card-grid">
                 {products.map((product: StorefrontProduct, index: number) => {
-                  const active = product._id === selectedProductId;
+                  const active = product._id === activeProductId;
                   const displayPrice =
                     product.variants.find((variant: StorefrontVariant) => variant.priceOverride !== undefined)
                       ?.priceOverride ?? product.basePrice;
@@ -290,8 +289,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                     {selectedProduct ? selectedProduct.title : "Select a product"}
                   </h2>
                   <p className="sf-checkout-copy">
-                    Guest checkout now writes real customers, orders, payments, and optional token
-                    burn records into Convex.
+                    Choose a rail, submit the payment, and confirm it with the tx hash.
                   </p>
 
                   <form onSubmit={onSubmit} className="sf-form">
@@ -378,11 +376,11 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
 
                         <div className={`sf-subpanel ${selectedProduct.tokenDiscountEligible ? "" : "is-disabled"}`}>
                           <div className="sf-subpanel-head">
-                            <strong>Token burn discount</strong>
+                            <strong>Discount program</strong>
                             <span>
                               {selectedProduct.tokenDiscountEligible
-                                ? "Available on this product"
-                                : "Not enabled for this product"}
+                                ? "Available for this product"
+                                : "Not available for this product"}
                             </span>
                           </div>
                           <div className="sf-form-grid">
@@ -467,8 +465,8 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       )}
                       <div className="sf-subpanel">
                         <div className="sf-subpanel-head">
-                          <strong>Verify payment</strong>
-                          <span>Submit the onchain tx hash and let the backend confirm it.</span>
+                          <strong>Submit tx hash</strong>
+                          <span>The backend checks the chain before the order is marked paid.</span>
                         </div>
                         <div className="sf-form-grid">
                           <label className="sf-field full">
@@ -498,44 +496,6 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
           )}
         </section>
 
-        <section className="sf-section" id="members">
-          <div className="sf-section-head">
-            <div>
-              <div className="sf-kicker">Discount backbone</div>
-              <h2 className="sf-section-title">Token programs are live too.</h2>
-            </div>
-            <p>
-              Active burn programs come directly from Convex, so pricing rules don’t live in the
-              frontend anymore.
-            </p>
-          </div>
-          <div className="sf-program-grid">
-            {(tokenPrograms ?? []).map((program) => (
-              <article key={program._id} className="sf-panel">
-                <div className="sf-product-topline">
-                  <span className="sf-pill">{program.chain}</span>
-                  <span className="sf-sku">{program.tokenKind}</span>
-                </div>
-                <h3>{program.projectName}</h3>
-                <p>
-                  Burn {program.tokenSymbol} for up to {preciseMoney.format(program.maxDiscountUsd)} off.
-                </p>
-                <div className="sf-program-meta">
-                  <span>{preciseMoney.format(program.discountPerTokenUsd)} per token</span>
-                  <span>{program.burnMechanism.replaceAll("_", " ")}</span>
-                </div>
-              </article>
-            ))}
-            {tokenPrograms?.length === 0 && (
-              <div className="sf-empty">
-                <strong>No active token programs.</strong>
-                <span>
-                  Seed one in <Link to="/app/token">ops</Link> and it becomes purchasable here.
-                </span>
-              </div>
-            )}
-          </div>
-        </section>
       </main>
     </div>
   );
