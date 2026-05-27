@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useMemo, useState, type FormEvent } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -9,10 +9,18 @@ const money = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
+type CheckoutProduct = NonNullable<
+  ReturnType<typeof useQuery<typeof api.checkout.storefrontProducts>>
+>[number];
+type CheckoutTokenProgram = NonNullable<
+  ReturnType<typeof useQuery<typeof api.token.programs>>
+>[number];
+
 export default function Checkout() {
   const products = useQuery(api.checkout.storefrontProducts, {});
   const tokenPrograms = useQuery(api.token.programs, { activeOnly: true });
   const createPaymentIntent = useMutation(api.checkout.createPaymentIntent);
+  const verifySubmittedPayment = useAction(api.payments.verifySubmittedPayment);
   const [productId, setProductId] = useState<Id<"products"> | "">("");
   const [quantity, setQuantity] = useState(1);
   const [rail, setRail] = useState<"x402" | "usdc">("x402");
@@ -20,17 +28,20 @@ export default function Checkout() {
   const [tokenProgramId, setTokenProgramId] = useState<Id<"tokenPrograms"> | "">("");
   const [burnAmountTokens, setBurnAmountTokens] = useState(0);
   const [pending, setPending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckoutResult | null>(null);
+  const [verificationTxHash, setVerificationTxHash] = useState("");
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
   const selectedProduct = useMemo(
-    () => products?.find((product) => product._id === productId),
+    () => products?.find((product: CheckoutProduct) => product._id === productId),
     [products, productId],
   );
   const subtotal = (selectedProduct?.basePrice ?? 0) * quantity;
   const shipping = selectedProduct?.productType === "physical" ? 9 : 0;
   const selectedProgram = useMemo(
-    () => tokenPrograms?.find((program) => program._id === tokenProgramId),
+    () => tokenPrograms?.find((program: CheckoutTokenProgram) => program._id === tokenProgramId),
     [tokenPrograms, tokenProgramId],
   );
   const burnDiscount = selectedProgram
@@ -52,6 +63,8 @@ export default function Checkout() {
     setPending(true);
     setError(null);
     setResult(null);
+    setVerificationTxHash("");
+    setVerificationMessage(null);
     try {
       const created = await createPaymentIntent({
         productId,
@@ -70,6 +83,35 @@ export default function Checkout() {
       setError(err instanceof Error ? err.message : "Checkout failed.");
     } finally {
       setPending(false);
+    }
+  }
+
+  async function onVerifyPayment() {
+    if (!result) return;
+    setVerifying(true);
+    setError(null);
+    setVerificationMessage(null);
+    try {
+      const verified = await verifySubmittedPayment({
+        paymentId: result.paymentId,
+        txHash: verificationTxHash,
+      });
+      if (verified.status === "confirmed") {
+        setVerificationMessage(
+          `Payment confirmed onchain${verified.confirmations ? ` (${verified.confirmations} confirmations)` : ""}.`,
+        );
+      } else if (verified.status === "failed") {
+        setVerificationMessage(verified.reason ?? "Payment verification failed.");
+      } else {
+        setVerificationMessage(
+          verified.reason ??
+            `Payment is still pending${verified.confirmations ? ` (${verified.confirmations} confirmations)` : ""}.`,
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Payment verification failed.");
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -96,7 +138,7 @@ export default function Checkout() {
                 className="cb-field"
               >
                 <option value="">Select product...</option>
-                {(products ?? []).map((product) => (
+                {(products ?? []).map((product: CheckoutProduct) => (
                   <option key={product._id} value={product._id}>
                     {product.title} - {money.format(product.basePrice)}
                   </option>
@@ -248,6 +290,26 @@ export default function Checkout() {
                   <CodeLine label="price" value={result.x402.price} />
                 </div>
               )}
+              <div className="mt-3 rounded-md border border-[var(--cb-line)] bg-white/40 p-3 text-xs">
+                <div className="mb-2 font-semibold">Verify payment</div>
+                <input
+                  value={verificationTxHash}
+                  onChange={(event) => setVerificationTxHash(event.target.value)}
+                  placeholder="0x... or Solana signature"
+                  className="cb-field"
+                />
+                {verificationMessage && (
+                  <p className="mt-2 text-[var(--cb-muted)]">{verificationMessage}</p>
+                )}
+                <button
+                  type="button"
+                  disabled={verifying || !verificationTxHash.trim()}
+                  onClick={() => void onVerifyPayment()}
+                  className="cb-button mt-3 w-full"
+                >
+                  {verifying ? "Verifying..." : "Verify onchain payment"}
+                </button>
+              </div>
               <Link to="/app/orders" className="cb-button-secondary mt-3 w-full">
                 Open orders
               </Link>

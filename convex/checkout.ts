@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
@@ -370,6 +370,99 @@ export const markPayment = mutation({
       await markOrderBurnsFailed(ctx, payment.orderId);
       await failOpenFulfillments(ctx, payment.orderId);
     }
+  },
+});
+
+export const paymentVerificationContext = internalQuery({
+  args: {
+    paymentId: v.id("payments"),
+  },
+  handler: async (ctx, { paymentId }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) return null;
+    const order = await ctx.db.get(payment.orderId);
+    if (!order) return null;
+    const payTo =
+      payment.x402?.payTo ?? (await receivingAddressForReader(ctx, payment.chain ?? "evm"));
+    return {
+      ...payment,
+      orderNumber: order.number,
+      currency: order.currency,
+      payTo,
+    };
+  },
+});
+
+export const recordPaymentSubmission = internalMutation({
+  args: {
+    paymentId: v.id("payments"),
+    txHash: v.string(),
+    fromAddress: v.optional(v.string()),
+    confirmations: v.optional(v.number()),
+  },
+  handler: async (ctx, { paymentId, txHash, fromAddress, confirmations }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    await ctx.db.patch(paymentId, {
+      txHash,
+      fromAddress: fromAddress ?? payment.fromAddress,
+      confirmations: confirmations ?? payment.confirmations,
+    });
+  },
+});
+
+export const confirmVerifiedPayment = internalMutation({
+  args: {
+    paymentId: v.id("payments"),
+    txHash: v.string(),
+    fromAddress: v.optional(v.string()),
+    confirmations: v.optional(v.number()),
+  },
+  handler: async (ctx, { paymentId, txHash, fromAddress, confirmations }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    const wasConfirmed = payment.status === "confirmed";
+    await ctx.db.patch(paymentId, {
+      status: "confirmed",
+      txHash,
+      fromAddress: fromAddress ?? payment.fromAddress,
+      confirmations: confirmations ?? 1,
+    });
+    await ctx.db.patch(payment.orderId, {
+      status: "paid",
+    });
+    if (!wasConfirmed) {
+      const patched = await ctx.db.get(paymentId);
+      if (!patched) return;
+      await ensureRoyaltyLedgerEntriesForOrder(ctx, payment.orderId);
+      await syncCustomerOnPaidOrder(ctx, payment.orderId);
+      await recordTreasuryInflow(ctx, paymentId, patched, txHash);
+    }
+  },
+});
+
+export const failVerifiedPayment = internalMutation({
+  args: {
+    paymentId: v.id("payments"),
+    txHash: v.optional(v.string()),
+  },
+  handler: async (ctx, { paymentId, txHash }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    if (payment.status === "confirmed") {
+      throw new Error("Confirmed payments cannot be marked failed.");
+    }
+    await ctx.db.patch(paymentId, {
+      status: "failed",
+      txHash: txHash ?? payment.txHash,
+      confirmations: 0,
+    });
+    await ctx.db.patch(payment.orderId, {
+      status: "awaiting_payment",
+    });
+    await releaseInventoryReservationForOrder(ctx, payment.orderId);
+    await markOrderBurnsFailed(ctx, payment.orderId);
+    await failOpenFulfillments(ctx, payment.orderId);
   },
 });
 
@@ -778,11 +871,19 @@ async function receivingAddress(
   ctx: MutationCtx,
   chain: "evm" | "solana",
 ) {
+  return await receivingAddressForReader(ctx, chain);
+}
+
+async function receivingAddressForReader(
+  ctx: Pick<QueryCtx, "db"> | Pick<MutationCtx, "db">,
+  chain: "evm" | "solana",
+) {
   const account = (await ctx.db.query("treasuryAccounts").collect()).find(
     (item) => item.kind === "usdc_multisig" && item.chain === chain && item.address,
   );
   return account?.address ?? x402Networks[chain === "evm" ? "base" : "solana"].fallbackPayTo;
 }
+
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;

@@ -79,7 +79,7 @@ export default function Orders() {
       )}
 
       <section className="space-y-3">
-        {(orders ?? []).map((order) => (
+        {(orders ?? []).map((order: Order) => (
           <OrderCard
             key={order._id}
             order={order}

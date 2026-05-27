@@ -8,6 +8,12 @@ const money = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
+type OrderDetailRecord = NonNullable<ReturnType<typeof useQuery<typeof api.checkout.orderDetail>>>;
+type OrderPayment = OrderDetailRecord["payments"][number];
+type OrderItem = OrderDetailRecord["items"][number];
+type OrderFulfillment = OrderItem["fulfillments"][number];
+type OrderBurn = OrderDetailRecord["tokenBurns"][number];
+
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const orderId = id as Id<"orders">;
@@ -44,7 +50,7 @@ export default function OrderDetail() {
       <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Card title="Payments">
           <div className="space-y-2">
-            {order.payments.map((payment) => (
+            {order.payments.map((payment: OrderPayment) => (
               <div key={payment._id} className="rounded-md border border-[var(--cb-line)] bg-white/40 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="font-medium">{payment.rail}</div>
@@ -62,7 +68,7 @@ export default function OrderDetail() {
 
         <Card title="Items & Fulfillment">
           <div className="space-y-3">
-            {order.items.map((item) => (
+            {order.items.map((item: OrderItem) => (
               <div key={item._id} className="rounded-md border border-[var(--cb-line)] bg-white/40 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -77,7 +83,7 @@ export default function OrderDetail() {
                   </div>
                 </div>
                 <div className="mt-2 space-y-1 text-xs text-[var(--cb-muted)]">
-                  {item.fulfillments.map((fulfillment) => (
+                  {item.fulfillments.map((fulfillment: OrderFulfillment) => (
                     <div key={fulfillment._id}>
                       {fulfillment.kind} · {fulfillment.status} · {fulfillment.trackingNumber ?? fulfillment.deliveredAssetUrl ?? "no reference"}
                     </div>
@@ -91,7 +97,7 @@ export default function OrderDetail() {
 
       <Card title="Token Burns">
         <div className="space-y-2">
-          {order.tokenBurns.map((burn) => (
+          {order.tokenBurns.map((burn: OrderBurn) => (
             <div key={burn._id} className="rounded-md border border-[var(--cb-line)] bg-white/40 p-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="font-medium">{burn.amountTokens} tokens</div>

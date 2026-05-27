@@ -20,6 +20,7 @@ import type * as digitalAssets from "../digitalAssets.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
 import type * as model_auth from "../model/auth.js";
+import type * as payments from "../payments.js";
 import type * as products from "../products.js";
 import type * as reports from "../reports.js";
 import type * as royalties from "../royalties.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   inventory: typeof inventory;
   "model/auth": typeof model_auth;
+  payments: typeof payments;
   products: typeof products;
   reports: typeof reports;
   royalties: typeof royalties;

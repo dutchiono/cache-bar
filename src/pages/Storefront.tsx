@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
@@ -38,11 +38,20 @@ type CheckoutResult = {
   };
 };
 
+type StorefrontProduct = NonNullable<
+  ReturnType<typeof useQuery<typeof api.checkout.publicStorefrontProducts>>
+>[number];
+type StorefrontVariant = StorefrontProduct["variants"][number];
+type StorefrontTokenProgram = NonNullable<
+  ReturnType<typeof useQuery<typeof api.token.publicPrograms>>
+>[number];
+
 export default function Storefront({ focusCheckout = false }: { focusCheckout?: boolean }) {
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
   const tokenPrograms = useQuery(api.token.publicPrograms, {});
   const me = useQuery(api.users.getCurrentUser, {});
   const createPaymentIntent = useMutation(api.checkout.createPublicPaymentIntent);
+  const verifySubmittedPayment = useAction(api.payments.verifySubmittedPayment);
 
   const [selectedProductId, setSelectedProductId] = useState<Id<"products"> | "">("");
   const [selectedVariantId, setSelectedVariantId] = useState<Id<"productVariants"> | "">("");
@@ -52,24 +61,28 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   const [tokenProgramId, setTokenProgramId] = useState<Id<"tokenPrograms"> | "">("");
   const [burnAmountTokens, setBurnAmountTokens] = useState(0);
   const [pending, setPending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckoutResult | null>(null);
+  const [verificationTxHash, setVerificationTxHash] = useState("");
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
   const activeProductId =
-    products?.some((product) => product._id === selectedProductId)
+    products?.some((product: StorefrontProduct) => product._id === selectedProductId)
       ? selectedProductId
       : (products?.[0]?._id ?? "");
-  const selectedProduct = products?.find((product) => product._id === activeProductId) ?? null;
-  const activeVariantId = selectedProduct?.variants.some((variant) => variant._id === selectedVariantId)
+  const selectedProduct =
+    products?.find((product: StorefrontProduct) => product._id === activeProductId) ?? null;
+  const activeVariantId = selectedProduct?.variants.some((variant: StorefrontVariant) => variant._id === selectedVariantId)
     ? selectedVariantId
     : (selectedProduct?.variants[0]?._id ?? "");
   const selectedVariant =
-    selectedProduct?.variants.find((variant) => variant._id === activeVariantId) ?? null;
+    selectedProduct?.variants.find((variant: StorefrontVariant) => variant._id === activeVariantId) ?? null;
   const tokenDiscountEnabled = Boolean(selectedProduct?.tokenDiscountEligible);
   const activeTokenProgramId = tokenDiscountEnabled ? tokenProgramId : "";
   const activeBurnAmountTokens = tokenDiscountEnabled ? burnAmountTokens : 0;
   const selectedProgram =
-    tokenPrograms?.find((program) => program._id === activeTokenProgramId) ?? null;
+    tokenPrograms?.find((program: StorefrontTokenProgram) => program._id === activeTokenProgramId) ?? null;
   const unitPrice = selectedVariant?.priceOverride ?? selectedProduct?.basePrice ?? 0;
   const subtotal = unitPrice * quantity;
   const shipping = selectedProduct?.productType === "physical" ? 9 : 0;
@@ -94,6 +107,8 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
     setPending(true);
     setError(null);
     setResult(null);
+    setVerificationTxHash("");
+    setVerificationMessage(null);
     try {
       const created = await createPaymentIntent({
         productId: selectedProduct._id,
@@ -113,6 +128,35 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
       setError(err instanceof Error ? err.message : "Checkout failed.");
     } finally {
       setPending(false);
+    }
+  }
+
+  async function onVerifyPayment() {
+    if (!result) return;
+    setVerifying(true);
+    setError(null);
+    setVerificationMessage(null);
+    try {
+      const verified = await verifySubmittedPayment({
+        paymentId: result.paymentId,
+        txHash: verificationTxHash,
+      });
+      if (verified.status === "confirmed") {
+        setVerificationMessage(
+          `Payment confirmed onchain${verified.confirmations ? ` (${verified.confirmations} confirmations)` : ""}.`,
+        );
+      } else if (verified.status === "failed") {
+        setVerificationMessage(verified.reason ?? "Payment verification failed.");
+      } else {
+        setVerificationMessage(
+          verified.reason ??
+            `Payment is still pending${verified.confirmations ? ` (${verified.confirmations} confirmations)` : ""}.`,
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Payment verification failed.");
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -201,10 +245,10 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
           ) : (
             <div className="sf-store-grid">
               <div className="sf-card-grid">
-                {products.map((product, index) => {
+                {products.map((product: StorefrontProduct, index: number) => {
                   const active = product._id === selectedProductId;
                   const displayPrice =
-                    product.variants.find((variant) => variant.priceOverride !== undefined)
+                    product.variants.find((variant: StorefrontVariant) => variant.priceOverride !== undefined)
                       ?.priceOverride ?? product.basePrice;
                   return (
                     <button
@@ -264,7 +308,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                                 )
                               }
                             >
-                              {selectedProduct.variants.map((variant) => (
+                              {selectedProduct.variants.map((variant: StorefrontVariant) => (
                                 <option key={variant._id} value={variant._id}>
                                   {variant.optionLabel}
                                   {variant.priceOverride !== undefined
@@ -421,6 +465,31 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                           <CodeLine label="price" value={result.x402.price} />
                         </div>
                       )}
+                      <div className="sf-subpanel">
+                        <div className="sf-subpanel-head">
+                          <strong>Verify payment</strong>
+                          <span>Submit the onchain tx hash and let the backend confirm it.</span>
+                        </div>
+                        <div className="sf-form-grid">
+                          <label className="sf-field full">
+                            <span>Transaction hash / signature</span>
+                            <input
+                              value={verificationTxHash}
+                              onChange={(event) => setVerificationTxHash(event.target.value)}
+                              placeholder={result.rail === "x402" ? "0x... or Solana signature" : "0x... or Solana signature"}
+                            />
+                          </label>
+                        </div>
+                        {verificationMessage && <div className="sf-kicker mt-3">{verificationMessage}</div>}
+                        <button
+                          type="button"
+                          disabled={verifying || !verificationTxHash.trim()}
+                          className="sf-button wide"
+                          onClick={() => void onVerifyPayment()}
+                        >
+                          {verifying ? "Verifying payment..." : "Verify onchain payment"}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
