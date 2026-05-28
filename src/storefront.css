@@ -203,6 +203,12 @@
   cursor: not-allowed;
 }
 
+.sf-button.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .sf-button-ghost {
   border-color: var(--sf-line);
   color: var(--sf-fg);
@@ -654,6 +660,15 @@
   background: rgba(255, 111, 76, 0.08);
   padding: 14px 16px;
   color: #ffc0b2;
+}
+
+.sf-warning {
+  border-radius: 18px;
+  border: 1px solid rgba(196, 164, 121, 0.28);
+  background: rgba(196, 164, 121, 0.1);
+  padding: 14px 16px;
+  color: var(--sf-fg-soft);
+  line-height: 1.55;
 }
 
 .sf-result,

@@ -1,5 +1,5 @@
 import { useAction, useQuery } from "convex/react";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -23,10 +23,21 @@ type StorefrontProduct = NonNullable<
 >[number];
 type StorefrontVariant = StorefrontProduct["variants"][number];
 
+type CheckoutConfigStatus = {
+  stripeSecretConfigured: boolean;
+  stripeWebhookSecretConfigured: boolean;
+  siteUrl: string | null;
+  usesBrowserOriginFallback: boolean;
+  siteUrlLooksLocal: boolean;
+  convexSiteUrl: string | null;
+  webhookPath: string;
+};
+
 export default function Storefront({ focusCheckout = false }: { focusCheckout?: boolean }) {
   const [searchParams] = useSearchParams();
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
   const createStripeSession = useAction(api.stripeCheckout.createSession);
+  const getConfigStatus = useAction(api.stripeCheckout.configStatus);
 
   const [selectedProductId, setSelectedProductId] = useState<Id<"products"> | "">(
     (searchParams.get("product") as Id<"products"> | null) ?? "",
@@ -38,6 +49,24 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   const [stashCode, setStashCode] = useState(searchParams.get("stash") ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [config, setConfig] = useState<CheckoutConfigStatus | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void getConfigStatus({})
+      .then((result) => {
+        if (active) setConfig(result);
+      })
+      .catch((err) => {
+        if (active) {
+          setConfigError(err instanceof Error ? err.message : "Unable to load checkout readiness.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [getConfigStatus]);
 
   const activeProductId =
     products?.some((product: StorefrontProduct) => product._id === selectedProductId)
@@ -57,11 +86,21 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   const liveCreatorCount = new Set(
     (products ?? []).map((product) => product.creator?._id).filter((value): value is Id<"creators"> => Boolean(value)),
   ).size;
+  const checkoutReady = Boolean(config?.stripeSecretConfigured && config?.stripeWebhookSecretConfigured);
+  const checkoutUnavailableMessage =
+    configError ??
+    (!checkoutReady && config
+      ? "Checkout is not live yet. Stripe is still being configured for this storefront."
+      : null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedProduct) {
       setError("Choose a live product first.");
+      return;
+    }
+    if (!checkoutReady) {
+      setError("Stripe checkout is not available yet for this storefront.");
       return;
     }
 
@@ -255,6 +294,12 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                     Name and email start the order. Stripe handles payment and collects delivery details securely for physical goods.
                   </p>
 
+                  {checkoutUnavailableMessage && (
+                    <div className="sf-warning">
+                      {checkoutUnavailableMessage}
+                    </div>
+                  )}
+
                   <form onSubmit={onSubmit} className="sf-form">
                     <div className="sf-form-grid">
                       <label className="sf-field">
@@ -317,7 +362,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
 
                     {error && <div className="sf-error">{error}</div>}
 
-                    <button type="submit" disabled={pending || !selectedProduct} className="sf-button wide">
+                    <button type="submit" disabled={pending || !selectedProduct || !checkoutReady} className="sf-button wide">
                       {pending ? "Opening Stripe..." : "Continue to secure checkout"}
                     </button>
                   </form>
@@ -433,9 +478,21 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         <QuoteRow label="Estimated total" value={preciseMoney.format(estimatedTotal)} strong />
                       </div>
                       <div className="sf-button-stack">
-                        <Link to={checkoutHref} className="sf-button wide">
+                        <Link
+                          to={checkoutReady ? checkoutHref : "#launch"}
+                          className={`sf-button wide${checkoutReady ? "" : " is-disabled"}`}
+                          aria-disabled={!checkoutReady}
+                          onClick={(event) => {
+                            if (!checkoutReady) event.preventDefault();
+                          }}
+                        >
                           Continue to checkout
                         </Link>
+                        {!checkoutReady && (
+                          <div className="sf-warning">
+                            Checkout is not live yet. Stripe secrets still need to be configured.
+                          </div>
+                        )}
                         {selectedProduct.tokenProgram && (
                           <Link to={`/stash?product=${selectedProduct._id}`} className="sf-button-ghost wide">
                             Redeem in .stash

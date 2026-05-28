@@ -1,5 +1,5 @@
 import { useAction, useMutation, useQuery } from "convex/react";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -16,12 +16,23 @@ type StorefrontProduct = NonNullable<
   ReturnType<typeof useQuery<typeof api.checkout.publicStorefrontProducts>>
 >[number];
 
+type CheckoutConfigStatus = {
+  stripeSecretConfigured: boolean;
+  stripeWebhookSecretConfigured: boolean;
+  siteUrl: string | null;
+  usesBrowserOriginFallback: boolean;
+  siteUrlLooksLocal: boolean;
+  convexSiteUrl: string | null;
+  webhookPath: string;
+};
+
 export default function Stash() {
   const [searchParams] = useSearchParams();
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
   const programs = useQuery(api.stash.publicPrograms, {});
   const createRedemptionIntent = useMutation(api.stash.createRedemptionIntent);
   const issuePromotionCode = useAction(api.stash.issuePromotionCode);
+  const getConfigStatus = useAction(api.stripeCheckout.configStatus);
 
   const [selectedProductId, setSelectedProductId] = useState<Id<"products"> | "">(
     (searchParams.get("product") as Id<"products"> | null) ?? "",
@@ -30,11 +41,29 @@ export default function Stash() {
   const [txHash, setTxHash] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [config, setConfig] = useState<CheckoutConfigStatus | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
   const [issuedCode, setIssuedCode] = useState<{
     promotionCode: string;
     discountValueUsd: number;
     expiresAt?: number;
   } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void getConfigStatus({})
+      .then((result) => {
+        if (active) setConfig(result);
+      })
+      .catch((err) => {
+        if (active) {
+          setConfigError(err instanceof Error ? err.message : "Unable to load .stash readiness.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [getConfigStatus]);
 
   const eligibleProducts = useMemo(
     () => (products ?? []).filter((product: StorefrontProduct) => product.tokenProgram),
@@ -51,11 +80,21 @@ export default function Stash() {
     selectedProduct?.tokenProgram ??
     null;
   const minimumBurn = selectedProgram?.minimumRedemptionTokens ?? 10;
+  const stashReady = Boolean(config?.stripeSecretConfigured && config?.stripeWebhookSecretConfigured);
+  const stashUnavailableMessage =
+    configError ??
+    (!stashReady && config
+      ? ".stash code issuance is not live yet because Stripe is still being configured."
+      : null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedProgram) {
       setError("Choose a product that has a .stash token program.");
+      return;
+    }
+    if (!stashReady) {
+      setError(".stash code issuance is not available yet for this storefront.");
       return;
     }
 
@@ -211,6 +250,12 @@ export default function Stash() {
                   Use the email you’ll check out with. After the burn confirms, .stash creates a one-time Stripe promotion code for this drop.
                 </p>
 
+                {stashUnavailableMessage && (
+                  <div className="sf-warning">
+                    {stashUnavailableMessage}
+                  </div>
+                )}
+
                 <form onSubmit={onSubmit} className="sf-form">
                   <div className="sf-form-grid">
                     <label className="sf-field">
@@ -249,7 +294,7 @@ export default function Stash() {
 
                   {error && <div className="sf-error">{error}</div>}
 
-                  <button type="submit" disabled={pending || !selectedProgram} className="sf-button wide">
+                  <button type="submit" disabled={pending || !selectedProgram || !stashReady} className="sf-button wide">
                     {pending ? "Verifying burn..." : "Issue .stash code"}
                   </button>
                 </form>
