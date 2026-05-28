@@ -176,7 +176,7 @@ export default function Checkout() {
             <div className="space-y-2 text-sm text-[var(--cb-muted)]">
               <p>Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Convex.</p>
               <p>Register the Convex HTTP webhook route in Stripe at `/stripe/webhook`.</p>
-              <p>Set `SITE_URL` or `APP_URL` in Convex to the real storefront URL if you do not want to rely on browser-origin fallback.</p>
+              <p>If `SITE_URL` or `APP_URL` is unset or still points at localhost, checkout now falls back to the buyer’s real browser origin automatically.</p>
               <p>Confirm at least one live product is linked to a `.stash` program if token discounts are required.</p>
               <p>Run one real Stripe Checkout payment and one refund recording pass in ops.</p>
             </div>

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
-import { appBaseUrl, envValue, getStripe } from "./lib/stripe";
+import { appBaseUrl, envValue, getStripe, isUsablePublicUrl } from "./lib/stripe";
 
 const shippingCountries = [
   "US",
@@ -304,11 +304,10 @@ export const createRefund = action({
 export const configStatus = action({
   args: {},
   handler: async () => {
-    const configuredSiteUrl =
+    const rawConfiguredSiteUrl =
       envValue("SITE_URL") ?? envValue("APP_URL") ?? envValue("VITE_APP_URL") ?? null;
-    const siteUrlLooksLocal =
-      configuredSiteUrl !== null &&
-      ["localhost", "127.0.0.1"].some((host) => configuredSiteUrl.includes(host));
+    const siteUrlLooksLocal = rawConfiguredSiteUrl !== null && !isUsablePublicUrl(rawConfiguredSiteUrl);
+    const configuredSiteUrl = isUsablePublicUrl(rawConfiguredSiteUrl) ? rawConfiguredSiteUrl : null;
     return {
       stripeSecretConfigured: Boolean(envValue("STRIPE_SECRET_KEY")),
       stripeWebhookSecretConfigured: Boolean(envValue("STRIPE_WEBHOOK_SECRET")),

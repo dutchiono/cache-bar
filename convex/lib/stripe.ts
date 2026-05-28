@@ -22,17 +22,28 @@ export function stripeWebhookSecret() {
 }
 
 export function appBaseUrl() {
-  return (
+  const configuredUrl =
     envValue("SITE_URL") ??
     envValue("APP_URL") ??
     envValue("VITE_APP_URL") ??
-    "http://127.0.0.1:4173"
-  );
+    null;
+
+  return isUsablePublicUrl(configuredUrl) ? configuredUrl : "http://127.0.0.1:4173";
 }
 
 export function envValue(key: string) {
   const globalProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
   return globalProcess.process?.env?.[key];
+}
+
+export function isUsablePublicUrl(value: string | null | undefined) {
+  if (!value?.trim()) return false;
+  try {
+    const url = new URL(value);
+    return !["localhost", "127.0.0.1"].includes(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 export function promotionCodeSlug(prefix: string | undefined, id: string) {

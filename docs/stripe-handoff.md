@@ -34,6 +34,8 @@ Recommended:
 - `SITE_URL` or `APP_URL`
 - `EVM_RPC_URL` for `.stash` burn verification
 
+If `SITE_URL` or `APP_URL` is missing or still set to `localhost`, the checkout action now falls back to the buyer's current browser origin for Stripe success and cancel URLs.
+
 ## What `.stash` currently supports
 
 Self-serve `.stash` verification currently supports:

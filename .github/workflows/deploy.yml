@@ -32,6 +32,24 @@ jobs:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: bunx convex deploy
 
+      - name: Sync optional Convex checkout env
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          set -e
+          if [ -n "$STRIPE_SECRET_KEY" ]; then
+            bunx convex env set --prod STRIPE_SECRET_KEY "$STRIPE_SECRET_KEY"
+          fi
+          if [ -n "$STRIPE_WEBHOOK_SECRET" ]; then
+            bunx convex env set --prod STRIPE_WEBHOOK_SECRET "$STRIPE_WEBHOOK_SECRET"
+          fi
+          if [ -n "$APP_URL" ]; then
+            bunx convex env set --prod APP_URL "$APP_URL"
+          fi
+
       - name: Seed storefront data
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
