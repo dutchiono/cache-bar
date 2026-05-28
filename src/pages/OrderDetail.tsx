@@ -57,9 +57,20 @@ export default function OrderDetail() {
                   <span className="cb-badge">{payment.status}</span>
                 </div>
                 <div className="mt-2 grid gap-2 text-xs text-[var(--cb-muted)]">
+                  <div>Rail: {payment.rail}</div>
                   <div>Chain: {payment.chain ?? "—"}</div>
-                  <div>Amount: {payment.amountUsdc?.toFixed(2) ?? "—"} USDC</div>
-                  <div className="truncate font-mono">Tx: {payment.txHash ?? "—"}</div>
+                  {payment.rail === "stripe" ? (
+                    <>
+                      <div>Order total: {money.format(order.total)}</div>
+                      <div className="truncate font-mono">Stripe session: {payment.stripeCheckoutSessionId ?? "—"}</div>
+                      <div className="truncate font-mono">Payment intent: {payment.stripePaymentIntentId ?? "—"}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div>Amount: {payment.amountUsdc?.toFixed(2) ?? "—"} USDC</div>
+                      <div className="truncate font-mono">Tx: {payment.txHash ?? "—"}</div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -105,6 +116,18 @@ export default function OrderDetail() {
               {order.shippingAddress.city}, {order.shippingAddress.region} {order.shippingAddress.postalCode}
             </div>
             <div>{order.shippingAddress.country}</div>
+          </div>
+        </Card>
+      )}
+
+      {order.stashRedemption && (
+        <Card title=".stash redemption">
+          <div className="grid gap-2 text-sm">
+            <div>Code: <span className="font-mono text-xs">{order.stashRedemption.promotionCode ?? "—"}</span></div>
+            <div>Status: {order.stashRedemption.status}</div>
+            <div>Discount: {money.format(order.stashRedemption.discountValueUsd)}</div>
+            <div>Email: {order.stashRedemption.customerEmail}</div>
+            <div>Burn tx: <span className="font-mono text-xs">{order.stashRedemption.burnTxHash ?? "—"}</span></div>
           </div>
         </Card>
       )}

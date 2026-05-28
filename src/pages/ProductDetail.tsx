@@ -141,13 +141,16 @@ export default function ProductDetail() {
           <Card title="Pricing & rails">
             <Row k="Base price" v={`${product.basePrice} ${product.currency}`} />
             <Row
-              k="$CACHE discount eligible"
+              k=".stash discount eligible"
               v={product.tokenDiscountEligible ? "Yes" : "No"}
             />
+            <Row
+              k=".stash program"
+              v={product.tokenProgram ? `${product.tokenProgram.projectName} (${product.tokenProgram.tokenSymbol})` : "—"}
+            />
             <div className="mt-2 flex flex-wrap gap-1">
-              <Pill kind="grey">Card</Pill>
-              <Pill kind="blue">USDC · Base</Pill>
-              <Pill kind="blue">USDC · Solana</Pill>
+              <Pill kind="grey">Stripe</Pill>
+              <Pill kind="blue">USDC in Stripe</Pill>
             </div>
           </Card>
         </div>

@@ -194,18 +194,24 @@ export const ensureStorefront = mutation({
     }
 
     const existingPrograms = await ctx.db.query("tokenPrograms").collect();
-    if (!existingPrograms.some((program) => program.projectName === "Example Drop Token")) {
-      await ctx.db.insert("tokenPrograms", {
+    let demoProgram = existingPrograms.find((program) => program.projectName === "Example Drop Token");
+    if (!demoProgram) {
+      const tokenProgramId = await ctx.db.insert("tokenPrograms", {
         projectName: "Example Drop Token",
         tokenSymbol: "DROP",
         chain: "evm",
         tokenKind: "erc20",
         tokenAddress: "0xDROp000000000000000000000000000000000000",
+        tokenDecimals: 18,
         burnTarget: "0x000000000000000000000000000000000000dEaD",
         burnMechanism: "transfer_to_burn",
         discountPerTokenUsd: 0.25,
         maxDiscountUsd: 35,
         active: true,
+        redemptionEnabled: true,
+        minimumRedemptionTokens: 10,
+        promotionCodePrefix: "DROP",
+        promotionCodeExpiresInDays: 14,
         preDropNft: {
           enabled: true,
           collectionName: ".cache Pre-drop Pass",
@@ -215,7 +221,34 @@ export const ensureStorefront = mutation({
         },
         notes: "Deploy bootstrap token program.",
       });
+      demoProgram = (await ctx.db.get(tokenProgramId))!;
       summary.tokenProgramsCreated += 1;
+    } else {
+      await ctx.db.patch(demoProgram._id, {
+        tokenDecimals: 18,
+        redemptionEnabled: true,
+        minimumRedemptionTokens: 10,
+        promotionCodePrefix: demoProgram.promotionCodePrefix ?? "DROP",
+        promotionCodeExpiresInDays: demoProgram.promotionCodeExpiresInDays ?? 14,
+      });
+      demoProgram = {
+        ...demoProgram,
+        tokenDecimals: 18,
+        redemptionEnabled: true,
+        minimumRedemptionTokens: 10,
+        promotionCodePrefix: demoProgram.promotionCodePrefix ?? "DROP",
+        promotionCodeExpiresInDays: demoProgram.promotionCodeExpiresInDays ?? 14,
+      };
+    }
+
+    if (demoProgram) {
+      const products = await ctx.db.query("products").collect();
+      for (const product of products) {
+        if (!product.tokenDiscountEligible || product.tokenProgramId) continue;
+        await ctx.db.patch(product._id, {
+          tokenProgramId: demoProgram._id,
+        });
+      }
     }
 
     const existingAccounts = await ctx.db.query("treasuryAccounts").collect();

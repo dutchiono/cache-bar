@@ -4,6 +4,7 @@ import { api } from "../../convex/_generated/api";
 
 export default function TokenBurn() {
   const programs = useQuery(api.token.programs, {});
+  const redemptions = useQuery(api.stash.redemptions, {});
   const burns = useQuery(api.token.burns, {});
   const upsertProgram = useMutation(api.token.upsertProgram);
   const seedDemo = useMutation(api.token.seedDemo);
@@ -17,7 +18,7 @@ export default function TokenBurn() {
     try {
       await fn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Token action failed.");
+      setError(err instanceof Error ? err.message : ".stash action failed.");
     } finally {
       setBusy(null);
     }
@@ -33,6 +34,7 @@ export default function TokenBurn() {
         chain: form.get("chain") as "evm" | "solana",
         tokenKind: form.get("tokenKind") as "native" | "erc20" | "spl",
         tokenAddress: String(form.get("tokenAddress") ?? "") || undefined,
+        tokenDecimals: Number(form.get("tokenDecimals") ?? 18),
         burnTarget: String(form.get("burnTarget") ?? ""),
         burnMechanism: form.get("burnMechanism") as
           | "transfer_to_burn"
@@ -41,6 +43,11 @@ export default function TokenBurn() {
         discountPerTokenUsd: Number(form.get("discountPerTokenUsd") ?? 0),
         maxDiscountUsd: Number(form.get("maxDiscountUsd") ?? 0),
         active: form.get("active") === "on",
+        redemptionEnabled: form.get("redemptionEnabled") === "on",
+        minimumRedemptionTokens: Number(form.get("minimumRedemptionTokens") ?? 0),
+        promotionCodePrefix: String(form.get("promotionCodePrefix") ?? "") || undefined,
+        promotionCodeExpiresInDays:
+          Number(form.get("promotionCodeExpiresInDays") ?? 0) || undefined,
         preDropNft:
           form.get("preDropEnabled") === "on"
             ? {
@@ -62,10 +69,10 @@ export default function TokenBurn() {
       <section className="cb-panel-dark p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="cb-kicker text-[var(--cb-gold)]">Project token discounts</p>
-            <h1 className="cb-display mt-2 text-4xl font-semibold">Token & Burn</h1>
+            <p className="cb-kicker text-[var(--cb-gold)]">Token-linked discounts</p>
+            <h1 className="cb-display mt-2 text-4xl font-semibold">.stash</h1>
             <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-              Configure project-native tokens that customers burn for merch or pre-drop NFT discounts.
+              Configure burn targets, discount ratios, and one-time Stripe code rules for products tied to a token program.
             </p>
           </div>
           <button
@@ -85,15 +92,16 @@ export default function TokenBurn() {
         </p>
       )}
 
-      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <form onSubmit={onCreate} className="cb-panel p-4">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide">New Burn Program</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide">New .stash Program</h2>
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Project" name="projectName" placeholder="Project name" />
             <Field label="Symbol" name="tokenSymbol" placeholder="TOKEN" />
             <Select label="Chain" name="chain" options={["evm", "solana"]} />
             <Select label="Token kind" name="tokenKind" options={["native", "erc20", "spl"]} />
             <Field label="Token address" name="tokenAddress" required={false} />
+            <Field label="Token decimals" name="tokenDecimals" type="number" defaultValue="18" />
             <Field label="Burn target" name="burnTarget" placeholder="burn address / program" />
             <Select
               label="Burn mechanism"
@@ -102,9 +110,16 @@ export default function TokenBurn() {
             />
             <Field label="$ discount / token" name="discountPerTokenUsd" type="number" step="0.000001" />
             <Field label="Max discount $" name="maxDiscountUsd" type="number" step="0.01" />
+            <Field label="Minimum burn" name="minimumRedemptionTokens" type="number" step="0.000001" defaultValue="0" />
+            <Field label="Code prefix" name="promotionCodePrefix" placeholder="DROP" required={false} />
+            <Field label="Code expiry days" name="promotionCodeExpiresInDays" type="number" defaultValue="14" required={false} />
             <label className="mt-6 inline-flex items-center gap-2 text-sm">
               <input name="active" type="checkbox" defaultChecked />
               Active
+            </label>
+            <label className="mt-6 inline-flex items-center gap-2 text-sm">
+              <input name="redemptionEnabled" type="checkbox" defaultChecked />
+              Enable .stash redemption
             </label>
           </div>
 
@@ -150,7 +165,9 @@ export default function TokenBurn() {
                     <Line label="Burn target" value={program.burnTarget} mono />
                     <Line label="Discount" value={`$${program.discountPerTokenUsd}/token`} />
                     <Line label="Max" value={`$${program.maxDiscountUsd}`} />
-                    <Line label="Pre-drop NFT" value={program.preDropNft?.enabled ? program.preDropNft.collectionName : "off"} />
+                    <Line label="Min burn" value={program.minimumRedemptionTokens} />
+                    <Line label="Code prefix" value={program.promotionCodePrefix ?? "STASH"} />
+                    <Line label="Self-serve" value={program.redemptionEnabled ? "on" : "off"} />
                   </div>
                 </article>
               ))}
@@ -158,7 +175,35 @@ export default function TokenBurn() {
           </section>
 
           <section className="cb-panel p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Burn Intents</h2>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Issued .stash Codes</h2>
+            <div className="space-y-2">
+              {(redemptions ?? []).map((row) => (
+                <article key={row._id} className="rounded-md border border-[var(--cb-line)] bg-white/40 p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="font-semibold">{row.program?.projectName ?? "Unknown program"}</div>
+                      <div className="text-sm text-[var(--cb-muted)]">
+                        {row.customerEmail} · {row.amountTokens} tokens · ${row.discountValueUsd.toFixed(2)} off
+                      </div>
+                    </div>
+                    <span className="cb-badge">{row.status}</span>
+                  </div>
+                  <div className="mt-3 grid gap-2 text-xs md:grid-cols-2">
+                    <Line label="Code" value={row.promotionCode ?? "—"} mono />
+                    <Line label="Wallet" value={row.walletAddress ?? "—"} mono />
+                    <Line label="Burn tx" value={row.burnTxHash ?? "—"} mono />
+                    <Line
+                      label="Expires"
+                      value={row.expiresAt ? new Date(row.expiresAt).toLocaleString() : "—"}
+                    />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="cb-panel p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Legacy burn records</h2>
             <div className="space-y-2">
               {(burns ?? []).map((burn) => (
                 <article key={burn._id} className="rounded-md border border-[var(--cb-line)] bg-white/40 p-3">

@@ -60,11 +60,16 @@ export const upsertProgram = mutation({
     chain,
     tokenKind,
     tokenAddress: v.optional(v.string()),
+    tokenDecimals: v.number(),
     burnTarget: v.string(),
     burnMechanism,
     discountPerTokenUsd: v.number(),
     maxDiscountUsd: v.number(),
     active: v.boolean(),
+    redemptionEnabled: v.boolean(),
+    minimumRedemptionTokens: v.number(),
+    promotionCodePrefix: v.optional(v.string()),
+    promotionCodeExpiresInDays: v.optional(v.number()),
     preDropNft: v.optional(
       v.object({
         enabled: v.boolean(),
@@ -121,7 +126,15 @@ export const seedDemo = mutation({
   handler: async (ctx) => {
     await requireRole(ctx, ["admin", "finance", "catalog_manager"]);
     const existing = await ctx.db.query("tokenPrograms").collect();
-    if (existing.some((program) => program.projectName === "Example Drop Token")) {
+    const current = existing.find((program) => program.projectName === "Example Drop Token");
+    if (current) {
+      await ctx.db.patch(current._id, {
+        tokenDecimals: 18,
+        redemptionEnabled: true,
+        minimumRedemptionTokens: 10,
+        promotionCodePrefix: current.promotionCodePrefix ?? "DROP",
+        promotionCodeExpiresInDays: current.promotionCodeExpiresInDays ?? 14,
+      });
       return { seeded: false };
     }
     await ctx.db.insert("tokenPrograms", {
@@ -130,11 +143,16 @@ export const seedDemo = mutation({
       chain: "evm",
       tokenKind: "erc20",
       tokenAddress: "0xDROp000000000000000000000000000000000000",
+      tokenDecimals: 18,
       burnTarget: "0x000000000000000000000000000000000000dEaD",
       burnMechanism: "transfer_to_burn",
       discountPerTokenUsd: 0.25,
       maxDiscountUsd: 35,
       active: true,
+      redemptionEnabled: true,
+      minimumRedemptionTokens: 10,
+      promotionCodePrefix: "DROP",
+      promotionCodeExpiresInDays: 14,
       preDropNft: {
         enabled: true,
         collectionName: ".cache Pre-drop Pass",
@@ -153,9 +171,14 @@ function validateProgram(program: {
   tokenSymbol: string;
   tokenKind: "native" | "erc20" | "spl";
   tokenAddress?: string;
+  tokenDecimals: number;
   burnTarget: string;
   discountPerTokenUsd: number;
   maxDiscountUsd: number;
+  redemptionEnabled: boolean;
+  minimumRedemptionTokens: number;
+  promotionCodePrefix?: string;
+  promotionCodeExpiresInDays?: number;
   preDropNft?: {
     enabled: boolean;
     collectionName: string;
@@ -168,12 +191,24 @@ function validateProgram(program: {
   if (program.tokenKind !== "native" && !program.tokenAddress?.trim()) {
     throw new Error("ERC-20/SPL programs require a token address.");
   }
+  if (!Number.isFinite(program.tokenDecimals) || program.tokenDecimals < 0 || program.tokenDecimals > 18) {
+    throw new Error("tokenDecimals must be between 0 and 18.");
+  }
   if (!program.burnTarget.trim()) throw new Error("Burn target is required.");
   if (!Number.isFinite(program.discountPerTokenUsd) || program.discountPerTokenUsd < 0) {
     throw new Error("discountPerTokenUsd must be non-negative.");
   }
   if (!Number.isFinite(program.maxDiscountUsd) || program.maxDiscountUsd < 0) {
     throw new Error("maxDiscountUsd must be non-negative.");
+  }
+  if (!Number.isFinite(program.minimumRedemptionTokens) || program.minimumRedemptionTokens < 0) {
+    throw new Error("minimumRedemptionTokens must be non-negative.");
+  }
+  if (
+    program.promotionCodeExpiresInDays !== undefined &&
+    (!Number.isFinite(program.promotionCodeExpiresInDays) || program.promotionCodeExpiresInDays < 1)
+  ) {
+    throw new Error("promotionCodeExpiresInDays must be at least 1.");
   }
   if (program.preDropNft?.enabled) {
     if (!program.preDropNft.collectionName.trim()) {

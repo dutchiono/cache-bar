@@ -6,6 +6,7 @@ import { SignIn } from "./components/SignIn";
 import AgentConsole from "./pages/AgentConsole";
 import Automations from "./pages/Automations";
 import Checkout from "./pages/Checkout";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CustomerDetail from "./pages/CustomerDetail";
 import Customers from "./pages/Customers";
 import Creators from "./pages/Creators";
@@ -19,6 +20,7 @@ import ProductDetail from "./pages/ProductDetail";
 import Reports from "./pages/Reports";
 import Royalties from "./pages/Royalties";
 import Settings from "./pages/Settings";
+import Stash from "./pages/Stash";
 import Storefront from "./pages/Storefront";
 import Submissions from "./pages/Submissions";
 import Team from "./pages/Team";
@@ -49,6 +51,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Storefront />} />
       <Route path="/checkout" element={<Storefront focusCheckout />} />
+      <Route path="/checkout/success" element={<CheckoutSuccess />} />
+      <Route path="/stash" element={<Stash />} />
       <Route path="/storefront" element={<Navigate to="/" replace />} />
 
       <Route path="/app" element={<ProtectedOpsLayout />}>
@@ -70,7 +74,8 @@ export default function App() {
         <Route path="agent" element={<AgentConsole />} />
         <Route path="settings" element={<Settings />} />
         <Route path="team" element={<Team />} />
-        <Route path="token" element={<TokenBurn />} />
+        <Route path="stash" element={<TokenBurn />} />
+        <Route path="token" element={<Navigate to="/app/stash" replace />} />
         <Route path="treasury" element={<Treasury />} />
         <Route path="storefront" element={<Navigate to="/" replace />} />
         <Route

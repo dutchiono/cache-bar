@@ -83,6 +83,7 @@ export default defineSchema({
     imageStorageIds: v.array(v.id("_storage")),
     demoImageUrls: v.optional(v.array(v.string())),
     tokenDiscountEligible: v.boolean(),
+    tokenProgramId: v.optional(v.id("tokenPrograms")),
     provenance: v.object({
       makerType: makerType,
       summary: v.string(),
@@ -221,6 +222,7 @@ export default defineSchema({
       v.literal("spl"),
     ),
     tokenAddress: v.optional(v.string()),
+    tokenDecimals: v.optional(v.number()),
     burnTarget: v.string(),
     burnMechanism: v.union(
       v.literal("transfer_to_burn"),
@@ -230,6 +232,10 @@ export default defineSchema({
     discountPerTokenUsd: v.number(),
     maxDiscountUsd: v.number(),
     active: v.boolean(),
+    redemptionEnabled: v.optional(v.boolean()),
+    minimumRedemptionTokens: v.optional(v.number()),
+    promotionCodePrefix: v.optional(v.string()),
+    promotionCodeExpiresInDays: v.optional(v.number()),
     preDropNft: v.optional(
       v.object({
         enabled: v.boolean(),
@@ -275,6 +281,7 @@ export default defineSchema({
         country: v.string(),
       }),
     ),
+    stashRedemptionId: v.optional(v.id("stashRedemptions")),
     total: v.number(),
     currency: v.string(),
     placedAt: v.number(),
@@ -284,10 +291,12 @@ export default defineSchema({
 
   payments: defineTable({
     orderId: v.id("orders"),
-    rail: v.union(v.literal("card"), v.literal("usdc"), v.literal("x402")),
+    rail: v.union(v.literal("card"), v.literal("usdc"), v.literal("x402"), v.literal("stripe")),
     chain: v.optional(chain),
     // card:
     stripePaymentIntentId: v.optional(v.string()),
+    stripeCheckoutSessionId: v.optional(v.string()),
+    stripePaymentMethodType: v.optional(v.string()),
     // usdc:
     txHash: v.optional(v.string()),
     fromAddress: v.optional(v.string()),
@@ -333,6 +342,31 @@ export default defineSchema({
     .index("by_order", ["orderId"])
     .index("by_program", ["programId"])
     .index("by_burnTx", ["burnTxHash"]),
+
+  stashRedemptions: defineTable({
+    programId: v.id("tokenPrograms"),
+    customerEmail: v.string(),
+    walletAddress: v.optional(v.string()),
+    amountTokens: v.number(),
+    discountValueUsd: v.number(),
+    burnTxHash: v.optional(v.string()),
+    stripeCouponId: v.optional(v.string()),
+    stripePromotionCodeId: v.optional(v.string()),
+    promotionCode: v.optional(v.string()),
+    status: v.union(
+      v.literal("awaiting_burn"),
+      v.literal("verified"),
+      v.literal("issued"),
+      v.literal("redeemed"),
+      v.literal("failed"),
+    ),
+    expiresAt: v.optional(v.number()),
+    redeemedAt: v.optional(v.number()),
+  })
+    .index("by_program", ["programId"])
+    .index("by_email", ["customerEmail"])
+    .index("by_code", ["promotionCode"])
+    .index("by_status", ["status"]),
 
   orderItems: defineTable({
     orderId: v.id("orders"),

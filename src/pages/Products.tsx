@@ -10,6 +10,7 @@ type Product = NonNullable<ReturnType<typeof useQuery<typeof api.products.list>>
 export default function Products() {
   const products = useQuery(api.products.list, {});
   const creators = useQuery(api.creators.list, {});
+  const tokenPrograms = useQuery(api.token.programs, { activeOnly: true });
   const createDraft = useMutation(api.products.createDraft);
   const seedVisionDemo = useMutation(api.products.seedVisionDemo);
 
@@ -18,6 +19,7 @@ export default function Products() {
   const [pending, setPending] = useState(false);
 
   const [creatorId, setCreatorId] = useState<Id<"creators"> | "">("");
+  const [tokenProgramId, setTokenProgramId] = useState<Id<"tokenPrograms"> | "">("");
   const [splits, setSplits] = useState<Split[]>([
     { role: "creator", percent: 90 },
     { role: "platform", percent: 10 },
@@ -77,6 +79,8 @@ export default function Products() {
           .map((s) => s.trim())
           .filter(Boolean),
         tokenDiscountEligible: fd.get("tokenDiscountEligible") === "on",
+        tokenProgramId:
+          fd.get("tokenDiscountEligible") === "on" && tokenProgramId ? tokenProgramId : undefined,
         provenance,
         royaltySplits: splits,
       });
@@ -87,6 +91,7 @@ export default function Products() {
         { role: "platform", percent: 10 },
       ]);
       setCreatorId("");
+      setTokenProgramId("");
       setOpen(false);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed.");
@@ -240,7 +245,22 @@ export default function Products() {
                 name="tokenDiscountEligible"
                 defaultChecked
               />
-              <span>$CACHE discounts apply to this product</span>
+              <span>.stash discounts apply to this product</span>
+            </label>
+            <label className="col-span-3 flex flex-col gap-1 text-sm">
+              <span className="cb-label">.stash token program</span>
+              <select
+                value={tokenProgramId}
+                onChange={(e) => setTokenProgramId(e.target.value as Id<"tokenPrograms"> | "")}
+                className="cb-field"
+              >
+                <option value="">Select token program…</option>
+                {tokenPrograms?.map((program) => (
+                  <option key={program._id} value={program._id}>
+                    {program.projectName} ({program.tokenSymbol})
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 

@@ -68,7 +68,7 @@ export default function Orders() {
         <p className="cb-kicker text-[var(--cb-gold)]">Payment operations</p>
         <h1 className="cb-display mt-2 text-4xl font-semibold">Orders</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Crypto checkout orders, USDC records, and x402 payment requirements.
+          Review Stripe and wallet-backed orders, track payment state, and record cancels or refunds after processor activity.
         </p>
       </section>
 
@@ -142,9 +142,29 @@ function OrderCard({
           <div className="rounded-md border border-[var(--cb-line)] bg-white/40 p-3">
             <div className="mb-2 text-sm font-semibold">Payment</div>
             <Line label="Status" value={payment.status} />
+            <Line label="Rail" value={payment.rail} />
             <Line label="Chain" value={payment.chain ?? "—"} />
-            <Line label="Amount USDC" value={payment.amountUsdc?.toFixed(2) ?? "—"} />
-            <Line label="Tx" value={payment.txHash ?? "—"} mono />
+            <Line
+              label={payment.rail === "stripe" ? "Stripe session" : "Amount USDC"}
+              value={
+                payment.rail === "stripe"
+                  ? payment.stripeCheckoutSessionId ?? "—"
+                  : payment.amountUsdc?.toFixed(2) ?? "—"
+              }
+              mono={payment.rail === "stripe"}
+            />
+            {payment.rail === "stripe" && (
+              <Line label="Order total" value={money.format(order.total)} />
+            )}
+            <Line
+              label={payment.rail === "stripe" ? "Payment intent" : "Tx"}
+              value={
+                payment.rail === "stripe"
+                  ? payment.stripePaymentIntentId ?? "—"
+                  : payment.txHash ?? "—"
+              }
+              mono
+            />
           </div>
           {payment.x402 && (
             <div className="rounded-md border border-[var(--cb-line)] bg-white/40 p-3">
@@ -158,7 +178,7 @@ function OrderCard({
         </div>
       )}
 
-      {payment && payment.status === "pending" && (
+      {payment && payment.status === "pending" && payment.rail !== "stripe" && (
         <div className="mt-3 flex flex-wrap justify-end gap-2">
           <button
             type="button"
@@ -184,6 +204,12 @@ function OrderCard({
           >
             {busy === payment._id ? "Confirming..." : "Mark confirmed"}
           </button>
+        </div>
+      )}
+
+      {payment && payment.status === "pending" && payment.rail === "stripe" && (
+        <div className="mt-3 rounded-md border border-[var(--cb-line)] bg-white/40 px-3 py-2 text-xs text-[var(--cb-muted)]">
+          Stripe-backed orders are confirmed by webhook. If the buyer abandons checkout, cancel the order here. If Stripe has already settled, do not use manual confirmation.
         </div>
       )}
 

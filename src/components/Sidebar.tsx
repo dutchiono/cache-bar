@@ -37,14 +37,15 @@ const groups: Group[] = [
     label: "Treasury",
     items: [
       { to: "/app/treasury", label: "Treasury & Off-ramp" },
-      { to: "/app/token", label: "Token & Burn" },
+      { to: "/app/stash", label: ".stash" },
     ],
   },
   {
     label: "Storefront",
     items: [
       { to: "/", label: "Live Storefront" },
-      { to: "/checkout", label: "Checkout Preview" },
+      { to: "/stash", label: "Public .stash" },
+      { to: "/checkout", label: "Live Checkout" },
     ],
   },
   {

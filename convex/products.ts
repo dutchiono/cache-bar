@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { requireRole, requireUser } from "./model/auth";
 import { makerType } from "./schema";
@@ -61,7 +62,16 @@ export const get = query({
     const product = await ctx.db.get(id);
     if (!product) return null;
     const creator = await ctx.db.get(product.creatorId);
-    return { ...product, creator };
+    let tokenProgram = product.tokenProgramId ? await ctx.db.get(product.tokenProgramId) : null;
+    if (!tokenProgram && product.tokenDiscountEligible) {
+      const programs = await ctx.db
+        .query("tokenPrograms")
+        .withIndex("by_active", (q) => q.eq("active", true))
+        .collect();
+      const redeemablePrograms = programs.filter((program) => program.redemptionEnabled ?? true);
+      tokenProgram = redeemablePrograms.length === 1 ? redeemablePrograms[0] : null;
+    }
+    return { ...product, creator, tokenProgram };
   },
 });
 
@@ -77,6 +87,7 @@ export const createDraft = mutation({
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     demoImageUrls: v.optional(v.array(v.string())),
     tokenDiscountEligible: v.boolean(),
+    tokenProgramId: v.optional(v.id("tokenPrograms")),
     provenance: provenanceArg,
     royaltySplits: royaltySplitsArg,
   },
@@ -90,6 +101,10 @@ export const createDraft = mutation({
     const derivedMakerType = creator.type;
     validateProvenance(derivedMakerType, args.provenance);
     validateSplits(args.royaltySplits);
+    const tokenProgramId = await validateTokenDiscount(ctx, {
+      tokenDiscountEligible: args.tokenDiscountEligible,
+      tokenProgramId: args.tokenProgramId,
+    });
 
     return await ctx.db.insert("products", {
       title: args.title,
@@ -104,6 +119,7 @@ export const createDraft = mutation({
       imageStorageIds: args.imageStorageIds ?? [],
       demoImageUrls: args.demoImageUrls ?? [],
       tokenDiscountEligible: args.tokenDiscountEligible,
+      tokenProgramId,
       provenance: { ...args.provenance, makerType: derivedMakerType },
       royaltySplits: args.royaltySplits,
     });
@@ -121,6 +137,7 @@ export const update = mutation({
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     demoImageUrls: v.optional(v.array(v.string())),
     tokenDiscountEligible: v.optional(v.boolean()),
+    tokenProgramId: v.optional(v.id("tokenPrograms")),
     provenance: v.optional(provenanceArg),
     royaltySplits: v.optional(royaltySplitsArg),
   },
@@ -136,7 +153,16 @@ export const update = mutation({
     if (patch.royaltySplits) {
       validateSplits(patch.royaltySplits);
     }
-    await ctx.db.patch(id, patch);
+    const tokenDiscountEligible = patch.tokenDiscountEligible ?? existing.tokenDiscountEligible;
+    const tokenProgramId = await validateTokenDiscount(ctx, {
+      tokenDiscountEligible,
+      tokenProgramId:
+        patch.tokenProgramId !== undefined ? patch.tokenProgramId : existing.tokenProgramId,
+    });
+    await ctx.db.patch(id, {
+      ...patch,
+      tokenProgramId,
+    });
   },
 });
 
@@ -161,6 +187,10 @@ export const setStatus = mutation({
     if (status === "live" || status === "approved") {
       validateProvenance(existing.makerType, existing.provenance);
       validateSplits(existing.royaltySplits);
+      await validateTokenDiscount(ctx, {
+        tokenDiscountEligible: existing.tokenDiscountEligible,
+        tokenProgramId: existing.tokenProgramId,
+      });
     }
     await ctx.db.patch(id, { status });
   },
@@ -195,6 +225,9 @@ export const seedVisionDemo = mutation({
     const title = "WAIFU.FUN v2.0.0 // Statement Tee";
     const existing = (await ctx.db.query("products").collect()).find((p) => p.title === title);
     if (existing) return existing._id;
+    const demoProgram = (await ctx.db.query("tokenPrograms").collect()).find(
+      (program) => program.active && program.redemptionEnabled,
+    );
 
     return await ctx.db.insert("products", {
       title,
@@ -210,6 +243,7 @@ export const seedVisionDemo = mutation({
       imageStorageIds: [],
       demoImageUrls: ["/images/waifu.png", "/images/image.png"],
       tokenDiscountEligible: true,
+      tokenProgramId: demoProgram?._id,
       provenance: {
         makerType: "agent",
         summary:
@@ -264,6 +298,29 @@ function validateProvenance(
       );
     }
   }
+}
+
+async function validateTokenDiscount(
+  ctx: MutationCtx,
+  {
+    tokenDiscountEligible,
+    tokenProgramId,
+  }: {
+    tokenDiscountEligible: boolean;
+    tokenProgramId?: Id<"tokenPrograms">;
+  },
+) {
+  if (!tokenDiscountEligible) {
+    return undefined;
+  }
+  if (!tokenProgramId) {
+    throw new Error("Token-discounted products must be linked to a .stash token program.");
+  }
+  const tokenProgram = await ctx.db.get(tokenProgramId);
+  if (!tokenProgram || !tokenProgram.active || !(tokenProgram.redemptionEnabled ?? true)) {
+    throw new Error("Selected .stash token program is not available.");
+  }
+  return tokenProgramId;
 }
 
 function validateSplits(

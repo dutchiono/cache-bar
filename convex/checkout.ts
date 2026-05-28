@@ -32,6 +32,15 @@ const paymentIntentArgs = {
   burnWalletAddress: v.optional(v.string()),
 };
 
+const shippingAddressArg = v.object({
+  line1: v.string(),
+  line2: v.optional(v.string()),
+  city: v.string(),
+  region: v.string(),
+  postalCode: v.string(),
+  country: v.string(),
+});
+
 const x402Networks = {
   base: {
     chain: "evm" as const,
@@ -95,6 +104,7 @@ export const orderDetail = query({
     const order = await ctx.db.get(orderId);
     if (!order) return null;
     const customer = await ctx.db.get(order.customerId);
+    const stashRedemption = order.stashRedemptionId ? await ctx.db.get(order.stashRedemptionId) : null;
     const payments = await ctx.db
       .query("payments")
       .withIndex("by_order", (q) => q.eq("orderId", orderId))
@@ -115,6 +125,7 @@ export const orderDetail = query({
     return {
       ...order,
       customer,
+      stashRedemption,
       payments,
       tokenBurns,
       items: await Promise.all(
@@ -141,6 +152,207 @@ export const createPublicPaymentIntent = mutation({
   args: paymentIntentArgs,
   handler: async (ctx, args) => {
     return await createPaymentIntentRecord(ctx, args);
+  },
+});
+
+export const checkoutSelectionContext = internalQuery({
+  args: {
+    productId: v.id("products"),
+    variantId: v.optional(v.id("productVariants")),
+  },
+  handler: async (ctx, { productId, variantId }) => {
+    const product = await ctx.db.get(productId);
+    if (!product) return null;
+
+    let variant = null;
+    if (variantId) {
+      variant = await ctx.db.get(variantId);
+      if (!variant || variant.productId !== productId) {
+        return null;
+      }
+    }
+
+    const tokenProgram = await resolveProductTokenProgram(ctx, product);
+
+    return {
+      product,
+      variant,
+      tokenProgram,
+    };
+  },
+});
+
+export const createStripeCheckoutDraft = internalMutation({
+  args: {
+    productId: v.id("products"),
+    variantId: v.optional(v.id("productVariants")),
+    quantity: v.number(),
+    customerName: v.string(),
+    customerEmail: v.string(),
+    shippingAddress: v.optional(shippingAddressArg),
+    stashRedemptionId: v.optional(v.id("stashRedemptions")),
+    discountValueUsd: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!Number.isInteger(args.quantity) || args.quantity < 1) {
+      throw new Error("Quantity must be at least 1.");
+    }
+
+    const product = await ctx.db.get(args.productId);
+    if (!product) throw new Error("Product not found.");
+    if (product.status !== "live") {
+      throw new Error("Only live products can be checked out.");
+    }
+
+    let variant = null;
+    if (args.variantId) {
+      variant = await ctx.db.get(args.variantId);
+      if (!variant) throw new Error("Variant not found.");
+      if (variant.productId !== product._id) {
+        throw new Error("Variant does not belong to the selected product.");
+      }
+    }
+
+    const customer = await findOrCreateCustomer(ctx, args.customerEmail, args.customerName);
+    const unitPrice = variant?.priceOverride ?? product.basePrice;
+    const subtotal = unitPrice * args.quantity;
+    const shipping = product.productType === "physical" ? 9 : 0;
+    const discountValueUsd = roundMoney(
+      Math.min(Math.max(args.discountValueUsd ?? 0, 0), subtotal),
+    );
+    const shippingAddress =
+      product.productType === "physical"
+        ? (args.shippingAddress ? normalizeShippingAddress(args.shippingAddress) : undefined)
+        : undefined;
+    const fulfillmentKind =
+      product.productType === "digital" ? "digital_delivery" : "print_on_demand";
+
+    if (variant) {
+      await reserveInventoryIfNeeded(ctx, variant._id, args.quantity);
+    }
+
+    const orderId = await ctx.db.insert("orders", {
+      number: await nextOrderNumber(ctx),
+      customerId: customer,
+      channel: "stripe_checkout",
+      status: "awaiting_payment",
+      subtotal,
+      holdTierDiscount: 0,
+      burnDiscount: discountValueUsd,
+      tokensSpentBurned: 0,
+      tax: 0,
+      shipping,
+      shippingAddress,
+      stashRedemptionId: args.stashRedemptionId,
+      total: subtotal - discountValueUsd + shipping,
+      currency: "USD",
+      placedAt: Date.now(),
+    });
+
+    const netRevenue = subtotal - discountValueUsd;
+    const orderItemId = await ctx.db.insert("orderItems", {
+      orderId,
+      productId: product._id,
+      variantId: variant?._id,
+      makerType: product.makerType,
+      quantity: args.quantity,
+      unitPrice,
+      netRevenue,
+      fulfillmentKind,
+    });
+    await ctx.db.insert("fulfillments", {
+      orderId,
+      orderItemId,
+      kind: fulfillmentKind,
+      status: "pending",
+    });
+
+    const paymentId = await ctx.db.insert("payments", {
+      orderId,
+      rail: "stripe",
+      status: "pending",
+    });
+
+    return {
+      orderId,
+      paymentId,
+      orderNumber: (await ctx.db.get(orderId))?.number ?? "",
+      productTitle: product.title,
+      variantLabel: variant?.optionLabel,
+      subtotal,
+      shipping,
+      discountValueUsd,
+      total: subtotal - discountValueUsd + shipping,
+      stashRedemptionId: args.stashRedemptionId,
+    };
+  },
+});
+
+export const markStripeCheckoutSessionCreated = internalMutation({
+  args: {
+    paymentId: v.id("payments"),
+    stripeCheckoutSessionId: v.string(),
+  },
+  handler: async (ctx, { paymentId, stripeCheckoutSessionId }) => {
+    await ctx.db.patch(paymentId, {
+      stripeCheckoutSessionId,
+    });
+  },
+});
+
+export const confirmStripeCheckoutPayment = internalMutation({
+  args: {
+    paymentId: v.id("payments"),
+    stripeCheckoutSessionId: v.string(),
+    stripePaymentIntentId: v.optional(v.string()),
+    stripePaymentMethodType: v.optional(v.string()),
+    shippingAddress: v.optional(shippingAddressArg),
+  },
+  handler: async (
+    ctx,
+    { paymentId, stripeCheckoutSessionId, stripePaymentIntentId, stripePaymentMethodType, shippingAddress },
+  ) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    const wasConfirmed = payment.status === "confirmed";
+    await ctx.db.patch(paymentId, {
+      status: "confirmed",
+      stripeCheckoutSessionId,
+      stripePaymentIntentId,
+      stripePaymentMethodType,
+    });
+    const order = await ctx.db.get(payment.orderId);
+    if (!order) throw new Error("Order not found.");
+    await ctx.db.patch(payment.orderId, {
+      status: "paid",
+      shippingAddress: shippingAddress ?? order.shippingAddress,
+    });
+    if (!wasConfirmed) {
+      await ensureRoyaltyLedgerEntriesForOrder(ctx, payment.orderId);
+      await syncCustomerOnPaidOrder(ctx, payment.orderId);
+      await markStashRedemptionRedeemed(ctx, payment.orderId);
+    }
+  },
+});
+
+export const failStripeCheckoutPayment = internalMutation({
+  args: {
+    paymentId: v.id("payments"),
+    stripeCheckoutSessionId: v.optional(v.string()),
+  },
+  handler: async (ctx, { paymentId, stripeCheckoutSessionId }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    if (payment.status === "confirmed") {
+      throw new Error("Confirmed payments cannot be failed.");
+    }
+    await ctx.db.patch(paymentId, {
+      status: "failed",
+      stripeCheckoutSessionId: stripeCheckoutSessionId ?? payment.stripeCheckoutSessionId,
+    });
+    await ctx.db.patch(payment.orderId, { status: "awaiting_payment" });
+    await releaseInventoryReservationForOrder(ctx, payment.orderId);
+    await failOpenFulfillments(ctx, payment.orderId);
   },
 });
 
@@ -324,6 +536,7 @@ async function listLiveStorefrontProducts(ctx: QueryCtx) {
   return await Promise.all(
     products.map(async (product) => {
       const creator = await ctx.db.get(product.creatorId);
+      const tokenProgram = await resolveProductTokenProgram(ctx, product);
       const variants = await ctx.db
         .query("productVariants")
         .withIndex("by_product", (q) => q.eq("productId", product._id))
@@ -331,10 +544,29 @@ async function listLiveStorefrontProducts(ctx: QueryCtx) {
       return {
         ...product,
         creator,
+        tokenProgram,
         variants,
       };
     }),
   );
+}
+
+async function resolveProductTokenProgram(
+  ctx: Pick<QueryCtx, "db">,
+  product: Doc<"products">,
+) {
+  if (product.tokenProgramId) {
+    return await ctx.db.get(product.tokenProgramId);
+  }
+  if (!product.tokenDiscountEligible) {
+    return null;
+  }
+  const programs = await ctx.db
+    .query("tokenPrograms")
+    .withIndex("by_active", (q) => q.eq("active", true))
+    .collect();
+  const redeemablePrograms = programs.filter((program) => program.redemptionEnabled ?? true);
+  return redeemablePrograms.length === 1 ? redeemablePrograms[0] : null;
 }
 
 async function quoteBurnDiscount(
@@ -800,6 +1032,20 @@ async function markUnverifiedBurnsFailed(
       status: "failed",
     });
   }
+}
+
+async function markStashRedemptionRedeemed(
+  ctx: MutationCtx,
+  orderId: Id<"orders">,
+) {
+  const order = await ctx.db.get(orderId);
+  if (!order?.stashRedemptionId) return;
+  const redemption = await ctx.db.get(order.stashRedemptionId);
+  if (!redemption || redemption.status === "redeemed") return;
+  await ctx.db.patch(order.stashRedemptionId, {
+    status: "redeemed",
+    redeemedAt: Date.now(),
+  });
 }
 
 async function reverseCustomerRevenueForRefund(
