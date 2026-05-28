@@ -297,6 +297,8 @@ export default defineSchema({
     stripePaymentIntentId: v.optional(v.string()),
     stripeCheckoutSessionId: v.optional(v.string()),
     stripePaymentMethodType: v.optional(v.string()),
+    stripeRefundId: v.optional(v.string()),
+    stripeRefundAmountUsd: v.optional(v.number()),
     // usdc:
     txHash: v.optional(v.string()),
     fromAddress: v.optional(v.string()),
@@ -323,6 +325,7 @@ export default defineSchema({
     ),
   })
     .index("by_order", ["orderId"])
+    .index("by_stripe_payment_intent", ["stripePaymentIntentId"])
     .index("by_txHash", ["txHash"]),
 
   tokenBurns: defineTable({

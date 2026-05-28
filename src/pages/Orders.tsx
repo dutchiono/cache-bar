@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useState } from "react";
@@ -16,6 +16,7 @@ export default function Orders() {
   const markPayment = useMutation(api.checkout.markPayment);
   const cancelOrder = useMutation(api.checkout.cancelOrder);
   const refundOrder = useMutation(api.checkout.refundOrder);
+  const createStripeRefund = useAction(api.stripeCheckout.createRefund);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,14 +48,22 @@ export default function Orders() {
     }
   }
 
-  async function refund(orderId: Id<"orders">) {
-    setBusy(orderId);
+  async function refund(order: Order) {
+    const payment = order.payments[0];
+    setBusy(order._id);
     setError(null);
     try {
-      await refundOrder({
-        orderId,
-        txHashOrRef: `manual-refund-${orderId}`,
-      });
+      if (payment?.rail === "stripe") {
+        await createStripeRefund({
+          paymentId: payment._id,
+          reason: "requested_by_customer",
+        });
+      } else {
+        await refundOrder({
+          orderId: order._id,
+          txHashOrRef: `manual-refund-${order._id}`,
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to refund order.");
     } finally {
@@ -68,7 +77,7 @@ export default function Orders() {
         <p className="cb-kicker text-[var(--cb-gold)]">Payment operations</p>
         <h1 className="cb-display mt-2 text-4xl font-semibold">Orders</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Review Stripe and wallet-backed orders, track payment state, and record cancels or refunds after processor activity.
+          Review Stripe and wallet-backed orders, track payment state, cancel abandoned sessions, and issue refunds from the same screen.
         </p>
       </section>
 
@@ -110,7 +119,7 @@ function OrderCard({
   busy: string | null;
   onMark: (paymentId: Id<"payments">, status: "confirmed" | "failed") => void;
   onCancel: (orderId: Id<"orders">) => void;
-  onRefund: (orderId: Id<"orders">) => void;
+  onRefund: (order: Order) => void;
 }) {
   const payment = order.payments[0];
   return (
@@ -215,13 +224,18 @@ function OrderCard({
 
       {payment && payment.status === "confirmed" && order.status !== "refunded" && (
         <div className="mt-3 flex flex-wrap justify-end gap-2">
+          {payment.rail === "stripe" && (
+            <div className="mr-auto rounded-md border border-[var(--cb-line)] bg-white/40 px-3 py-2 text-xs text-[var(--cb-muted)]">
+              Stripe refunds are submitted to Stripe first, then synced back into the order record through the webhook.
+            </div>
+          )}
           <button
             type="button"
             disabled={busy !== null}
-            onClick={() => onRefund(order._id)}
+            onClick={() => onRefund(order)}
             className="cb-button-secondary min-h-8 px-3 py-1 text-xs"
           >
-            {busy === order._id ? "Refunding..." : "Refund order"}
+            {busy === order._id ? (payment.rail === "stripe" ? "Submitting refund..." : "Refunding...") : "Refund order"}
           </button>
         </div>
       )}

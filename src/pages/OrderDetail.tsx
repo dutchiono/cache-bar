@@ -62,8 +62,11 @@ export default function OrderDetail() {
                   {payment.rail === "stripe" ? (
                     <>
                       <div>Order total: {money.format(order.total)}</div>
+                      <div>Method: {payment.stripePaymentMethodType ?? "—"}</div>
                       <div className="truncate font-mono">Stripe session: {payment.stripeCheckoutSessionId ?? "—"}</div>
                       <div className="truncate font-mono">Payment intent: {payment.stripePaymentIntentId ?? "—"}</div>
+                      <div className="truncate font-mono">Refund: {payment.stripeRefundId ?? "—"}</div>
+                      <div>Refund amount: {payment.stripeRefundAmountUsd ? money.format(payment.stripeRefundAmountUsd) : "—"}</div>
                     </>
                   ) : (
                     <>

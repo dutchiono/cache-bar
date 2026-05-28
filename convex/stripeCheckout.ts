@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 import { appBaseUrl, envValue, getStripe } from "./lib/stripe";
@@ -64,6 +64,24 @@ type StripeSessionResult = {
   orderId: Id<"orders">;
   orderNumber: string;
   checkoutUrl: string | null;
+};
+
+type StripeRefundContext = {
+  paymentId: Id<"payments">;
+  orderId: Id<"orders">;
+  orderNumber: string;
+  paymentStatus: "pending" | "confirmed" | "failed" | "refunded";
+  orderStatus: string;
+  stripePaymentIntentId: string;
+  amountUsd: number;
+  customerEmail: string | null;
+};
+
+type StripeRefundResult = {
+  refundId: string;
+  status: string | null;
+  amountUsd: number;
+  orderNumber: string;
 };
 
 export const createSession = action({
@@ -233,16 +251,70 @@ export const sessionStatus = action({
   },
 });
 
+export const createRefund = action({
+  args: {
+    paymentId: v.id("payments"),
+    reason: v.optional(
+      v.union(
+        v.literal("duplicate"),
+        v.literal("fraudulent"),
+        v.literal("requested_by_customer"),
+      ),
+    ),
+  },
+  handler: async (ctx, { paymentId, reason }): Promise<StripeRefundResult> => {
+    const refundContext = (await ctx.runQuery(api.checkout.stripeRefundContext, {
+      paymentId,
+    })) as StripeRefundContext;
+
+    if (refundContext.paymentStatus === "refunded" || refundContext.orderStatus === "refunded") {
+      throw new Error("This Stripe payment is already refunded.");
+    }
+
+    const stripe = getStripe();
+    const refund = await stripe.refunds.create({
+      payment_intent: refundContext.stripePaymentIntentId,
+      reason: reason ?? "requested_by_customer",
+      metadata: {
+        orderId: refundContext.orderId,
+        orderNumber: refundContext.orderNumber,
+        paymentId: refundContext.paymentId,
+      },
+    });
+
+    const amountUsd = (refund.amount ?? 0) / 100;
+    if (refund.status === "succeeded") {
+      await ctx.runMutation(internal.checkout.syncStripeRefundFromWebhook, {
+        paymentId,
+        stripePaymentIntentId: refundContext.stripePaymentIntentId,
+        stripeRefundId: refund.id,
+        refundAmountUsd: amountUsd,
+      });
+    }
+
+    return {
+      refundId: refund.id,
+      status: refund.status,
+      amountUsd,
+      orderNumber: refundContext.orderNumber,
+    };
+  },
+});
+
 export const configStatus = action({
   args: {},
   handler: async () => {
     const configuredSiteUrl =
       envValue("SITE_URL") ?? envValue("APP_URL") ?? envValue("VITE_APP_URL") ?? null;
+    const siteUrlLooksLocal =
+      configuredSiteUrl !== null &&
+      ["localhost", "127.0.0.1"].some((host) => configuredSiteUrl.includes(host));
     return {
       stripeSecretConfigured: Boolean(envValue("STRIPE_SECRET_KEY")),
       stripeWebhookSecretConfigured: Boolean(envValue("STRIPE_WEBHOOK_SECRET")),
       siteUrl: configuredSiteUrl,
       usesBrowserOriginFallback: configuredSiteUrl === null,
+      siteUrlLooksLocal,
       convexSiteUrl: envValue("CONVEX_SITE_URL") ?? null,
       webhookPath: "/stripe/webhook",
     };

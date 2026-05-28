@@ -14,6 +14,7 @@ type ConfigStatus = {
   stripeWebhookSecretConfigured: boolean;
   siteUrl: string | null;
   usesBrowserOriginFallback: boolean;
+  siteUrlLooksLocal: boolean;
   convexSiteUrl: string | null;
   webhookPath: string;
 };
@@ -101,6 +102,11 @@ export default function Checkout() {
                 the storefront sends its current origin when creating the Stripe session.
               </p>
             )}
+            {config?.siteUrlLooksLocal && (
+              <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                The configured site URL still points at localhost. Stripe success and cancel URLs should use the real storefront host before live testing.
+              </p>
+            )}
           </section>
 
           <section className="cb-panel p-4">
@@ -118,7 +124,8 @@ export default function Checkout() {
             <div className="space-y-2 text-sm text-[var(--cb-muted)]">
               <p>Self-serve `.stash` verification is currently for EVM ERC-20 transfer-to-burn programs.</p>
               <p>Physical shipping details are collected inside Stripe Checkout, not on the storefront form.</p>
-              <p>Refunds still need to be initiated in Stripe first, then recorded in ops.</p>
+              <p>Stripe remains the source of truth for payment success, failure, and refund lifecycle.</p>
+              <p>Ops can submit a Stripe refund from the orders screen, but Stripe secrets and webhook delivery still need to be configured correctly.</p>
             </div>
           </section>
         </div>
@@ -169,6 +176,7 @@ export default function Checkout() {
             <div className="space-y-2 text-sm text-[var(--cb-muted)]">
               <p>Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Convex.</p>
               <p>Register the Convex HTTP webhook route in Stripe at `/stripe/webhook`.</p>
+              <p>Set `SITE_URL` or `APP_URL` in Convex to the real storefront URL if you do not want to rely on browser-origin fallback.</p>
               <p>Confirm at least one live product is linked to a `.stash` program if token discounts are required.</p>
               <p>Run one real Stripe Checkout payment and one refund recording pass in ops.</p>
             </div>

@@ -140,6 +140,36 @@ export const orderDetail = query({
   },
 });
 
+export const stripeRefundContext = query({
+  args: {
+    paymentId: v.id("payments"),
+  },
+  handler: async (ctx, { paymentId }) => {
+    await requireRole(ctx, ["admin", "finance", "support"]);
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    if (payment.rail !== "stripe") {
+      throw new Error("Only Stripe-backed payments can be refunded here.");
+    }
+    if (!payment.stripePaymentIntentId) {
+      throw new Error("Stripe payment intent is missing for this payment.");
+    }
+    const order = await ctx.db.get(payment.orderId);
+    if (!order) throw new Error("Order not found.");
+
+    return {
+      paymentId: payment._id,
+      orderId: order._id,
+      orderNumber: order.number,
+      paymentStatus: payment.status,
+      orderStatus: order.status,
+      stripePaymentIntentId: payment.stripePaymentIntentId,
+      amountUsd: order.total,
+      customerEmail: order.customerId ? (await ctx.db.get(order.customerId))?.email ?? null : null,
+    };
+  },
+});
+
 export const createPaymentIntent = mutation({
   args: paymentIntentArgs,
   handler: async (ctx, args) => {
@@ -300,6 +330,18 @@ export const markStripeCheckoutSessionCreated = internalMutation({
   },
 });
 
+export const stripePaymentByIntent = internalQuery({
+  args: {
+    stripePaymentIntentId: v.string(),
+  },
+  handler: async (ctx, { stripePaymentIntentId }) => {
+    return await ctx.db
+      .query("payments")
+      .withIndex("by_stripe_payment_intent", (q) => q.eq("stripePaymentIntentId", stripePaymentIntentId))
+      .first();
+  },
+});
+
 export const confirmStripeCheckoutPayment = internalMutation({
   args: {
     paymentId: v.id("payments"),
@@ -353,6 +395,78 @@ export const failStripeCheckoutPayment = internalMutation({
     await ctx.db.patch(payment.orderId, { status: "awaiting_payment" });
     await releaseInventoryReservationForOrder(ctx, payment.orderId);
     await failOpenFulfillments(ctx, payment.orderId);
+  },
+});
+
+export const syncStripePaymentFailureFromWebhook = internalMutation({
+  args: {
+    paymentId: v.id("payments"),
+    stripePaymentIntentId: v.optional(v.string()),
+  },
+  handler: async (ctx, { paymentId, stripePaymentIntentId }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    if (payment.status === "confirmed" || payment.status === "refunded") {
+      return;
+    }
+
+    await ctx.db.patch(paymentId, {
+      status: "failed",
+      stripePaymentIntentId: stripePaymentIntentId ?? payment.stripePaymentIntentId,
+    });
+    await ctx.db.patch(payment.orderId, {
+      status: "awaiting_payment",
+    });
+    await releaseInventoryReservationForOrder(ctx, payment.orderId);
+    await failOpenFulfillments(ctx, payment.orderId);
+  },
+});
+
+export const syncStripeRefundFromWebhook = internalMutation({
+  args: {
+    paymentId: v.id("payments"),
+    stripePaymentIntentId: v.optional(v.string()),
+    stripeRefundId: v.string(),
+    refundAmountUsd: v.number(),
+  },
+  handler: async (ctx, { paymentId, stripePaymentIntentId, stripeRefundId, refundAmountUsd }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    const order = await ctx.db.get(payment.orderId);
+    if (!order) throw new Error("Order not found.");
+
+    const normalizedRefundAmount = roundMoney(Math.max(refundAmountUsd, 0));
+    const fullRefund = normalizedRefundAmount >= roundMoney(order.total);
+    await ctx.db.patch(paymentId, {
+      stripePaymentIntentId: stripePaymentIntentId ?? payment.stripePaymentIntentId,
+      stripeRefundId,
+      stripeRefundAmountUsd: normalizedRefundAmount,
+      status: fullRefund ? "refunded" : payment.status,
+    });
+
+    if (!fullRefund) {
+      await addCustomerActivity(ctx, order.customerId, {
+        type: "note",
+        body: `Stripe partial refund recorded for order ${order.number}: ${normalizedRefundAmount.toFixed(2)} USD.`,
+      });
+      return;
+    }
+
+    const alreadyRefunded = order.status === "refunded";
+    await ctx.db.patch(order._id, {
+      status: "refunded",
+    });
+    await releaseInventoryReservationForOrder(ctx, order._id);
+    await markUnverifiedBurnsFailed(ctx, order._id);
+    await failOpenFulfillments(ctx, order._id);
+    await createRefundRoyaltyReversals(ctx, order._id);
+    if (!alreadyRefunded) {
+      await reverseCustomerRevenueByAmount(ctx, order.customerId, order.total);
+      await addCustomerActivity(ctx, order.customerId, {
+        type: "note",
+        body: `Stripe refund completed for order ${order.number}.`,
+      });
+    }
   },
 });
 
@@ -1052,10 +1166,18 @@ async function reverseCustomerRevenueForRefund(
   ctx: MutationCtx,
   order: Doc<"orders">,
 ) {
-  const customer = await ctx.db.get(order.customerId);
+  await reverseCustomerRevenueByAmount(ctx, order.customerId, order.total);
+}
+
+async function reverseCustomerRevenueByAmount(
+  ctx: MutationCtx,
+  customerId: Id<"customers">,
+  amount: number,
+) {
+  const customer = await ctx.db.get(customerId);
   if (!customer) return;
   await ctx.db.patch(customer._id, {
-    lifetimeValue: Math.max(0, roundMoney(customer.lifetimeValue - order.total)),
+    lifetimeValue: Math.max(0, roundMoney(customer.lifetimeValue - amount)),
   });
 }
 
