@@ -20,6 +20,7 @@ Set these for the live deployment:
 - `CACHE_ELIZA_API_KEY`
 - `CACHE_ELIZA_AGENT_ID`
 - `CACHE_ELIZA_CHANNEL_ID`
+- `CACHE_ELIZA_MODE`
 
 The code also accepts the generic aliases:
 
@@ -28,6 +29,12 @@ The code also accepts the generic aliases:
 - `ELIZA_API_KEY`
 - `ELIZA_AGENT_ID`
 - `ELIZA_CHANNEL_ID`
+
+`CACHE_ELIZA_MODE` can be:
+
+- `auto`: try synchronous inference first, then fall back to bus ingest.
+- `process`: require synchronous inference from `/api/messaging/external-messages`.
+- `ingest`: only enqueue into Eliza's external message bus through `/api/messaging/ingest-external`.
 
 ## Discord and Telegram
 

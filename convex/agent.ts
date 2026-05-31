@@ -15,6 +15,7 @@ type ElizaReply = {
   content: string;
   configured: boolean;
   provider: "eliza" | "cache";
+  mode: "process" | "ingest" | "fallback";
 };
 
 type PublicConciergeResult = ElizaReply & {
@@ -215,6 +216,10 @@ export const configStatus = action({
       elizaChannelId: c.channelId,
       discordConfigured: Boolean(envValue("DISCORD_APPLICATION_ID") && envValue("DISCORD_API_TOKEN")),
       telegramConfigured: Boolean(envValue("TELEGRAM_BOT_TOKEN")),
+      mode: c.mode,
+      synchronousResponses: c.mode !== "ingest",
+      processEndpoint: "/api/messaging/external-messages",
+      ingestEndpoint: "/api/messaging/ingest-external",
       webConciergeEnabled: true,
     };
   },
@@ -333,17 +338,130 @@ async function askEliza({
       content: fallbackReply(text),
       configured: false,
       provider: "cache",
+      mode: "fallback",
     };
   }
 
-  const response = await fetch(`${c.baseUrl.replace(/\/$/, "")}/api/messaging/ingest-external`, {
+  if (c.mode !== "ingest") {
+    const processed = await processExternalMessage({
+      baseUrl: c.baseUrl,
+      apiKey: c.apiKey,
+      text,
+      source,
+      entityId,
+      roomId,
+      metadata,
+    });
+    if (processed) {
+      return {
+        content: processed,
+        configured: true,
+        provider: "eliza",
+        mode: "process",
+      };
+    }
+    if (c.mode === "process") {
+      throw new Error("Eliza Cloud did not return a message response from the process endpoint.");
+    }
+  }
+
+  await ingestExternalMessage({
+    baseUrl: c.baseUrl,
+    apiKey: c.apiKey,
+    agentId: c.agentId,
+    text,
+    source,
+    entityId,
+    roomId,
+    metadata,
+  });
+
+  return {
+    content:
+      "I sent that to .cache's Eliza runtime. If this is a shop request, I will turn it into draft catalog, .stash, fulfillment, or ops proposals for human approval.",
+    configured: true,
+    provider: "eliza",
+    mode: "ingest",
+  };
+}
+
+async function processExternalMessage({
+  baseUrl,
+  apiKey,
+  text,
+  source,
+  entityId,
+  roomId,
+  metadata,
+}: {
+  baseUrl: string;
+  apiKey?: string;
+  text: string;
+  source: "web" | "discord" | "telegram" | "waifu";
+  entityId: string;
+  roomId: string;
+  metadata: Record<string, unknown>;
+}) {
+  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/messaging/external-messages`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      ...(c.apiKey ? { authorization: `Bearer ${c.apiKey}` } : {}),
+      ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
     },
     body: JSON.stringify({
-      agentId: c.agentId,
+      platform: source === "telegram" ? "telegram" : "discord",
+      messageId: `cache-${Date.now()}-${crypto.randomUUID()}`,
+      channelId: roomId,
+      userId: entityId,
+      content: text,
+      attachments: [],
+      metadata: {
+        ...metadata,
+        source,
+      },
+    }),
+  });
+
+  if (response.status === 404 || response.status === 405 || response.status === 501) {
+    return null;
+  }
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Eliza Cloud process request failed (${response.status}). ${detail}`.trim());
+  }
+
+  const body = await response.json();
+  const candidate = body?.data?.response ?? body?.response ?? body?.message;
+  return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null;
+}
+
+async function ingestExternalMessage({
+  baseUrl,
+  apiKey,
+  agentId,
+  text,
+  source,
+  entityId,
+  roomId,
+  metadata,
+}: {
+  baseUrl: string;
+  apiKey?: string;
+  agentId: string;
+  text: string;
+  source: "web" | "discord" | "telegram" | "waifu";
+  entityId: string;
+  roomId: string;
+  metadata: Record<string, unknown>;
+}) {
+  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/messaging/ingest-external`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      agentId,
       roomId,
       userId: entityId,
       text,
@@ -357,13 +475,6 @@ async function askEliza({
     const detail = await response.text().catch(() => "");
     throw new Error(`Eliza Cloud request failed (${response.status}). ${detail}`.trim());
   }
-
-  return {
-    content:
-      "I sent that to .cache's Eliza runtime. If this is a shop request, I will turn it into draft catalog, .stash, fulfillment, or ops proposals for human approval.",
-    configured: true,
-    provider: "eliza",
-  };
 }
 
 function fallbackReply(content: string) {
@@ -389,7 +500,13 @@ function config() {
     apiKey: envValue("CACHE_ELIZA_API_KEY") ?? envValue("ELIZA_API_KEY"),
     agentId: envValue("CACHE_ELIZA_AGENT_ID") ?? envValue("ELIZA_AGENT_ID"),
     channelId: envValue("CACHE_ELIZA_CHANNEL_ID") ?? envValue("ELIZA_CHANNEL_ID"),
+    mode: elizaMode(),
   };
+}
+
+function elizaMode(): "process" | "ingest" | "auto" {
+  const raw = envValue("CACHE_ELIZA_MODE") ?? envValue("ELIZA_MODE") ?? "auto";
+  return raw === "process" || raw === "ingest" ? raw : "auto";
 }
 
 function envValue(key: string) {
