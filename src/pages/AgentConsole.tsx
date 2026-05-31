@@ -1,17 +1,40 @@
-import { useMutation, useQuery } from "convex/react";
-import { useState, type FormEvent } from "react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export default function AgentConsole() {
   const threads = useQuery(api.agent.listThreads, {});
   const createThread = useMutation(api.agent.createThread);
-  const postMessage = useMutation(api.agent.postMessage);
+  const chat = useAction(api.agent.chat);
+  const getConfigStatus = useAction(api.agent.configStatus);
   const [threadId, setThreadId] = useState<Id<"agentThreads"> | null>(null);
   const activeThreadId = threadId ?? threads?.[0]?._id ?? null;
   const thread = useQuery(api.agent.getThread, activeThreadId ? { id: activeThreadId } : "skip");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [config, setConfig] = useState<{
+    elizaConfigured: boolean;
+    discordConfigured: boolean;
+    telegramConfigured: boolean;
+    elizaBaseUrl?: string;
+    elizaAgentId?: string;
+    elizaChannelId?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void getConfigStatus({})
+      .then((result) => {
+        if (active) setConfig(result);
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof Error ? err.message : "Unable to load agent config.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [getConfigStatus]);
 
   async function onCreateThread() {
     setBusy("thread");
@@ -33,7 +56,7 @@ export default function AgentConsole() {
     setBusy("message");
     setError(null);
     try {
-      await postMessage({
+      await chat({
         threadId: activeThreadId,
         content: String(form.get("content") ?? ""),
       });
@@ -51,9 +74,9 @@ export default function AgentConsole() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="cb-kicker text-[var(--cb-gold)]">Ops copilot</p>
-            <h1 className="cb-display mt-2 text-4xl font-semibold">Agent Console</h1>
+            <h1 className="cb-display mt-2 text-4xl font-semibold">.cache Concierge</h1>
             <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-              Internal thread storage for operator notes, backend actions, and future agent wiring.
+              Staff channel for the same .cache agent that waifus and storefront visitors use to start shops, shape drops, and prepare commerce actions.
             </p>
           </div>
           <button type="button" disabled={busy !== null} onClick={onCreateThread} className="cb-button">
@@ -67,6 +90,13 @@ export default function AgentConsole() {
           {error}
         </p>
       )}
+
+      <section className="grid gap-3 md:grid-cols-4">
+        <StatusCard label="Eliza Cloud" ready={config?.elizaConfigured} detail={config?.elizaAgentId ?? "Missing CACHE_ELIZA_AGENT_ID / ELIZA_AGENT_ID"} />
+        <StatusCard label="Web chat" ready={true} detail="Storefront concierge is enabled" />
+        <StatusCard label="Discord" ready={config?.discordConfigured} detail="Requires DISCORD_APPLICATION_ID and DISCORD_API_TOKEN in Eliza" />
+        <StatusCard label="Telegram" ready={config?.telegramConfigured} detail="Requires TELEGRAM_BOT_TOKEN in Eliza" />
+      </section>
 
       <section className="grid gap-4 xl:grid-cols-[320px_1fr]">
         <aside className="cb-panel p-4">
@@ -116,7 +146,7 @@ export default function AgentConsole() {
             <textarea
               name="content"
               className="cb-field min-h-24"
-              placeholder="Ask for inventory, refunds, routing, or leave an ops note."
+              placeholder="Ask .cache to create a shop plan, draft products, configure .stash, or check orders."
               disabled={!activeThreadId || busy !== null}
               required
             />
@@ -132,4 +162,26 @@ export default function AgentConsole() {
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="rounded-md border border-dashed border-[var(--cb-line)] p-3 text-sm text-[var(--cb-muted)]">{children}</div>;
+}
+
+function StatusCard({
+  label,
+  ready,
+  detail,
+}: {
+  label: string;
+  ready: boolean | undefined;
+  detail: string;
+}) {
+  return (
+    <div className="cb-panel p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="cb-kicker">{label}</span>
+        <span className={`cb-badge ${ready ? "cb-badge-human" : ""}`}>
+          {ready ? "ready" : "missing"}
+        </span>
+      </div>
+      <p className="mt-2 text-xs leading-5 text-[var(--cb-muted)]">{detail}</p>
+    </div>
+  );
 }

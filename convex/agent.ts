@@ -1,6 +1,26 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireUser } from "./model/auth";
+
+const conciergeSource = v.union(
+  v.literal("web"),
+  v.literal("discord"),
+  v.literal("telegram"),
+  v.literal("waifu"),
+);
+
+type ElizaReply = {
+  content: string;
+  configured: boolean;
+  provider: "eliza" | "cache";
+};
+
+type PublicConciergeResult = ElizaReply & {
+  sessionId: Id<"conciergeSessions">;
+  visitorId: string;
+};
 
 export const listThreads = query({
   args: {},
@@ -71,7 +91,7 @@ export const postMessage = mutation({
       content: body,
     });
 
-    const response = respondToMessage(body);
+    const response = fallbackReply(body);
     await ctx.db.insert("agentMessages", {
       threadId,
       role: "assistant",
@@ -81,20 +101,299 @@ export const postMessage = mutation({
       mode: "copilot",
       userId: user._id,
       summary: response,
-      toolCalls: [],
+      toolCalls: [{ tool: "cache_fallback", detail: "Eliza action proxy was not used." }],
     });
 
     return response;
   },
 });
 
-function respondToMessage(content: string) {
+export const chat = action({
+  args: {
+    threadId: v.id("agentThreads"),
+    content: v.string(),
+  },
+  handler: async (ctx, { threadId, content }) => {
+    const body = content.trim();
+    if (!body) throw new Error("Message is required.");
+
+    const auth = await ctx.runQuery(internal.agent.authorizeThreadForChat, { threadId });
+    await ctx.runMutation(internal.agent.recordThreadMessage, {
+      threadId,
+      role: "user",
+      content: body,
+    });
+
+    const reply = await askEliza({
+      text: body,
+      source: "web",
+      entityId: String(auth.userId),
+      roomId: config().channelId ?? String(threadId),
+      metadata: {
+        surface: auth.surface,
+        contextRef: auth.contextRef,
+        role: auth.role,
+      },
+    });
+
+    await ctx.runMutation(internal.agent.recordThreadMessage, {
+      threadId,
+      role: "assistant",
+      content: reply.content,
+    });
+    await ctx.runMutation(internal.agent.recordAgentRun, {
+      userId: auth.userId,
+      summary: reply.content,
+      provider: reply.provider,
+    });
+
+    return reply;
+  },
+});
+
+export const publicConciergeChat = action({
+  args: {
+    visitorId: v.optional(v.string()),
+    content: v.string(),
+    currentPath: v.optional(v.string()),
+    waifuAgentId: v.optional(v.string()),
+  },
+  handler: async (ctx, { visitorId, content, currentPath, waifuAgentId }): Promise<PublicConciergeResult> => {
+    const body = content.trim();
+    if (!body) throw new Error("Message is required.");
+
+    const stableVisitorId = visitorId?.trim() || `web-${crypto.randomUUID()}`;
+    const sessionId = await ctx.runMutation(internal.agent.upsertConciergeSession, {
+      visitorId: stableVisitorId,
+      source: "web",
+      sourceRef: currentPath,
+      waifuAgentId: waifuAgentId?.trim() || undefined,
+    }) as Id<"conciergeSessions">;
+
+    await ctx.runMutation(internal.agent.recordConciergeMessage, {
+      sessionId,
+      role: "user",
+      content: body,
+      metadata: { currentPath },
+    });
+
+    const reply = await askEliza({
+      text: body,
+      source: "web",
+      entityId: stableVisitorId,
+      roomId: config().channelId ?? String(sessionId),
+      metadata: {
+        currentPath,
+        waifuAgentId,
+        product: "cache_concierge",
+      },
+    });
+
+    await ctx.runMutation(internal.agent.recordConciergeMessage, {
+      sessionId,
+      role: "assistant",
+      content: reply.content,
+      metadata: { provider: reply.provider, configured: reply.configured },
+    });
+
+    return {
+      ...reply,
+      sessionId,
+      visitorId: stableVisitorId,
+    };
+  },
+});
+
+export const configStatus = action({
+  args: {},
+  handler: async () => {
+    const c = config();
+    return {
+      elizaConfigured: Boolean(c.baseUrl && c.agentId),
+      elizaBaseUrl: c.baseUrl,
+      elizaAgentId: c.agentId,
+      elizaChannelId: c.channelId,
+      discordConfigured: Boolean(envValue("DISCORD_APPLICATION_ID") && envValue("DISCORD_API_TOKEN")),
+      telegramConfigured: Boolean(envValue("TELEGRAM_BOT_TOKEN")),
+      webConciergeEnabled: true,
+    };
+  },
+});
+
+export const authorizeThreadForChat = internalQuery({
+  args: { threadId: v.id("agentThreads") },
+  handler: async (ctx, { threadId }) => {
+    const user = await requireUser(ctx);
+    const thread = await ctx.db.get(threadId);
+    if (!thread) throw new Error("Thread not found.");
+    if (thread.userId !== user._id && !["admin", "support"].includes(user.role)) {
+      throw new Error("Forbidden.");
+    }
+    return {
+      userId: user._id,
+      role: user.role,
+      surface: thread.surface,
+      contextRef: thread.contextRef,
+    };
+  },
+});
+
+export const recordThreadMessage = internalMutation({
+  args: {
+    threadId: v.id("agentThreads"),
+    role: v.union(v.literal("user"), v.literal("assistant"), v.literal("tool")),
+    content: v.string(),
+  },
+  handler: async (ctx, { threadId, role, content }) => {
+    await ctx.db.insert("agentMessages", {
+      threadId,
+      role,
+      content,
+    });
+  },
+});
+
+export const recordAgentRun = internalMutation({
+  args: {
+    userId: v.id("users"),
+    summary: v.string(),
+    provider: v.string(),
+  },
+  handler: async (ctx, { userId, summary, provider }) => {
+    await ctx.db.insert("agentRuns", {
+      mode: "copilot",
+      userId,
+      summary,
+      toolCalls: [{ tool: provider, detail: "cache concierge chat" }],
+    });
+  },
+});
+
+export const upsertConciergeSession = internalMutation({
+  args: {
+    visitorId: v.string(),
+    source: conciergeSource,
+    sourceRef: v.optional(v.string()),
+    waifuAgentId: v.optional(v.string()),
+  },
+  handler: async (ctx, { visitorId, source, sourceRef, waifuAgentId }): Promise<Id<"conciergeSessions">> => {
+    const existing = await ctx.db
+      .query("conciergeSessions")
+      .withIndex("by_visitor", (q) => q.eq("visitorId", visitorId))
+      .first();
+    const lastMessageAt = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        source,
+        sourceRef,
+        waifuAgentId,
+        lastMessageAt,
+      });
+      return existing._id;
+    }
+    return await ctx.db.insert("conciergeSessions", {
+      visitorId,
+      source,
+      sourceRef,
+      waifuAgentId,
+      lastMessageAt,
+    });
+  },
+});
+
+export const recordConciergeMessage = internalMutation({
+  args: {
+    sessionId: v.id("conciergeSessions"),
+    role: v.union(v.literal("user"), v.literal("assistant"), v.literal("tool")),
+    content: v.string(),
+    metadata: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("conciergeMessages", args);
+    await ctx.db.patch(args.sessionId, { lastMessageAt: Date.now() });
+  },
+});
+
+async function askEliza({
+  text,
+  source,
+  entityId,
+  roomId,
+  metadata,
+}: {
+  text: string;
+  source: "web" | "discord" | "telegram" | "waifu";
+  entityId: string;
+  roomId: string;
+  metadata: Record<string, unknown>;
+}): Promise<ElizaReply> {
+  const c = config();
+  if (!c.baseUrl || !c.agentId) {
+    return {
+      content: fallbackReply(text),
+      configured: false,
+      provider: "cache",
+    };
+  }
+
+  const response = await fetch(`${c.baseUrl.replace(/\/$/, "")}/api/messaging/ingest-external`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(c.apiKey ? { authorization: `Bearer ${c.apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      agentId: c.agentId,
+      roomId,
+      userId: entityId,
+      text,
+      sourceId: entityId,
+      sourceType: source === "telegram" ? "telegram" : "discord",
+      metadata,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Eliza Cloud request failed (${response.status}). ${detail}`.trim());
+  }
+
+  return {
+    content:
+      "I sent that to .cache's Eliza runtime. If this is a shop request, I will turn it into draft catalog, .stash, fulfillment, or ops proposals for human approval.",
+    configured: true,
+    provider: "eliza",
+  };
+}
+
+function fallbackReply(content: string) {
   const lower = content.toLowerCase();
-  if (lower.includes("inventory")) {
-    return "Inventory actions are now wired through the live Convex inventory overview and checkout reservation flow.";
+  if (lower.includes("shop") || lower.includes("store") || lower.includes("drop")) {
+    return "I can help a waifu open a shop: define the drop, create products, attach a token discount through .stash, prepare Stripe checkout, and route fulfillment for approval.";
   }
-  if (lower.includes("refund") || lower.includes("cancel")) {
-    return "Refunds and cancellations now hit the checkout lifecycle directly and update treasury, royalty, and fulfillment records.";
+  if (lower.includes("stash") || lower.includes("token") || lower.includes("burn")) {
+    return ".stash connects a waifu token to a Stripe discount code. The holder burns the configured token amount, cache verifies the burn, then issues a one-time checkout code.";
   }
-  return "Thread recorded. Use this console for ops notes and backend run context until a full external agent is attached.";
+  if (lower.includes("discord") || lower.includes("telegram")) {
+    return "The web concierge is wired here. Discord and Telegram should run through the same .cache Eliza agent once the bot tokens are added to the Eliza Cloud deployment.";
+  }
+  if (lower.includes("refund") || lower.includes("order")) {
+    return "I can help with order lookup, Stripe refund prep, fulfillment status, and customer support. Money-moving actions still need an operator approval path.";
+  }
+  return "Tell me what the waifu wants to sell, what token should unlock the discount, and whether fulfillment is print-on-demand, dropship, supplier, or digital.";
+}
+
+function config() {
+  return {
+    baseUrl: envValue("CACHE_ELIZA_BASE_URL") ?? envValue("ELIZA_BASE_URL") ?? envValue("ELIZA_API_URL"),
+    apiKey: envValue("CACHE_ELIZA_API_KEY") ?? envValue("ELIZA_API_KEY"),
+    agentId: envValue("CACHE_ELIZA_AGENT_ID") ?? envValue("ELIZA_AGENT_ID"),
+    channelId: envValue("CACHE_ELIZA_CHANNEL_ID") ?? envValue("ELIZA_CHANNEL_ID"),
+  };
+}
+
+function envValue(key: string) {
+  const globalProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
+  const value = globalProcess.process?.env?.[key]?.trim();
+  return value || undefined;
 }

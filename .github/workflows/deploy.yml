@@ -38,6 +38,13 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           APP_URL: ${{ secrets.APP_URL }}
+          CACHE_ELIZA_BASE_URL: ${{ secrets.CACHE_ELIZA_BASE_URL }}
+          CACHE_ELIZA_API_KEY: ${{ secrets.CACHE_ELIZA_API_KEY }}
+          CACHE_ELIZA_AGENT_ID: ${{ secrets.CACHE_ELIZA_AGENT_ID }}
+          CACHE_ELIZA_CHANNEL_ID: ${{ secrets.CACHE_ELIZA_CHANNEL_ID }}
+          DISCORD_APPLICATION_ID: ${{ secrets.DISCORD_APPLICATION_ID }}
+          DISCORD_API_TOKEN: ${{ secrets.DISCORD_API_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           set -e
           if [ -n "$STRIPE_SECRET_KEY" ]; then
@@ -48,6 +55,27 @@ jobs:
           fi
           if [ -n "$APP_URL" ]; then
             bunx convex env set --prod APP_URL "$APP_URL"
+          fi
+          if [ -n "$CACHE_ELIZA_BASE_URL" ]; then
+            bunx convex env set --prod CACHE_ELIZA_BASE_URL "$CACHE_ELIZA_BASE_URL"
+          fi
+          if [ -n "$CACHE_ELIZA_API_KEY" ]; then
+            bunx convex env set --prod CACHE_ELIZA_API_KEY "$CACHE_ELIZA_API_KEY"
+          fi
+          if [ -n "$CACHE_ELIZA_AGENT_ID" ]; then
+            bunx convex env set --prod CACHE_ELIZA_AGENT_ID "$CACHE_ELIZA_AGENT_ID"
+          fi
+          if [ -n "$CACHE_ELIZA_CHANNEL_ID" ]; then
+            bunx convex env set --prod CACHE_ELIZA_CHANNEL_ID "$CACHE_ELIZA_CHANNEL_ID"
+          fi
+          if [ -n "$DISCORD_APPLICATION_ID" ]; then
+            bunx convex env set --prod DISCORD_APPLICATION_ID "$DISCORD_APPLICATION_ID"
+          fi
+          if [ -n "$DISCORD_API_TOKEN" ]; then
+            bunx convex env set --prod DISCORD_API_TOKEN "$DISCORD_API_TOKEN"
+          fi
+          if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+            bunx convex env set --prod TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
           fi
 
       - name: Seed storefront data

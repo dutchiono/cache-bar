@@ -561,4 +561,30 @@ export default defineSchema({
       ),
     ),
   }).index("by_thread", ["threadId"]),
+
+  conciergeSessions: defineTable({
+    visitorId: v.string(),
+    source: v.union(
+      v.literal("web"),
+      v.literal("discord"),
+      v.literal("telegram"),
+      v.literal("waifu"),
+    ),
+    sourceRef: v.optional(v.string()),
+    waifuAgentId: v.optional(v.string()),
+    lastMessageAt: v.number(),
+  })
+    .index("by_visitor", ["visitorId"])
+    .index("by_source", ["source", "sourceRef"]),
+
+  conciergeMessages: defineTable({
+    sessionId: v.id("conciergeSessions"),
+    role: v.union(
+      v.literal("user"),
+      v.literal("assistant"),
+      v.literal("tool"),
+    ),
+    content: v.string(),
+    metadata: v.optional(v.any()),
+  }).index("by_session", ["sessionId"]),
 });

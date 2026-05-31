@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { CacheConcierge } from "../components/CacheConcierge";
 import "../storefront.css";
 
 const money = new Intl.NumberFormat("en-US", {
@@ -544,6 +545,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
           </section>
         )}
       </main>
+      <CacheConcierge />
     </div>
   );
 }
