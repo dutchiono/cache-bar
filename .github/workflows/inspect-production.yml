@@ -30,15 +30,9 @@ jobs:
               echo "=== matched server_name ==="
               SERVER_NAME="$(awk '/server_name/ {for (i = 2; i <= NF; i++) {gsub(/;/, "", $i); if ($i != "") print $i}}' "$SITE_FILE" | paste -sd ',' -)"
               echo "raw server names: ${SERVER_NAME:-not-found}"
-              export SERVER_NAME
-              python3 - <<'PY'
-              import os
-
-              raw = os.environ.get("SERVER_NAME", "").strip()
-              print("server names dotted:", raw.replace(".", " [dot] "))
-              print("server names reversed:", raw[::-1])
-              print("server names char codes:", " ".join(str(ord(ch)) for ch in raw))
-              PY
+              echo "server names dotted: $(printf '%s' "$SERVER_NAME" | sed 's/\./ [dot] /g')"
+              echo "server names reversed: $(printf '%s' "$SERVER_NAME" | rev)"
+              echo "server names char codes: $(printf '%s' "$SERVER_NAME" | od -An -t u1 | tr '\n' ' ' | sed 's/[[:space:]]\\+/ /g; s/^ //; s/ $//')"
               echo "=== matched config excerpt ==="
               sed -n '1,160p' "$SITE_FILE"
             else
