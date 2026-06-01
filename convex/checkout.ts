@@ -4,6 +4,12 @@ import { internalMutation, internalQuery, mutation, query } from "./_generated/s
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
+import {
+  recordOrderMetric,
+  recordPaymentMetric,
+  replaceOrderMetric,
+  replacePaymentMetric,
+} from "./componentMetrics";
 import { requireRole, requireUser } from "./model/auth";
 
 const paymentRail = v.union(v.literal("usdc"), v.literal("x402"));
@@ -278,6 +284,10 @@ export const createStripeCheckoutDraft = internalMutation({
       currency: "USD",
       placedAt: Date.now(),
     });
+    const order = await ctx.db.get(orderId);
+    if (order) {
+      await recordOrderMetric(ctx, order);
+    }
 
     const netRevenue = subtotal - discountValueUsd;
     const orderItemId = await ctx.db.insert("orderItems", {
@@ -302,6 +312,10 @@ export const createStripeCheckoutDraft = internalMutation({
       rail: "stripe",
       status: "pending",
     });
+    const payment = await ctx.db.get(paymentId);
+    if (payment) {
+      await recordPaymentMetric(ctx, payment);
+    }
 
     return {
       orderId,
@@ -363,16 +377,27 @@ export const confirmStripeCheckoutPayment = internalMutation({
       stripePaymentIntentId,
       stripePaymentMethodType,
     });
+    const confirmedPayment = await ctx.db.get(paymentId);
+    if (confirmedPayment) {
+      await replacePaymentMetric(ctx, payment, confirmedPayment);
+    }
     const order = await ctx.db.get(payment.orderId);
     if (!order) throw new Error("Order not found.");
     await ctx.db.patch(payment.orderId, {
       status: "paid",
       shippingAddress: shippingAddress ?? order.shippingAddress,
     });
+    const paidOrder = await ctx.db.get(payment.orderId);
+    if (paidOrder) {
+      await replaceOrderMetric(ctx, order, paidOrder);
+    }
     if (!wasConfirmed) {
       await ensureRoyaltyLedgerEntriesForOrder(ctx, payment.orderId);
       await syncCustomerOnPaidOrder(ctx, payment.orderId);
       await markStashRedemptionRedeemed(ctx, payment.orderId);
+      await ctx.scheduler.runAfter(0, internal.email.sendOrderReceipt, {
+        orderId: payment.orderId,
+      });
     }
   },
 });
@@ -392,7 +417,16 @@ export const failStripeCheckoutPayment = internalMutation({
       status: "failed",
       stripeCheckoutSessionId: stripeCheckoutSessionId ?? payment.stripeCheckoutSessionId,
     });
+    const failedPayment = await ctx.db.get(paymentId);
+    if (failedPayment) {
+      await replacePaymentMetric(ctx, payment, failedPayment);
+    }
+    const order = await ctx.db.get(payment.orderId);
     await ctx.db.patch(payment.orderId, { status: "awaiting_payment" });
+    const restoredOrder = await ctx.db.get(payment.orderId);
+    if (order && restoredOrder) {
+      await replaceOrderMetric(ctx, order, restoredOrder);
+    }
     await releaseInventoryReservationForOrder(ctx, payment.orderId);
     await failOpenFulfillments(ctx, payment.orderId);
   },
@@ -414,9 +448,18 @@ export const syncStripePaymentFailureFromWebhook = internalMutation({
       status: "failed",
       stripePaymentIntentId: stripePaymentIntentId ?? payment.stripePaymentIntentId,
     });
+    const failedPayment = await ctx.db.get(paymentId);
+    if (failedPayment) {
+      await replacePaymentMetric(ctx, payment, failedPayment);
+    }
+    const order = await ctx.db.get(payment.orderId);
     await ctx.db.patch(payment.orderId, {
       status: "awaiting_payment",
     });
+    const restoredOrder = await ctx.db.get(payment.orderId);
+    if (order && restoredOrder) {
+      await replaceOrderMetric(ctx, order, restoredOrder);
+    }
     await releaseInventoryReservationForOrder(ctx, payment.orderId);
     await failOpenFulfillments(ctx, payment.orderId);
   },
@@ -443,6 +486,10 @@ export const syncStripeRefundFromWebhook = internalMutation({
       stripeRefundAmountUsd: normalizedRefundAmount,
       status: fullRefund ? "refunded" : payment.status,
     });
+    const refundedPayment = await ctx.db.get(paymentId);
+    if (refundedPayment) {
+      await replacePaymentMetric(ctx, payment, refundedPayment);
+    }
 
     if (!fullRefund) {
       await addCustomerActivity(ctx, order.customerId, {
@@ -456,6 +503,10 @@ export const syncStripeRefundFromWebhook = internalMutation({
     await ctx.db.patch(order._id, {
       status: "refunded",
     });
+    const refundedOrder = await ctx.db.get(order._id);
+    if (refundedOrder) {
+      await replaceOrderMetric(ctx, order, refundedOrder);
+    }
     await releaseInventoryReservationForOrder(ctx, order._id);
     await markUnverifiedBurnsFailed(ctx, order._id);
     await failOpenFulfillments(ctx, order._id);
@@ -550,6 +601,10 @@ async function createPaymentIntentRecord(
     currency: "USD",
     placedAt: Date.now(),
   });
+  const order = await ctx.db.get(orderId);
+  if (order) {
+    await recordOrderMetric(ctx, order);
+  }
 
   const netRevenue = subtotal - burnQuote.discount;
   const orderItemId = await ctx.db.insert("orderItems", {
@@ -611,6 +666,10 @@ async function createPaymentIntentRecord(
           }
         : undefined,
   });
+  const payment = await ctx.db.get(paymentIdDoc);
+  if (payment) {
+    await recordPaymentMetric(ctx, payment);
+  }
 
   return {
     orderId,
@@ -733,13 +792,25 @@ export const markPayment = mutation({
       txHash,
       confirmations: status === "confirmed" ? 1 : 0,
     });
+    const patchedPayment = await ctx.db.get(paymentId);
+    if (patchedPayment) {
+      await replacePaymentMetric(ctx, payment, patchedPayment);
+    }
+    const order = await ctx.db.get(payment.orderId);
     await ctx.db.patch(payment.orderId, {
       status: status === "confirmed" ? "paid" : "awaiting_payment",
     });
+    const patchedOrder = await ctx.db.get(payment.orderId);
+    if (order && patchedOrder) {
+      await replaceOrderMetric(ctx, order, patchedOrder);
+    }
     if (status === "confirmed" && !wasConfirmed) {
       await ensureRoyaltyLedgerEntriesForOrder(ctx, payment.orderId);
       await syncCustomerOnPaidOrder(ctx, payment.orderId);
       await recordTreasuryInflow(ctx, paymentId, payment, txHash);
+      await ctx.scheduler.runAfter(0, internal.email.sendOrderReceipt, {
+        orderId: payment.orderId,
+      });
     }
     if (status === "failed") {
       await releaseInventoryReservationForOrder(ctx, payment.orderId);
@@ -800,8 +871,9 @@ export const recordPaymentSubmission = internalMutation({
       confirmations: confirmations ?? payment.confirmations,
     });
     if (payment.status === "pending" && txHash.trim()) {
-      await ctx.scheduler.runAfter(2 * 60 * 1000, internal.payments.reconcileSubmittedPayment, {
-        paymentId,
+      await ctx.scheduler.runAfter(2 * 60 * 1000, internal.workflows.startPaymentReconciliation, {
+        limit: 25,
+        source: "payment_submission",
       });
     }
   },
@@ -824,15 +896,27 @@ export const confirmVerifiedPayment = internalMutation({
       fromAddress: fromAddress ?? payment.fromAddress,
       confirmations: confirmations ?? 1,
     });
+    const confirmedPayment = await ctx.db.get(paymentId);
+    if (confirmedPayment) {
+      await replacePaymentMetric(ctx, payment, confirmedPayment);
+    }
+    const order = await ctx.db.get(payment.orderId);
     await ctx.db.patch(payment.orderId, {
       status: "paid",
     });
+    const paidOrder = await ctx.db.get(payment.orderId);
+    if (order && paidOrder) {
+      await replaceOrderMetric(ctx, order, paidOrder);
+    }
     if (!wasConfirmed) {
       const patched = await ctx.db.get(paymentId);
       if (!patched) return;
       await ensureRoyaltyLedgerEntriesForOrder(ctx, payment.orderId);
       await syncCustomerOnPaidOrder(ctx, payment.orderId);
       await recordTreasuryInflow(ctx, paymentId, patched, txHash);
+      await ctx.scheduler.runAfter(0, internal.email.sendOrderReceipt, {
+        orderId: payment.orderId,
+      });
     }
   },
 });
@@ -853,9 +937,18 @@ export const failVerifiedPayment = internalMutation({
       txHash: txHash ?? payment.txHash,
       confirmations: 0,
     });
+    const failedPayment = await ctx.db.get(paymentId);
+    if (failedPayment) {
+      await replacePaymentMetric(ctx, payment, failedPayment);
+    }
+    const order = await ctx.db.get(payment.orderId);
     await ctx.db.patch(payment.orderId, {
       status: "awaiting_payment",
     });
+    const restoredOrder = await ctx.db.get(payment.orderId);
+    if (order && restoredOrder) {
+      await replaceOrderMetric(ctx, order, restoredOrder);
+    }
     await releaseInventoryReservationForOrder(ctx, payment.orderId);
     await markOrderBurnsFailed(ctx, payment.orderId);
     await failOpenFulfillments(ctx, payment.orderId);
@@ -888,12 +981,20 @@ export const cancelOrder = mutation({
           status: "failed",
           confirmations: 0,
         });
+        const failedPayment = await ctx.db.get(payment._id);
+        if (failedPayment) {
+          await replacePaymentMetric(ctx, payment, failedPayment);
+        }
       }
     }
 
     await ctx.db.patch(orderId, {
       status: "cancelled",
     });
+    const cancelledOrder = await ctx.db.get(orderId);
+    if (cancelledOrder) {
+      await replaceOrderMetric(ctx, order, cancelledOrder);
+    }
     await releaseInventoryReservationForOrder(ctx, orderId);
     await markOrderBurnsFailed(ctx, orderId);
     await failOpenFulfillments(ctx, orderId);
@@ -933,12 +1034,20 @@ export const refundOrder = mutation({
         txHash: txHashOrRef ?? payment.txHash,
         confirmations: 0,
       });
+      const refundedPayment = await ctx.db.get(payment._id);
+      if (refundedPayment) {
+        await replacePaymentMetric(ctx, payment, refundedPayment);
+      }
       await recordTreasuryRefund(ctx, payment._id, payment, txHashOrRef);
     }
 
     await ctx.db.patch(orderId, {
       status: "refunded",
     });
+    const refundedOrder = await ctx.db.get(orderId);
+    if (refundedOrder) {
+      await replaceOrderMetric(ctx, order, refundedOrder);
+    }
     await releaseInventoryReservationForOrder(ctx, orderId);
     await markUnverifiedBurnsFailed(ctx, orderId);
     await failOpenFulfillments(ctx, orderId);

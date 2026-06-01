@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
+import { rateLimiter } from "./componentLimits";
 import { appBaseUrl, envValue, getStripe, isUsablePublicUrl } from "./lib/stripe";
 
 const shippingCountries = [
@@ -95,6 +96,11 @@ export const createSession = action({
     origin: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<StripeSessionResult> => {
+    await rateLimiter.limit(ctx, "checkoutSession", {
+      key: args.customerEmail.trim().toLowerCase() || args.customerName.trim().toLowerCase(),
+      throws: true,
+    });
+
     const selection = (await ctx.runQuery(internal.checkout.checkoutSelectionContext, {
       productId: args.productId,
       variantId: args.variantId,
@@ -263,6 +269,11 @@ export const createRefund = action({
     ),
   },
   handler: async (ctx, { paymentId, reason }): Promise<StripeRefundResult> => {
+    await rateLimiter.limit(ctx, "stripeRefund", {
+      key: String(paymentId),
+      throws: true,
+    });
+
     const refundContext = (await ctx.runQuery(api.checkout.stripeRefundContext, {
       paymentId,
     })) as StripeRefundContext;

@@ -46,6 +46,10 @@ jobs:
           DISCORD_APPLICATION_ID: ${{ secrets.DISCORD_APPLICATION_ID }}
           DISCORD_API_TOKEN: ${{ secrets.DISCORD_API_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+          RESEND_TEST_MODE: ${{ secrets.RESEND_TEST_MODE }}
+          CACHE_EMAIL_FROM: ${{ secrets.CACHE_EMAIL_FROM }}
         run: |
           set -e
           if [ -n "$STRIPE_SECRET_KEY" ]; then
@@ -81,11 +85,28 @@ jobs:
           if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
             bunx convex env set --prod TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
           fi
+          if [ -n "$RESEND_API_KEY" ]; then
+            bunx convex env set --prod RESEND_API_KEY "$RESEND_API_KEY"
+          fi
+          if [ -n "$RESEND_WEBHOOK_SECRET" ]; then
+            bunx convex env set --prod RESEND_WEBHOOK_SECRET "$RESEND_WEBHOOK_SECRET"
+          fi
+          if [ -n "$RESEND_TEST_MODE" ]; then
+            bunx convex env set --prod RESEND_TEST_MODE "$RESEND_TEST_MODE"
+          fi
+          if [ -n "$CACHE_EMAIL_FROM" ]; then
+            bunx convex env set --prod CACHE_EMAIL_FROM "$CACHE_EMAIL_FROM"
+          fi
 
       - name: Seed storefront data
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: bunx convex run bootstrap:ensureStorefront
+
+      - name: Run production migrations
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: bunx convex run migrations:runAll
 
       - name: Build
         env:

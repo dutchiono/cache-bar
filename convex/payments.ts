@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, internalAction, type ActionCtx } from "./_generated/server";
+import { rateLimiter } from "./componentLimits";
 
 const x402Networks = {
   base: {
@@ -97,6 +98,10 @@ export const verifySubmittedPayment = action({
     txHash: v.string(),
   },
   handler: async (ctx, { paymentId, txHash }): Promise<PublicVerificationResponse> => {
+    await rateLimiter.limit(ctx, "publicPaymentVerification", {
+      key: String(paymentId),
+      throws: true,
+    });
     return (await processPaymentVerification(ctx, paymentId, txHash)) as PublicVerificationResponse;
   },
 });

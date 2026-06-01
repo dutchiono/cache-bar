@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { statusSummary } from "./componentMetrics";
 import { requireRole } from "./model/auth";
 
 export const overview = query({
@@ -14,6 +15,7 @@ export const overview = query({
       payouts,
       submissions,
       creators,
+      componentMetrics,
     ] = await Promise.all([
       ctx.db.query("products").collect(),
       ctx.db.query("orders").collect(),
@@ -23,6 +25,7 @@ export const overview = query({
       ctx.db.query("payouts").collect(),
       ctx.db.query("submissions").collect(),
       ctx.db.query("creators").collect(),
+      statusSummary(ctx),
     ]);
 
     const grossSales = roundMoney(
@@ -73,6 +76,7 @@ export const overview = query({
         acc[order.status] = row;
         return acc;
       }, {}),
+      componentMetrics,
       topCustomers: customers
         .slice()
         .sort((a, b) => b.lifetimeValue - a.lifetimeValue)

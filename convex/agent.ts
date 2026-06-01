@@ -1,7 +1,10 @@
+import { ActionCache } from "@convex-dev/action-cache";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { rateLimiter } from "./componentLimits";
+import { recordConciergeMessageMetric } from "./componentMetrics";
 import { requireUser } from "./model/auth";
 
 const conciergeSource = v.union(
@@ -22,6 +25,26 @@ type PublicConciergeResult = ElizaReply & {
   sessionId: Id<"conciergeSessions">;
   visitorId: string;
 };
+
+type ElizaConfigStatus = {
+  elizaConfigured: boolean;
+  elizaBaseUrl?: string;
+  elizaAgentId?: string;
+  elizaChannelId?: string;
+  discordConfigured: boolean;
+  telegramConfigured: boolean;
+  mode: "process" | "ingest" | "auto";
+  synchronousResponses: boolean;
+  processEndpoint: string;
+  ingestEndpoint: string;
+  webConciergeEnabled: boolean;
+};
+
+const elizaConfigCache: ActionCache<typeof internal.agent.readElizaConfigStatus> = new ActionCache(components.actionCache, {
+  action: internal.agent.readElizaConfigStatus,
+  name: "eliza-config-status-v1",
+  ttl: 30_000,
+});
 
 export const listThreads = query({
   args: {},
@@ -119,6 +142,11 @@ export const chat = action({
     if (!body) throw new Error("Message is required.");
 
     const auth = await ctx.runQuery(internal.agent.authorizeThreadForChat, { threadId });
+    await rateLimiter.limit(ctx, "authSensitiveMutation", {
+      key: String(auth.userId),
+      throws: true,
+    });
+    await rateLimiter.limit(ctx, "elizaProxyRequest", { throws: true });
     await ctx.runMutation(internal.agent.recordThreadMessage, {
       threadId,
       role: "user",
@@ -164,6 +192,13 @@ export const publicConciergeChat = action({
     if (!body) throw new Error("Message is required.");
 
     const stableVisitorId = visitorId?.trim() || `web-${crypto.randomUUID()}`;
+    await rateLimiter.limit(ctx, "publicConciergeMessage", {
+      key: stableVisitorId,
+      throws: true,
+    });
+    await rateLimiter.limit(ctx, "globalConciergeMessage", { throws: true });
+    await rateLimiter.limit(ctx, "elizaProxyRequest", { throws: true });
+
     const sessionId = await ctx.runMutation(internal.agent.upsertConciergeSession, {
       visitorId: stableVisitorId,
       source: "web",
@@ -207,7 +242,14 @@ export const publicConciergeChat = action({
 
 export const configStatus = action({
   args: {},
-  handler: async () => {
+  handler: async (ctx): Promise<ElizaConfigStatus> => {
+    return await elizaConfigCache.fetch(ctx, {});
+  },
+});
+
+export const readElizaConfigStatus = internalAction({
+  args: {},
+  handler: async (): Promise<ElizaConfigStatus> => {
     const c = config();
     return {
       elizaConfigured: Boolean(c.baseUrl && c.agentId),
@@ -314,7 +356,11 @@ export const recordConciergeMessage = internalMutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.insert("conciergeMessages", args);
+    const messageId = await ctx.db.insert("conciergeMessages", args);
+    const message = await ctx.db.get(messageId);
+    if (message) {
+      await recordConciergeMessageMetric(ctx, message);
+    }
     await ctx.db.patch(args.sessionId, { lastMessageAt: Date.now() });
   },
 });

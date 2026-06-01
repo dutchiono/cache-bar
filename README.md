@@ -32,3 +32,4 @@ bun run lint
 Stripe and `.stash` handoff notes live in [docs/stripe-handoff.md](docs/stripe-handoff.md).
 Eliza and waifu handoff notes live in [docs/eliza-waifu-handoff.md](docs/eliza-waifu-handoff.md).
 The Eliza Cloud proxy, migration, and contingency plan lives in [docs/cache-eliza-cloud-plan.md](docs/cache-eliza-cloud-plan.md).
+Convex component wiring is tracked in [docs/convex-components.md](docs/convex-components.md).

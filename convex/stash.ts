@@ -2,8 +2,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalQuery, mutation, query, action, internalMutation } from "./_generated/server";
-import { requireRole } from "./model/auth";
+import { rateLimiter } from "./componentLimits";
+import { recordRedemptionMetric, replaceRedemptionMetric } from "./componentMetrics";
 import { getStripe, promotionCodeSlug } from "./lib/stripe";
+import { requireRole } from "./model/auth";
 
 type RedemptionContext = {
   status: "awaiting_burn" | "verified" | "issued" | "redeemed" | "failed";
@@ -60,6 +62,12 @@ export const createRedemptionIntent = mutation({
     amountTokens: v.number(),
   },
   handler: async (ctx, { programId, customerEmail, walletAddress, amountTokens }) => {
+    const emailKey = customerEmail.trim().toLowerCase();
+    await rateLimiter.limit(ctx, "stashRedemptionIntent", {
+      key: emailKey || walletAddress?.trim().toLowerCase() || String(programId),
+      throws: true,
+    });
+
     const program = await ctx.db.get(programId);
     if (!program || !program.active || !(program.redemptionEnabled ?? true)) {
       throw new Error("That token program is not available for .stash redemptions.");
@@ -77,14 +85,19 @@ export const createRedemptionIntent = mutation({
       throw new Error("This burn amount does not produce a valid discount.");
     }
 
-    return await ctx.db.insert("stashRedemptions", {
+    const redemptionId = await ctx.db.insert("stashRedemptions", {
       programId,
-      customerEmail: customerEmail.trim().toLowerCase(),
+      customerEmail: emailKey,
       walletAddress: walletAddress?.trim() || undefined,
       amountTokens,
       discountValueUsd,
       status: "awaiting_burn",
     });
+    const redemption = await ctx.db.get(redemptionId);
+    if (redemption) {
+      await recordRedemptionMetric(ctx, redemption);
+    }
+    return redemptionId;
   },
 });
 
@@ -97,6 +110,11 @@ export const issuePromotionCode = action({
     ctx,
     { redemptionId, txHash },
   ): Promise<{ promotionCode: string; discountValueUsd: number; expiresAt?: number }> => {
+    await rateLimiter.limit(ctx, "stashIssuePromotionCode", {
+      key: String(redemptionId),
+      throws: true,
+    });
+
     const context = (await ctx.runQuery(internal.stash.redemptionContext, {
       redemptionId,
     })) as RedemptionContext | null;
@@ -192,6 +210,7 @@ export const markIssued = internalMutation({
     expiresAt: v.number(),
   },
   handler: async (ctx, args) => {
+    const oldRedemption = await ctx.db.get(args.redemptionId);
     await ctx.db.patch(args.redemptionId, {
       burnTxHash: args.txHash,
       stripeCouponId: args.stripeCouponId,
@@ -200,16 +219,25 @@ export const markIssued = internalMutation({
       expiresAt: args.expiresAt,
       status: "issued",
     });
+    const newRedemption = await ctx.db.get(args.redemptionId);
+    if (oldRedemption && newRedemption) {
+      await replaceRedemptionMetric(ctx, oldRedemption, newRedemption);
+    }
   },
 });
 
 export const markRedeemed = internalMutation({
   args: { redemptionId: v.id("stashRedemptions") },
   handler: async (ctx, { redemptionId }) => {
+    const oldRedemption = await ctx.db.get(redemptionId);
     await ctx.db.patch(redemptionId, {
       status: "redeemed",
       redeemedAt: Date.now(),
     });
+    const newRedemption = await ctx.db.get(redemptionId);
+    if (oldRedemption && newRedemption) {
+      await replaceRedemptionMetric(ctx, oldRedemption, newRedemption);
+    }
   },
 });
 

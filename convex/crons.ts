@@ -4,10 +4,10 @@ import { internal } from "./_generated/api";
 const crons = cronJobs();
 
 crons.interval(
-  "reconcile pending payment submissions",
+  "start durable payment reconciliation",
   { minutes: 5 },
-  internal.payments.reconcilePendingPayments,
-  { limit: 25 },
+  internal.workflows.startPaymentReconciliation,
+  { limit: 25, source: "cron" },
 );
 
 export default crons;

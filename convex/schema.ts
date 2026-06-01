@@ -587,4 +587,28 @@ export default defineSchema({
     content: v.string(),
     metadata: v.optional(v.any()),
   }).index("by_session", ["sessionId"]),
+
+  backendJobs: defineTable({
+    kind: v.union(
+      v.literal("payment_reconciliation"),
+      v.literal("fulfillment_sync"),
+      v.literal("eliza_shop_onboarding"),
+      v.literal("email_delivery"),
+      v.literal("metrics_backfill"),
+    ),
+    workflowId: v.string(),
+    status: v.union(
+      v.literal("started"),
+      v.literal("success"),
+      v.literal("error"),
+      v.literal("canceled"),
+    ),
+    context: v.optional(v.any()),
+    result: v.optional(v.any()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_kind", ["kind"])
+    .index("by_status", ["status"])
+    .index("by_workflow", ["workflowId"]),
 });

@@ -14,13 +14,17 @@ import type * as auth from "../auth.js";
 import type * as automations from "../automations.js";
 import type * as bootstrap from "../bootstrap.js";
 import type * as checkout from "../checkout.js";
+import type * as componentLimits from "../componentLimits.js";
+import type * as componentMetrics from "../componentMetrics.js";
 import type * as creators from "../creators.js";
 import type * as crons from "../crons.js";
 import type * as customers from "../customers.js";
 import type * as digitalAssets from "../digitalAssets.js";
+import type * as email from "../email.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
 import type * as lib_stripe from "../lib/stripe.js";
+import type * as migrations from "../migrations.js";
 import type * as model_auth from "../model/auth.js";
 import type * as payments from "../payments.js";
 import type * as products from "../products.js";
@@ -35,6 +39,7 @@ import type * as token from "../token.js";
 import type * as treasury from "../treasury.js";
 import type * as users from "../users.js";
 import type * as variants from "../variants.js";
+import type * as workflows from "../workflows.js";
 
 import type {
   ApiFromModules,
@@ -49,13 +54,17 @@ declare const fullApi: ApiFromModules<{
   automations: typeof automations;
   bootstrap: typeof bootstrap;
   checkout: typeof checkout;
+  componentLimits: typeof componentLimits;
+  componentMetrics: typeof componentMetrics;
   creators: typeof creators;
   crons: typeof crons;
   customers: typeof customers;
   digitalAssets: typeof digitalAssets;
+  email: typeof email;
   http: typeof http;
   inventory: typeof inventory;
   "lib/stripe": typeof lib_stripe;
+  migrations: typeof migrations;
   "model/auth": typeof model_auth;
   payments: typeof payments;
   products: typeof products;
@@ -70,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   treasury: typeof treasury;
   users: typeof users;
   variants: typeof variants;
+  workflows: typeof workflows;
 }>;
 
 /**
@@ -98,4 +108,14 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  workflow: import("@convex-dev/workflow/_generated/component.js").ComponentApi<"workflow">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+  actionCache: import("@convex-dev/action-cache/_generated/component.js").ComponentApi<"actionCache">;
+  migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
+  resend: import("@convex-dev/resend/_generated/component.js").ComponentApi<"resend">;
+  orderMetrics: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"orderMetrics">;
+  paymentMetrics: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"paymentMetrics">;
+  redemptionMetrics: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"redemptionMetrics">;
+  conciergeMetrics: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"conciergeMetrics">;
+};
