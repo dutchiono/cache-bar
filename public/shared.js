@@ -115,6 +115,9 @@
       return p ? s + linePrice(p, l.variant) * l.qty : s;
     }, 0);
   }
+  function cartHasOpenPricing() {
+    return cart.some((l) => /tbd/i.test(String(window.PRODUCT_LOOKUP[l.sku]?.price || "")));
+  }
   function persist() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cart)); } catch {} }
 
   function addToCart(sku, qty = 1, variant = null) {
@@ -174,7 +177,7 @@
         const unitPrice = linePrice(p, line.variant);
         const lineTotal = unitPrice * line.qty;
         const isFree = unitPrice === 0;
-        const catLabel = p.cat === 'digital' ? window.t('inv.digital') : p.cat || '';
+        const catLabel = p.categoryLabel || (p.cat === 'digital' ? window.t('inv.digital') : p.cat || '');
         const variantBits = [];
         if (line.variant) {
           if (line.variant.format) {
@@ -204,7 +207,7 @@
           </div>`;
       }).join('');
       if (foot) foot.style.display = 'flex';
-      if (sub) sub.textContent = '$' + cartSubtotal().toFixed(0);
+      if (sub) sub.textContent = cartHasOpenPricing() ? 'TBD' : '$' + cartSubtotal().toFixed(0);
     }
 
     if (trigger) {
@@ -265,7 +268,7 @@
 
   /* ---------- FOOTER COLUMNS ---------- */
   // Hrefs are positional — match each i18n array's order:
-  //   shopLinks    : Drop 001, Archive, Member Pricing, Gift Cards
+  //   shopLinks    : Sticker Run, Archive, POD Setup, Reserve
   //   cacheLinks   : Manifesto, Process, Studio, Press
   //   supportLinks : Sizing, Care, Shipping, Returns
   //   followLinks  : Instagram, TikTok, X, RSS
