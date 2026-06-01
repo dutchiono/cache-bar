@@ -15,6 +15,7 @@
 - Vite + React + TypeScript
 - Convex for backend, auth, and data
 - Stripe Checkout for payments
+- Teemill hybrid support for custom-product checkout links and catalog-backed fulfillment
 - `.stash` for token-linked discount redemption
 - Eliza-ready concierge channel for web, Discord, Telegram, and waifu agents
 
@@ -33,3 +34,4 @@ Stripe and `.stash` handoff notes live in [docs/stripe-handoff.md](docs/stripe-h
 Eliza and waifu handoff notes live in [docs/eliza-waifu-handoff.md](docs/eliza-waifu-handoff.md).
 The Eliza Cloud proxy, migration, and contingency plan lives in [docs/cache-eliza-cloud-plan.md](docs/cache-eliza-cloud-plan.md).
 Convex component wiring is tracked in [docs/convex-components.md](docs/convex-components.md).
+Teemill hybrid mode notes live in [docs/teemill-integration-plan.md](docs/teemill-integration-plan.md).

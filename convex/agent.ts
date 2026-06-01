@@ -5,6 +5,7 @@ import type { Id } from "./_generated/dataModel";
 import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { rateLimiter } from "./componentLimits";
 import { recordConciergeMessageMetric } from "./componentMetrics";
+import { createCustomProduct, teemillConfig } from "./lib/teemill";
 import { requireUser } from "./model/auth";
 
 const conciergeSource = v.union(
@@ -186,10 +187,13 @@ export const publicConciergeChat = action({
     content: v.string(),
     currentPath: v.optional(v.string()),
     waifuAgentId: v.optional(v.string()),
+    imageDataUrl: v.optional(v.string()),
+    imageName: v.optional(v.string()),
   },
-  handler: async (ctx, { visitorId, content, currentPath, waifuAgentId }): Promise<PublicConciergeResult> => {
+  handler: async (ctx, { visitorId, content, currentPath, waifuAgentId, imageDataUrl, imageName }): Promise<PublicConciergeResult> => {
     const body = content.trim();
-    if (!body) throw new Error("Message is required.");
+    const normalizedImageDataUrl = imageDataUrl?.trim() || undefined;
+    if (!body && !normalizedImageDataUrl) throw new Error("Message or image is required.");
 
     const stableVisitorId = visitorId?.trim() || `web-${crypto.randomUUID()}`;
     await rateLimiter.limit(ctx, "publicConciergeMessage", {
@@ -209,21 +213,31 @@ export const publicConciergeChat = action({
     await ctx.runMutation(internal.agent.recordConciergeMessage, {
       sessionId,
       role: "user",
-      content: body,
-      metadata: { currentPath },
-    });
-
-    const reply = await askEliza({
-      text: body,
-      source: "web",
-      entityId: stableVisitorId,
-      roomId: config().channelId ?? String(sessionId),
+      content: body || `[image] ${imageName?.trim() || "custom shirt request"}`,
       metadata: {
         currentPath,
-        waifuAgentId,
-        product: "cache_concierge",
+        imageAttached: Boolean(normalizedImageDataUrl),
+        imageName: imageName?.trim() || undefined,
       },
     });
+
+    const reply = normalizedImageDataUrl
+      ? await handleCustomProductRequest({
+          text: body,
+          imageDataUrl: normalizedImageDataUrl,
+          imageName: imageName?.trim() || undefined,
+        })
+      : await askEliza({
+          text: body,
+          source: "web",
+          entityId: stableVisitorId,
+          roomId: config().channelId ?? String(sessionId),
+          metadata: {
+            currentPath,
+            waifuAgentId,
+            product: "cache_concierge",
+          },
+        });
 
     await ctx.runMutation(internal.agent.recordConciergeMessage, {
       sessionId,
@@ -431,6 +445,42 @@ async function askEliza({
   };
 }
 
+async function handleCustomProductRequest({
+  text,
+  imageDataUrl,
+  imageName,
+}: {
+  text: string;
+  imageDataUrl: string;
+  imageName?: string;
+}): Promise<ElizaReply> {
+  if (!teemillConfig().customProductConfigured) {
+    return {
+      content:
+        "I can see the image, but Teemill custom-product mode is not configured yet. Add `TEEMILL_PUBLIC_SAFE_KEY` to enable one-off shirt creation.",
+      configured: false,
+      provider: "cache",
+      mode: "fallback",
+    };
+  }
+
+  const productName = deriveCustomProductName(text, imageName);
+  const result = await createCustomProduct({
+    imageUrl: imageDataUrl,
+    itemCode: "RNA1",
+    name: productName,
+    colours: "White,Black",
+    description: "Created through the .cache concierge Teemill custom-product flow.",
+  });
+
+  return {
+    content: `I turned that image into a Teemill shirt draft. Buy it here: ${result.url}`,
+    configured: true,
+    provider: "cache",
+    mode: "fallback",
+  };
+}
+
 async function processExternalMessage({
   baseUrl,
   apiKey,
@@ -526,7 +576,16 @@ async function ingestExternalMessage({
 function fallbackReply(content: string) {
   const lower = content.toLowerCase();
   if (lower.includes("shop") || lower.includes("store") || lower.includes("drop")) {
-    return "I can help a waifu open a shop: define the drop, create products, attach a token discount through .stash, prepare Stripe checkout, and route fulfillment for approval.";
+    return "I can help a waifu open a shop: decide whether the buyer needs a custom Teemill product link or the .cache Stripe catalog flow, define the drop, attach a token discount through .stash, and route fulfillment for approval.";
+  }
+  if (
+    lower.includes("custom shirt") ||
+    lower.includes("design a shirt") ||
+    lower.includes("generate shirt") ||
+    lower.includes("one-off shirt") ||
+    lower.includes("personalized shirt")
+  ) {
+    return "For Teemill, I can route two paths: custom-product mode for one-off generated shirts that use Teemill checkout, or catalog/orders mode for prebuilt products that stay in the .cache Stripe flow.";
   }
   if (lower.includes("stash") || lower.includes("token") || lower.includes("burn")) {
     return ".stash connects a waifu token to a Stripe discount code. The holder burns the configured token amount, cache verifies the burn, then issues a one-time checkout code.";
@@ -537,7 +596,18 @@ function fallbackReply(content: string) {
   if (lower.includes("refund") || lower.includes("order")) {
     return "I can help with order lookup, Stripe refund prep, fulfillment status, and customer support. Money-moving actions still need an operator approval path.";
   }
-  return "Tell me what the waifu wants to sell, what token should unlock the discount, and whether fulfillment is print-on-demand, dropship, supplier, or digital.";
+  return "Tell me what the waifu wants to sell, whether the request is a one-off custom shirt or a catalog product, what token should unlock the discount, and whether fulfillment is print-on-demand, dropship, supplier, or digital.";
+}
+
+function deriveCustomProductName(text: string, imageName?: string) {
+  const trimmedText = text.trim();
+  if (trimmedText) {
+    return trimmedText.slice(0, 80);
+  }
+  if (imageName?.trim()) {
+    return imageName.trim().replace(/\.[A-Za-z0-9]+$/, "").slice(0, 80);
+  }
+  return ".cache custom tee";
 }
 
 function config() {

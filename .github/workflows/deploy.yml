@@ -50,6 +50,9 @@ jobs:
           RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
           RESEND_TEST_MODE: ${{ secrets.RESEND_TEST_MODE }}
           CACHE_EMAIL_FROM: ${{ secrets.CACHE_EMAIL_FROM }}
+          TEEMILL_PROJECT_NAME: ${{ secrets.TEEMILL_PROJECT_NAME }}
+          TEEMILL_PRIVATE_API_KEY: ${{ secrets.TEEMILL_PRIVATE_API_KEY }}
+          TEEMILL_PUBLIC_SAFE_KEY: ${{ secrets.TEEMILL_PUBLIC_SAFE_KEY }}
         run: |
           set -e
           if [ -n "$STRIPE_SECRET_KEY" ]; then
@@ -96,6 +99,15 @@ jobs:
           fi
           if [ -n "$CACHE_EMAIL_FROM" ]; then
             bunx convex env set --prod CACHE_EMAIL_FROM "$CACHE_EMAIL_FROM"
+          fi
+          if [ -n "$TEEMILL_PROJECT_NAME" ]; then
+            bunx convex env set --prod TEEMILL_PROJECT_NAME "$TEEMILL_PROJECT_NAME"
+          fi
+          if [ -n "$TEEMILL_PRIVATE_API_KEY" ]; then
+            bunx convex env set --prod TEEMILL_PRIVATE_API_KEY "$TEEMILL_PRIVATE_API_KEY"
+          fi
+          if [ -n "$TEEMILL_PUBLIC_SAFE_KEY" ]; then
+            bunx convex env set --prod TEEMILL_PUBLIC_SAFE_KEY "$TEEMILL_PUBLIC_SAFE_KEY"
           fi
 
       - name: Seed storefront data

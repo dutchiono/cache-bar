@@ -19,11 +19,36 @@ type ConfigStatus = {
   webhookPath: string;
 };
 
+type TeemillStatus = {
+  configured: boolean;
+  customProductConfigured: boolean;
+  projectName: string | null;
+  privateApiKeyConfigured: boolean;
+  publicSafeKeyConfigured: boolean;
+};
+
+type TeemillCatalogSmoke = {
+  ok: boolean;
+  productCount: number;
+  projectName: string | null;
+  sample: Array<{
+    id: string;
+    title: string;
+    slug: string | null;
+    variantCount: number;
+  }>;
+};
+
 export default function Checkout() {
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
   const getConfigStatus = useAction(api.stripeCheckout.configStatus);
+  const getTeemillStatus = useAction(api.teemill.configStatus);
+  const getTeemillCatalogSmoke = useAction(api.teemill.catalogSmoke);
   const [config, setConfig] = useState<ConfigStatus | null>(null);
+  const [teemill, setTeemill] = useState<TeemillStatus | null>(null);
+  const [teemillCatalog, setTeemillCatalog] = useState<TeemillCatalogSmoke | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [teemillError, setTeemillError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -40,6 +65,24 @@ export default function Checkout() {
       active = false;
     };
   }, [getConfigStatus]);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([getTeemillStatus({}), getTeemillCatalogSmoke({})])
+      .then(([status, catalog]) => {
+        if (!active) return;
+        setTeemill(status);
+        setTeemillCatalog(catalog);
+      })
+      .catch((error) => {
+        if (active) {
+          setTeemillError(error instanceof Error ? error.message : "Unable to load Teemill status.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [getTeemillCatalogSmoke, getTeemillStatus]);
 
   const featuredProduct = useMemo(() => products?.[0] ?? null, [products]);
   const previewHref = featuredProduct
@@ -110,12 +153,59 @@ export default function Checkout() {
           </section>
 
           <section className="cb-panel p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Teemill</h2>
+            {teemillError && (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {teemillError}
+              </p>
+            )}
+            {!teemill && !teemillError && (
+              <p className="text-sm text-[var(--cb-muted)]">Loading Teemill config…</p>
+            )}
+            {teemill && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <StatusCard
+                  label="Catalog / orders"
+                  ok={teemill.configured}
+                  good="Project + private key configured"
+                  bad="Missing project or private key"
+                />
+                <StatusCard
+                  label="Custom product"
+                  ok={teemill.customProductConfigured}
+                  good="Public safe key configured"
+                  bad="Missing public safe key"
+                />
+                <InfoCard label="Teemill project" value={teemill.projectName ?? "Not configured"} mono />
+                <InfoCard
+                  label="Catalog products"
+                  value={teemillCatalog ? String(teemillCatalog.productCount) : "Loading…"}
+                />
+              </div>
+            )}
+            {teemillCatalog && teemillCatalog.productCount === 0 && (
+              <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Teemill credentials are live, but this project currently has zero catalog products. Custom-product mode is ready; catalog/orders mode still needs products created in Teemill.
+              </p>
+            )}
+          </section>
+
+          <section className="cb-panel p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Buyer Flow</h2>
             <div className="space-y-2 text-sm text-[var(--cb-muted)]">
               <p>1. Buyer selects a live product on the storefront.</p>
               <p>2. If the drop is token-linked, buyer redeems in `.stash` and receives a one-time Stripe code.</p>
               <p>3. Buyer enters name and email on `/checkout` and is redirected into hosted Stripe Checkout.</p>
               <p>4. Stripe posts `checkout.session.completed` to Convex and the order moves to paid automatically.</p>
+            </div>
+          </section>
+
+          <section className="cb-panel p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Teemill Modes</h2>
+            <div className="space-y-2 text-sm text-[var(--cb-muted)]">
+              <p>Option A: use Teemill custom-product mode for one-off generated shirts and return the Teemill checkout URL to the buyer.</p>
+              <p>Option B: use `.cache` Stripe checkout for prebuilt products, then send paid orders to Teemill catalog/orders fulfillment.</p>
+              <p>The agent should choose between A and B based on the customer request rather than assuming a single fulfillment path.</p>
             </div>
           </section>
 
