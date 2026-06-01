@@ -227,17 +227,24 @@ export const publicConciergeChat = action({
           imageDataUrl: normalizedImageDataUrl,
           imageName: imageName?.trim() || undefined,
         })
-      : await askEliza({
-          text: body,
-          source: "web",
-          entityId: stableVisitorId,
-          roomId: config().channelId ?? String(sessionId),
-          metadata: {
-            currentPath,
-            waifuAgentId,
-            product: "cache_concierge",
-          },
-        });
+      : isStickerDemoIntent(body)
+        ? {
+            content: stickerDemoReply(),
+            configured: true,
+            provider: "cache" as const,
+            mode: "fallback" as const,
+          }
+        : await askEliza({
+            text: body,
+            source: "web",
+            entityId: stableVisitorId,
+            roomId: config().channelId ?? String(sessionId),
+            metadata: {
+              currentPath,
+              waifuAgentId,
+              product: "cache_concierge",
+            },
+          });
 
     await ctx.runMutation(internal.agent.recordConciergeMessage, {
       sessionId,
@@ -575,6 +582,9 @@ async function ingestExternalMessage({
 
 function fallbackReply(content: string) {
   const lower = content.toLowerCase();
+  if (isStickerDemoIntent(content)) {
+    return stickerDemoReply();
+  }
   if (lower.includes("shop") || lower.includes("store") || lower.includes("drop")) {
     return "I can help a waifu open a shop: decide whether the buyer needs a custom Teemill product link or the .cache Stripe catalog flow, define the drop, attach a token discount through .stash, and route fulfillment for approval.";
   }
@@ -597,6 +607,29 @@ function fallbackReply(content: string) {
     return "I can help with order lookup, Stripe refund prep, fulfillment status, and customer support. Money-moving actions still need an operator approval path.";
   }
   return "Tell me what the waifu wants to sell, whether the request is a one-off custom shirt or a catalog product, what token should unlock the discount, and whether fulfillment is print-on-demand, dropship, supplier, or digital.";
+}
+
+function isStickerDemoIntent(content: string) {
+  const lower = content.toLowerCase();
+  return (
+    lower.includes("what do you have for sale") ||
+    lower.includes("what's for sale") ||
+    lower.includes("whats for sale") ||
+    lower.includes("what are you selling") ||
+    lower.includes("what can i buy") ||
+    lower.includes("pre-pre sale") ||
+    lower.includes("sticker")
+  );
+}
+
+function stickerDemoReply() {
+  return [
+    "Right now .cache is running the sticker pre-pre sale demo.",
+    "Offer: a 50-wallet proof run for the first Cozy Devs sticker drop.",
+    "What you get: a DTOUR-gated sticker claim, a collectible claim NFT, and the first batch of physical stickers shipped by hand.",
+    "This is the point of the demo: the agent is already attached to a real product before the full 24-hour waifu launch cycle exists.",
+    "If you want in, say `claim a sticker pack` and I will walk you through the DTOUR/Solana claim flow.",
+  ].join(" ");
 }
 
 function deriveCustomProductName(text: string, imageName?: string) {

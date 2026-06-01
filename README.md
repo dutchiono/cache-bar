@@ -35,3 +35,5 @@ Eliza and waifu handoff notes live in [docs/eliza-waifu-handoff.md](docs/eliza-w
 The Eliza Cloud proxy, migration, and contingency plan lives in [docs/cache-eliza-cloud-plan.md](docs/cache-eliza-cloud-plan.md).
 Convex component wiring is tracked in [docs/convex-components.md](docs/convex-components.md).
 Teemill hybrid mode notes live in [docs/teemill-integration-plan.md](docs/teemill-integration-plan.md).
+Sticker proof NFT notes live in [docs/sticker-drop-nft.md](docs/sticker-drop-nft.md).
+Solana DTOUR sticker flow notes live in [docs/solana-sticker-drop.md](docs/solana-sticker-drop.md).

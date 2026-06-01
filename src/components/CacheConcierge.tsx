@@ -30,7 +30,7 @@ export function CacheConcierge() {
     {
       role: "assistant",
       content:
-        "Tell me what this waifu wants to sell. Drop an image here and say you want it on a t-shirt if you want a one-off Teemill link.",
+        "Ask what .cache has for sale and I will pitch the sticker pre-pre sale demo. Or drop an image here and ask for a one-off t-shirt.",
     },
   ]);
   const [busy, setBusy] = useState(false);
@@ -156,7 +156,7 @@ export function CacheConcierge() {
             />
             <input
               name="message"
-              placeholder="Ask .cache to start a shop or say you want the image on a t-shirt..."
+              placeholder="Ask what .cache has for sale, claim a sticker pack, or ask for a t-shirt..."
               disabled={busy || !visitorId}
               autoComplete="off"
             />
