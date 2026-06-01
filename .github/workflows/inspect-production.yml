@@ -32,13 +32,13 @@ jobs:
               echo "raw server names: ${SERVER_NAME:-not-found}"
               export SERVER_NAME
               python3 - <<'PY'
-import os
+              import os
 
-raw = os.environ.get("SERVER_NAME", "").strip()
-print("server names dotted:", raw.replace(".", " [dot] "))
-print("server names reversed:", raw[::-1])
-print("server names char codes:", " ".join(str(ord(ch)) for ch in raw))
-PY
+              raw = os.environ.get("SERVER_NAME", "").strip()
+              print("server names dotted:", raw.replace(".", " [dot] "))
+              print("server names reversed:", raw[::-1])
+              print("server names char codes:", " ".join(str(ord(ch)) for ch in raw))
+              PY
               echo "=== matched config excerpt ==="
               sed -n '1,160p' "$SITE_FILE"
             else
