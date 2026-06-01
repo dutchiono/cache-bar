@@ -30,85 +30,51 @@ export const ensureStorefront = mutation({
     }
 
     const existingProducts = await ctx.db.query("products").collect();
+    const retiredDemoTitles = [
+      "Stack Tee",
+      "Daemon Shell",
+      "Wallpaper Pack",
+      "Cozy Devs Moon Seal Sticker",
+      "Cozy Devs Floppy Sticker",
+      "Cozy Devs Bus Riot Sticker",
+    ];
+    for (const demoTitle of retiredDemoTitles) {
+      const demoProduct = existingProducts.find((item) => item.title === demoTitle);
+      if (demoProduct && demoProduct.status === "live") {
+        await ctx.db.patch(demoProduct._id, { status: "retired" });
+      }
+    }
+
     const productSpecs = [
       {
-        title: "Cache Mark",
+        title: "Cozy Devs Sticker Pack",
         creatorId: humanCreator._id,
         makerType: "human" as const,
-        description: "Die-cut .cache mark sticker prepared for the first POD proof batch. Quantity is capped at fifty and price is TBD until proof approval.",
+        description:
+          "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot. 56 packs total. The first 10 Stripe, first 10 USDC, and first 10 x402 purchases are dedicated payment-lane tests. DTOUR is one of the agents allowed to offer the same pack as a promo.",
         productType: "physical" as const,
         category: "stickers",
-        basePrice: 0,
+        basePrice: 5,
         currency: "USD",
-        demoImageUrls: ["/uploads/1.png"],
+        demoImageUrls: [
+          "/uploads/cozy-devs-moon-seal.png",
+          "/uploads/cozy-devs-floppy.png",
+          "/uploads/cozy-devs-bus-riot.png",
+        ],
         tokenDiscountEligible: false,
         provenance: {
           makerType: "human" as const,
-          summary: "Prepared by .cache for POD sticker proofing.",
+          summary: "Original Cozy Devs sticker pack art provided directly for the sticker proof drop.",
         },
         royaltySplits: [
           { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
           { role: "platform", percent: 10 as const },
         ],
         variants: [
-          { sku: "CST-001", optionLabel: "50-unit POD batch" },
-        ],
-      },
-      {
-        title: "Proof Label",
-        creatorId: humanCreator._id,
-        makerType: "human" as const,
-        description: "Matte proof label sticker for the POD run. Quantity is capped at fifty and price is TBD until the provider quote is locked.",
-        productType: "physical" as const,
-        category: "stickers",
-        basePrice: 0,
-        currency: "USD",
-        demoImageUrls: ["/uploads/2.png"],
-        tokenDiscountEligible: false,
-        provenance: {
-          makerType: "human" as const,
-          summary: "Prepared by .cache for POD sticker proofing.",
-        },
-        royaltySplits: [
-          { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
-          { role: "platform", percent: 10 as const },
-        ],
-        variants: [
-          { sku: "CST-002", optionLabel: "50-unit POD batch" },
-        ],
-      },
-      {
-        title: "Seal Holo",
-        creatorId: humanCreator._id,
-        makerType: "human" as const,
-        description: "Holographic .cache seal sticker for the POD run. Quantity is capped at fifty and price is TBD until the provider quote is locked.",
-        productType: "physical" as const,
-        category: "stickers",
-        basePrice: 0,
-        currency: "USD",
-        demoImageUrls: ["/uploads/3.png"],
-        tokenDiscountEligible: false,
-        provenance: {
-          makerType: "human" as const,
-          summary: "Prepared by .cache for POD sticker proofing.",
-        },
-        royaltySplits: [
-          { role: "creator", percent: 85, payeeCreatorId: humanCreator._id },
-          { role: "platform", percent: 15 as const },
-        ],
-        variants: [
-          { sku: "CST-003", optionLabel: "50-unit POD batch" },
+          { sku: "STICKER-PACK-001", optionLabel: "3-sticker pack" },
         ],
       },
     ];
-
-    const activeStickerTitles = new Set(productSpecs.map((spec) => spec.title));
-    const legacyDemoTitles = new Set(["Stack Tee", "Daemon Shell", "Wallpaper Pack"]);
-    for (const product of existingProducts) {
-      if (legacyDemoTitles.has(product.title) && !activeStickerTitles.has(product.title) && product.status === "live") {
-        await ctx.db.patch(product._id, { status: "retired" });
-      }
-    }
 
     for (const spec of productSpecs) {
       let product = existingProducts.find((item) => item.title === spec.title);
@@ -132,24 +98,37 @@ export const ensureStorefront = mutation({
         product = (await ctx.db.get(productId))!;
         summary.productsCreated += 1;
       } else {
-        const productPatch = {
-          title: spec.title,
+        await ctx.db.patch(product._id, {
           description: spec.description,
           productType: spec.productType,
           category: spec.category,
           makerType: spec.makerType,
           creatorId: spec.creatorId,
-          status: "live" as const,
+          status: "live",
           basePrice: spec.basePrice,
           currency: spec.currency,
-          imageStorageIds: [],
           demoImageUrls: spec.demoImageUrls,
           tokenDiscountEligible: spec.tokenDiscountEligible,
+          tokenProgramId: undefined,
+          provenance: spec.provenance,
+          royaltySplits: spec.royaltySplits,
+        });
+        product = {
+          ...product,
+          description: spec.description,
+          productType: spec.productType,
+          category: spec.category,
+          makerType: spec.makerType,
+          creatorId: spec.creatorId,
+          status: "live",
+          basePrice: spec.basePrice,
+          currency: spec.currency,
+          demoImageUrls: spec.demoImageUrls,
+          tokenDiscountEligible: spec.tokenDiscountEligible,
+          tokenProgramId: undefined,
           provenance: spec.provenance,
           royaltySplits: spec.royaltySplits,
         };
-        await ctx.db.patch(product._id, productPatch);
-        product = { ...product, ...productPatch };
       }
 
       for (const variantSpec of spec.variants) {
@@ -174,71 +153,120 @@ export const ensureStorefront = mutation({
         if (!inventory) {
           await ctx.db.insert("inventory", {
             variantId: variant._id,
-            onHand: 50,
+            onHand: 56,
             reserved: 0,
-            reorderPoint: 5,
-            location: "Drop 001 / POD sticker batch",
+            reorderPoint: 10,
+            location: "Sticker Pack Demo / Bin A",
           });
           summary.inventoryRowsCreated += 1;
+        } else if (
+          inventory.onHand !== 56 ||
+          inventory.reorderPoint !== 10 ||
+          inventory.location !== "Sticker Pack Demo / Bin A"
+        ) {
+          await ctx.db.patch(inventory._id, {
+            onHand: 56,
+            reorderPoint: 10,
+            location: "Sticker Pack Demo / Bin A",
+          });
         }
       }
     }
 
     const existingPrograms = await ctx.db.query("tokenPrograms").collect();
-    let demoProgram = existingPrograms.find((program) => program.projectName === "Example Drop Token");
+    let demoProgram = existingPrograms.find((program) => program.projectName === "DTOUR Sticker Pack Promo");
     if (!demoProgram) {
       const tokenProgramId = await ctx.db.insert("tokenPrograms", {
-        projectName: "Example Drop Token",
-        tokenSymbol: "DROP",
-        chain: "evm",
-        tokenKind: "erc20",
-        tokenAddress: "0xDROp000000000000000000000000000000000000",
-        tokenDecimals: 18,
-        burnTarget: "0x000000000000000000000000000000000000dEaD",
-        burnMechanism: "transfer_to_burn",
-        discountPerTokenUsd: 0.25,
-        maxDiscountUsd: 35,
+        projectName: "DTOUR Sticker Pack Promo",
+        tokenSymbol: "DTOUR",
+        chain: "solana",
+        tokenKind: "spl",
+        tokenAddress: "DTOUR_MINT_PENDING",
+        tokenDecimals: 9,
+        burnTarget: "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX",
+        burnMechanism: "manual_verify",
+        discountPerTokenUsd: 5,
+        maxDiscountUsd: 5,
         active: true,
         redemptionEnabled: true,
-        minimumRedemptionTokens: 10,
-        promotionCodePrefix: "DROP",
-        promotionCodeExpiresInDays: 14,
+        minimumRedemptionTokens: 1,
+        promotionCodePrefix: "DTOUR",
+        promotionCodeExpiresInDays: 21,
         preDropNft: {
           enabled: true,
-          collectionName: ".cache Pre-drop Pass",
-          contractOrMint: "0xPREdrop00000000000000000000000000000000",
-          mintPriceUsdc: 18,
-          discountPercent: 20,
+          collectionName: "Cozy Devs Sticker Claim",
+          contractOrMint: "SOLANA_COLLECTION_PENDING",
+          mintPriceUsdc: 5,
+          discountPercent: 100,
         },
-        notes: "Deploy bootstrap token program.",
+        notes: "Manual-verify DTOUR sticker pack promo for the first physical proof run.",
       });
       demoProgram = (await ctx.db.get(tokenProgramId))!;
       summary.tokenProgramsCreated += 1;
     } else {
       await ctx.db.patch(demoProgram._id, {
-        tokenDecimals: 18,
+        tokenSymbol: "DTOUR",
+        chain: "solana",
+        tokenKind: "spl",
+        tokenAddress: "DTOUR_MINT_PENDING",
+        tokenDecimals: 9,
+        burnTarget: "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX",
+        burnMechanism: "manual_verify",
+        discountPerTokenUsd: 5,
+        maxDiscountUsd: 5,
         redemptionEnabled: true,
-        minimumRedemptionTokens: 10,
-        promotionCodePrefix: demoProgram.promotionCodePrefix ?? "DROP",
-        promotionCodeExpiresInDays: demoProgram.promotionCodeExpiresInDays ?? 14,
+        minimumRedemptionTokens: 1,
+        promotionCodePrefix: "DTOUR",
+        promotionCodeExpiresInDays: 21,
+        preDropNft: {
+          enabled: true,
+          collectionName: "Cozy Devs Sticker Claim",
+          contractOrMint: "SOLANA_COLLECTION_PENDING",
+          mintPriceUsdc: 5,
+          discountPercent: 100,
+        },
       });
       demoProgram = {
         ...demoProgram,
-        tokenDecimals: 18,
+        tokenSymbol: "DTOUR",
+        chain: "solana",
+        tokenKind: "spl",
+        tokenAddress: "DTOUR_MINT_PENDING",
+        tokenDecimals: 9,
+        burnTarget: "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX",
+        burnMechanism: "manual_verify",
+        discountPerTokenUsd: 5,
+        maxDiscountUsd: 5,
         redemptionEnabled: true,
-        minimumRedemptionTokens: 10,
-        promotionCodePrefix: demoProgram.promotionCodePrefix ?? "DROP",
-        promotionCodeExpiresInDays: demoProgram.promotionCodeExpiresInDays ?? 14,
+        minimumRedemptionTokens: 1,
+        promotionCodePrefix: "DTOUR",
+        promotionCodeExpiresInDays: 21,
+        preDropNft: {
+          enabled: true,
+          collectionName: "Cozy Devs Sticker Claim",
+          contractOrMint: "SOLANA_COLLECTION_PENDING",
+          mintPriceUsdc: 5,
+          discountPercent: 100,
+        },
       };
     }
 
     if (demoProgram) {
       const products = await ctx.db.query("products").collect();
       for (const product of products) {
-        if (!product.tokenDiscountEligible || product.tokenProgramId) continue;
-        await ctx.db.patch(product._id, {
-          tokenProgramId: demoProgram._id,
-        });
+        if (!product.tokenDiscountEligible) {
+          if (product.tokenProgramId) {
+            await ctx.db.patch(product._id, {
+              tokenProgramId: undefined,
+            });
+          }
+          continue;
+        }
+        if (!product.tokenProgramId) {
+          await ctx.db.patch(product._id, {
+            tokenProgramId: demoProgram._id,
+          });
+        }
       }
     }
 
@@ -290,7 +318,7 @@ export const ensureStorefront = mutation({
         type: "supplier_payment",
         amount: 2150,
         currency: "USD",
-        ref: "sticker-pod-proof-0001",
+        ref: "blank-tee-po-0007",
         status: "confirmed",
       });
       summary.treasuryTransactionsCreated += 3;
