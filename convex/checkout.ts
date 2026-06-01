@@ -64,10 +64,14 @@ const x402Networks = {
 
 const facilitatorUrl = "https://x402.org/facilitator";
 const stickerPackTitle = "Cozy Devs Sticker Pack";
+const stickerPackVariantSku = "STICKER-PACK-001";
+const stickerPackDescription =
+  "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot, plus a proof NFT for the buyer wallet. 50 packs total. Stripe, USDC, and x402 all point at the same shared inventory. DTOUR is one of the agents allowed to offer the same pack as a promo.";
+const stickerPackInventoryOnHand = 50;
 const stickerPackRailLimits = {
-  stripe: 10,
-  usdc: 10,
-  x402: 10,
+  stripe: 50,
+  usdc: 50,
+  x402: 50,
 } as const;
 
 export const storefrontProducts = query({
@@ -90,6 +94,99 @@ export const publicRailAllocationStatus = query({
   },
   handler: async (ctx, { productId }) => {
     return await getRailAllocationStatus(ctx, productId);
+  },
+});
+
+export const syncStickerPackDemoData = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const product = (await ctx.db.query("products").collect()).find(
+      (item) => item.title === stickerPackTitle,
+    );
+    if (!product) {
+      throw new Error("Sticker pack product not found.");
+    }
+
+    let productPatched = false;
+    if (product.description !== stickerPackDescription) {
+      await ctx.db.patch(product._id, {
+        description: stickerPackDescription,
+      });
+      productPatched = true;
+    }
+
+    const variant = (await ctx.db.query("productVariants").collect()).find(
+      (item) => item.productId === product._id && item.sku === stickerPackVariantSku,
+    );
+    if (!variant) {
+      throw new Error("Sticker pack variant not found.");
+    }
+
+    const inventory = (await ctx.db.query("inventory").collect()).find(
+      (item) => item.variantId === variant._id,
+    );
+    if (!inventory) {
+      throw new Error("Sticker pack inventory row not found.");
+    }
+
+    let inventoryPatched = false;
+    if (
+      inventory.onHand !== stickerPackInventoryOnHand ||
+      inventory.reserved !== 0 ||
+      inventory.reorderPoint !== 10 ||
+      inventory.location !== "Sticker Pack Demo / Bin A"
+    ) {
+      await ctx.db.patch(inventory._id, {
+        onHand: stickerPackInventoryOnHand,
+        reserved: 0,
+        reorderPoint: 10,
+        location: "Sticker Pack Demo / Bin A",
+      });
+      inventoryPatched = true;
+    }
+
+    return {
+      productId: product._id,
+      variantId: variant._id,
+      inventoryId: inventory._id,
+      productPatched,
+      inventoryPatched,
+      onHand: stickerPackInventoryOnHand,
+    };
+  },
+});
+
+export const debugStickerPackInventory = query({
+  args: {},
+  handler: async (ctx) => {
+    const product = (await ctx.db.query("products").collect()).find(
+      (item) => item.title === stickerPackTitle,
+    );
+    if (!product) return null;
+
+    const variants = (await ctx.db.query("productVariants").collect()).filter(
+      (item) => item.productId === product._id,
+    );
+    const inventoryRows = (await ctx.db.query("inventory").collect()).filter((item) =>
+      variants.some((variant) => variant._id === item.variantId),
+    );
+
+    return {
+      productId: product._id,
+      variants: variants.map((variant) => ({
+        variantId: variant._id,
+        sku: variant.sku,
+        optionLabel: variant.optionLabel,
+      })),
+      inventoryRows: inventoryRows.map((row) => ({
+        inventoryId: row._id,
+        variantId: row.variantId,
+        onHand: row.onHand,
+        reserved: row.reserved,
+        reorderPoint: row.reorderPoint,
+        location: row.location,
+      })),
+    };
   },
 });
 
@@ -268,7 +365,7 @@ export const createStripeCheckoutDraft = internalMutation({
     const customer = await findOrCreateCustomer(ctx, args.customerEmail, args.customerName);
     const unitPrice = variant?.priceOverride ?? product.basePrice;
     const subtotal = unitPrice * args.quantity;
-    const shipping = product.productType === "physical" ? 9 : 0;
+    const shipping = checkoutShippingForProduct(product);
     const discountValueUsd = roundMoney(
       Math.min(Math.max(args.discountValueUsd ?? 0, 0), subtotal),
     );
@@ -584,7 +681,7 @@ async function createPaymentIntentRecord(
   const customer = await findOrCreateCustomer(ctx, args.customerEmail, args.customerName);
   const unitPrice = variant?.priceOverride ?? product.basePrice;
   const subtotal = unitPrice * args.quantity;
-  const shipping = product.productType === "physical" ? 9 : 0;
+  const shipping = checkoutShippingForProduct(product);
   const shippingAddress =
     product.productType === "physical"
       ? normalizeShippingAddress(args.shippingAddress)
@@ -1515,6 +1612,15 @@ async function receivingAddressForReader(
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function checkoutShippingForProduct(product: {
+  title: string;
+  productType: "physical" | "digital";
+}) {
+  if (product.productType !== "physical") return 0;
+  if (product.title === stickerPackTitle) return 0;
+  return 9;
 }
 
 function normalizeShippingAddress(

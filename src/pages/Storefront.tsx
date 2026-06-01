@@ -1,4 +1,4 @@
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
@@ -38,10 +38,39 @@ type RailAllocationStatus = NonNullable<
   ReturnType<typeof useQuery<typeof api.checkout.publicRailAllocationStatus>>
 >;
 
+type PaymentRail = "stripe" | "usdc" | "x402";
+
+type WalletPaymentQuote = {
+  orderId: Id<"orders">;
+  paymentId: Id<"payments">;
+  rail: "usdc" | "x402";
+  total: number;
+  burnDiscount: number;
+  tokensSpentBurned: number;
+  instruction: {
+    amount: string;
+    asset: string;
+    network: string;
+    payTo: string;
+  };
+  x402: null | {
+    asset: string;
+    description: string;
+    facilitatorUrl: string;
+    network: string;
+    payTo: string;
+    paymentId: string;
+    price: string;
+    resource: string;
+    scheme: string;
+  };
+};
+
 export default function Storefront({ focusCheckout = false }: { focusCheckout?: boolean }) {
   const [searchParams] = useSearchParams();
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
   const createStripeSession = useAction(api.stripeCheckout.createSession);
+  const createPublicPaymentIntent = useMutation(api.checkout.createPublicPaymentIntent);
   const getConfigStatus = useAction(api.stripeCheckout.configStatus);
   const legacySku = searchParams.get("legacySku") ?? "";
 
@@ -53,10 +82,15 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   );
   const [quantity, setQuantity] = useState(parseQuantity(searchParams.get("quantity")));
   const [stashCode, setStashCode] = useState(searchParams.get("stash") ?? "");
+  const [selectedRail, setSelectedRail] = useState<PaymentRail>(() => {
+    const rail = searchParams.get("rail");
+    return rail === "usdc" || rail === "x402" ? rail : "stripe";
+  });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [config, setConfig] = useState<CheckoutConfigStatus | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [walletQuote, setWalletQuote] = useState<WalletPaymentQuote | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -95,7 +129,11 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
     activeProductId ? { productId: activeProductId } : "skip",
   ) as RailAllocationStatus | null | undefined;
   const unitPrice = selectedVariant?.priceOverride ?? selectedProduct?.basePrice ?? 0;
-  const shipping = selectedProduct?.productType === "physical" ? 9 : 0;
+  const shipping =
+    selectedProduct?.productType === "physical" &&
+    selectedProduct.title !== "Cozy Devs Sticker Pack"
+      ? 9
+      : 0;
   const estimatedTotal = unitPrice * quantity + shipping;
   const checkoutHref = buildCheckoutHref(activeProductId, activeVariantId, quantity, stashCode);
   const liveCreatorCount = new Set(
@@ -108,13 +146,18 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
       ? "Checkout is not live yet. Stripe is still being configured for this storefront."
       : null);
 
+  useEffect(() => {
+    setWalletQuote(null);
+    setError(null);
+  }, [activeProductId, activeVariantId, quantity, selectedRail]);
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedProduct) {
       setError("Choose a live product first.");
       return;
     }
-    if (!checkoutReady) {
+    if (selectedRail === "stripe" && !checkoutReady) {
       setError("Stripe checkout is not available yet for this storefront.");
       return;
     }
@@ -124,23 +167,53 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
     setError(null);
 
     try {
-      const session = await createStripeSession({
+      const customerName = String(form.get("customerName") ?? "");
+      const customerEmail = String(form.get("customerEmail") ?? "");
+
+      if (selectedRail === "stripe") {
+        const session = await createStripeSession({
+          productId: selectedProduct._id,
+          variantId: activeVariantId || undefined,
+          quantity,
+          customerName,
+          customerEmail,
+          stashCode: stashCode.trim() || undefined,
+          origin: window.location.origin,
+        });
+        if (!session.checkoutUrl) {
+          throw new Error("Stripe checkout URL was not returned.");
+        }
+        window.location.assign(session.checkoutUrl);
+        return;
+      }
+
+      const shippingAddress =
+        selectedProduct.productType === "physical"
+          ? {
+              line1: String(form.get("shippingLine1") ?? ""),
+              line2: String(form.get("shippingLine2") ?? "") || undefined,
+              city: String(form.get("shippingCity") ?? ""),
+              region: String(form.get("shippingRegion") ?? ""),
+              postalCode: String(form.get("shippingPostalCode") ?? ""),
+              country: String(form.get("shippingCountry") ?? ""),
+            }
+          : undefined;
+
+      const quote = await createPublicPaymentIntent({
         productId: selectedProduct._id,
         variantId: activeVariantId || undefined,
         quantity,
-        customerName: String(form.get("customerName") ?? ""),
-        customerEmail: String(form.get("customerEmail") ?? ""),
-        stashCode: stashCode.trim() || undefined,
-        origin: window.location.origin,
+        customerName,
+        customerEmail,
+        shippingAddress,
+        rail: selectedRail,
+        network: "base",
       });
-      if (!session.checkoutUrl) {
-        throw new Error("Stripe checkout URL was not returned.");
-      }
-      window.location.assign(session.checkoutUrl);
+      setWalletQuote(quote as WalletPaymentQuote);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start checkout.");
-      setPending(false);
     }
+    setPending(false);
   }
 
   return (
@@ -173,7 +246,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
               <p className="sf-lead">
                 {focusCheckout
                   ? "Pick your item here, then finish payment in Stripe. Shipping details are collected there for physical orders."
-                  : "One real sticker pack is live now. .cache can sell it directly, or another agent like DTOUR can plug in and offer the same pack as a promo."}
+                  : "One real sticker pack is live now. .cache owns the product, inventory, NFT fulfillment promise, and checkout flow. A partner agent like DTOUR can front the same pack to its own audience as a promo."}
               </p>
               <div className="sf-hero-actions">
                 <a className="sf-button" href="#shop">
@@ -215,7 +288,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
             <p>
               {focusCheckout
                 ? "This page only handles item selection, buyer identity, and optional .stash codes. Payment and shipping details complete inside Stripe."
-                : "This demo is one sticker pack, not a fake catalog. The point is to show a real product, real payment rails, and a partner-agent promo path."}
+                : "This demo is one sticker pack plus a proof NFT, not a fake catalog. The point is to show one real product, real payment rails, and a reusable partner-agent sales pattern."}
             </p>
           </div>
 
@@ -310,16 +383,43 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                   <div className="sf-kicker">Checkout</div>
                   <h2 className="sf-checkout-title">Buyer details</h2>
                   <p className="sf-checkout-copy">
-                    Name and email start the order. Stripe handles payment and collects delivery details securely for physical goods.
+                    Pick the payment rail first. Stripe redirects into hosted checkout. USDC and x402 create a pending order here and show the wallet payment instructions directly.
                   </p>
 
-                  {checkoutUnavailableMessage && (
-                    <div className="sf-warning">
-                      {checkoutUnavailableMessage}
-                    </div>
-                  )}
-
                   <form onSubmit={onSubmit} className="sf-form">
+                    <div className="sf-subpanel">
+                      <div className="sf-subpanel-head">
+                        <strong>Payment rail</strong>
+                        <span>choose how this pack gets paid</span>
+                      </div>
+                      <div className="sf-toggle">
+                        {(["stripe", "usdc", "x402"] as const).map((rail) => (
+                          <button
+                            key={rail}
+                            type="button"
+                            className={selectedRail === rail ? "is-active" : ""}
+                            onClick={() => setSelectedRail(rail)}
+                          >
+                            {rail.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                      {selectedRail === "stripe" ? (
+                        <div className="sf-inline-note">
+                          Stripe collects payment and shipping inside hosted checkout.
+                        </div>
+                      ) : (
+                        <div className="sf-inline-note">
+                          {selectedRail.toUpperCase()} stays on this page. We create the order first, show the payment destination, and ops can verify settlement from the order record.
+                        </div>
+                      )}
+                      {selectedRail === "stripe" && checkoutUnavailableMessage && (
+                        <div className="sf-warning">
+                          {checkoutUnavailableMessage} You can still use USDC or x402 on this deployment.
+                        </div>
+                      )}
+                    </div>
+
                     <div className="sf-form-grid">
                       <label className="sf-field">
                         <span>Name</span>
@@ -335,6 +435,41 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         />
                       </label>
                     </div>
+
+                    {selectedRail !== "stripe" && selectedProduct?.productType === "physical" && (
+                      <div className="sf-subpanel">
+                        <div className="sf-subpanel-head">
+                          <strong>Shipping details</strong>
+                          <span>required for non-Stripe rails</span>
+                        </div>
+                        <div className="sf-form-grid">
+                          <label className="sf-field full">
+                            <span>Address line 1</span>
+                            <input name="shippingLine1" placeholder="Street address" required />
+                          </label>
+                          <label className="sf-field full">
+                            <span>Address line 2</span>
+                            <input name="shippingLine2" placeholder="Apt, suite, unit (optional)" />
+                          </label>
+                          <label className="sf-field">
+                            <span>City</span>
+                            <input name="shippingCity" placeholder="City" required />
+                          </label>
+                          <label className="sf-field">
+                            <span>State / region</span>
+                            <input name="shippingRegion" placeholder="State" required />
+                          </label>
+                          <label className="sf-field">
+                            <span>Postal code</span>
+                            <input name="shippingPostalCode" placeholder="ZIP / postal code" required />
+                          </label>
+                          <label className="sf-field">
+                            <span>Country</span>
+                            <input name="shippingCountry" placeholder="US" defaultValue="US" required />
+                          </label>
+                        </div>
+                      </div>
+                    )}
 
                     {selectedProduct?.tokenProgram && (
                       <div className="sf-subpanel">
@@ -361,17 +496,27 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       </div>
                     )}
 
-                      <div className="sf-subpanel">
-                        <div className="sf-subpanel-head">
-                          <strong>What happens next</strong>
-                          <span>Stripe Checkout</span>
-                        </div>
+                    <div className="sf-subpanel">
+                      <div className="sf-subpanel-head">
+                        <strong>What happens next</strong>
+                        <span>{selectedRail === "stripe" ? "Stripe Checkout" : `${selectedRail.toUpperCase()} payment`}</span>
+                      </div>
                       <div className="sf-step-list">
-                        <div>1. Review the order summary.</div>
-                        <div>2. Pay in Stripe using the payment methods enabled on your account, including USDC if available.</div>
-                        <div>3. Stripe collects shipping details for physical products.</div>
+                        {selectedRail === "stripe" ? (
+                          <>
+                            <div>1. Review the order summary.</div>
+                            <div>2. Pay in Stripe using the payment methods enabled on your account.</div>
+                            <div>3. Stripe collects shipping details for physical products.</div>
+                          </>
+                        ) : (
+                          <>
+                            <div>1. Submit the order here and lock in the buyer record.</div>
+                            <div>2. Send the exact amount to the displayed wallet destination.</div>
+                            <div>3. Ops verifies settlement and the pack stays tied to the same shared inventory.</div>
+                          </>
+                        )}
                       </div>
-                      </div>
+                    </div>
 
                     {railAllocation && (
                       <RailLanePanel railAllocation={railAllocation} />
@@ -380,13 +525,63 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                     <div className="sf-quote">
                       <QuoteRow label="Subtotal" value={preciseMoney.format(unitPrice * quantity)} />
                       <QuoteRow label="Shipping" value={preciseMoney.format(shipping)} />
-                      <QuoteRow label="Due in Stripe" value={preciseMoney.format(estimatedTotal)} strong />
+                      <QuoteRow
+                        label={selectedRail === "stripe" ? "Due in Stripe" : `Due via ${selectedRail.toUpperCase()}`}
+                        value={preciseMoney.format(estimatedTotal)}
+                        strong
+                      />
                     </div>
 
                     {error && <div className="sf-error">{error}</div>}
 
-                    <button type="submit" disabled={pending || !selectedProduct || !checkoutReady} className="sf-button wide">
-                      {pending ? "Opening Stripe..." : "Continue to secure checkout"}
+                    {walletQuote && (
+                      <div className="sf-result">
+                        <div className="sf-subpanel">
+                          <div className="sf-subpanel-head">
+                            <strong>{walletQuote.rail.toUpperCase()} payment instructions</strong>
+                            <span>order {walletQuote.orderId}</span>
+                          </div>
+                          <div className="sf-code">
+                            <div className="sf-code-line">
+                              <span>amount</span>
+                              <span>{walletQuote.instruction.amount}</span>
+                            </div>
+                            <div className="sf-code-line">
+                              <span>network</span>
+                              <span>{walletQuote.instruction.network}</span>
+                            </div>
+                            <div className="sf-code-line">
+                              <span>asset</span>
+                              <span>{walletQuote.instruction.asset}</span>
+                            </div>
+                            <div className="sf-code-line">
+                              <span>pay to</span>
+                              <span>{walletQuote.instruction.payTo}</span>
+                            </div>
+                          </div>
+                          {walletQuote.x402 && (
+                            <div className="sf-inline-note">
+                              x402 facilitator: {walletQuote.x402.facilitatorUrl}
+                              <br />
+                              resource: {walletQuote.x402.resource}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={pending || !selectedProduct || (selectedRail === "stripe" && !checkoutReady)}
+                      className="sf-button wide"
+                    >
+                      {pending
+                        ? selectedRail === "stripe"
+                          ? "Opening Stripe..."
+                          : `Creating ${selectedRail.toUpperCase()} order...`
+                        : selectedRail === "stripe"
+                          ? "Continue to secure checkout"
+                          : `Create ${selectedRail.toUpperCase()} payment`}
                     </button>
                   </form>
                 </div>
@@ -455,7 +650,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         <span>{selectedProduct.productType}</span>
                       </div>
                       <div className="sf-inline-note">
-                        DTOUR is one of the agents allowed to offer this same pack as a promo. That is the demo: one product, reusable by any agent that wants a shop.
+                        DTOUR is allowed to offer this same pack as a promo. That is the demo: one product record, one 50-pack inventory pool, one proof NFT promise per buyer, and multiple agent fronts pointing at it.
                       </div>
                     </div>
                     <div className="sf-selection-actions">
@@ -503,18 +698,14 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       )}
                       <div className="sf-button-stack">
                         <Link
-                          to={checkoutReady ? checkoutHref : "#launch"}
-                          className={`sf-button wide${checkoutReady ? "" : " is-disabled"}`}
-                          aria-disabled={!checkoutReady}
-                          onClick={(event) => {
-                            if (!checkoutReady) event.preventDefault();
-                          }}
+                          to={checkoutHref}
+                          className="sf-button wide"
                         >
-                          Continue to checkout
+                          Choose payment rail
                         </Link>
                         {!checkoutReady && (
                           <div className="sf-warning">
-                            Checkout is not live yet. Stripe secrets still need to be configured.
+                            Stripe is not configured on this deployment yet, but USDC and x402 can still be used on the checkout screen.
                           </div>
                         )}
                       </div>
@@ -534,8 +725,50 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 <h2 className="sf-section-title">launch your own drop.</h2>
               </div>
               <p>
-                .cache can sell its own product, let a partner agent like DTOUR run the same product as a promo, and reuse that exact pattern for any other agent shop.
+                .cache can sell its own product, let a partner agent like DTOUR run the same product as a promo, and reuse that exact contract for any other agent shop.
               </p>
+            </div>
+
+            <div className="sf-panel sf-summary-panel">
+              <div className="sf-launch-grid">
+                <div className="sf-panel sf-launch-card">
+                  <div className="sf-kicker">1. .cache owns the pack</div>
+                  <h3>One SKU. One inventory pool.</h3>
+                  <p>.cache keeps the sticker-pack record, lane limits, order state, and mailing export. The pack does not get copied for each agent.</p>
+                </div>
+                <div className="sf-panel sf-launch-card">
+                  <div className="sf-kicker">2. DTOUR owns the promo</div>
+                  <h3>Different audience. Same product.</h3>
+                  <p>DTOUR can pitch the Cozy Devs Sticker Pack to its own users as a promo, while still routing buyers into the same 50-pack run and the same NFT-backed claim.</p>
+                </div>
+                <div className="sf-panel sf-launch-card">
+                  <div className="sf-kicker">3. Any agent can reuse it</div>
+                  <h3>Agent front, cache backend.</h3>
+                  <p>That is the reusable pattern for agent commerce: the agent handles discovery and copy, while .cache handles inventory, checkout, and fulfillment ops.</p>
+                </div>
+              </div>
+              <div className="sf-inline-note">
+                Live demo contract: one Cozy Devs Sticker Pack, 50 total packs, and one proof NFT per buyer. Stripe, USDC, and x402 all point at the same shared inventory.
+              </div>
+            </div>
+
+            <div className="sf-panel sf-summary-panel">
+              <div className="sf-subpanel-head">
+                <strong>What you tell DTOUR</strong>
+                <span>copy and send</span>
+              </div>
+              <div className="sf-code">
+                <div className="sf-code-line">
+                  <span>partner script</span>
+                  <span>DTOUR plugs into the same product, not a forked shop.</span>
+                </div>
+              </div>
+              <p className="sf-subpanel-copy">
+                I am offering one real sticker pack plus a proof NFT through .cache and I want DTOUR to be allowed to offer the same pack as a promo. DTOUR does not need its own SKU, inventory, or checkout stack. It plugs into the existing .cache product, uses Stripe, USDC, or x402 against the same shared inventory, and .cache keeps the order record and fulfillment flow.
+              </p>
+              <div className="sf-inline-note">
+                This is the full point of the demo: one agent can front the sale, but the reusable commerce system stays in .cache.
+              </div>
             </div>
 
             <div className="sf-launch-grid">
@@ -593,13 +826,28 @@ function ProductImageGallery({
   imageUrls?: string[];
 }) {
   const images = imageUrls?.length ? imageUrls : ["/uploads/1.png"];
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [title, imageUrls]);
+
+  const activeImage = images[Math.min(activeIndex, images.length - 1)] ?? images[0];
   return (
     <div className="sf-image-stack">
-      <img src={images[0]} alt={title} />
+      <img src={activeImage} alt={title} />
       {images.length > 1 && (
         <div className="sf-thumb-row">
           {images.map((imageUrl, index) => (
-            <img key={`${imageUrl}-${index}`} src={imageUrl} alt={`${title} view ${index + 1}`} />
+            <button
+              key={`${imageUrl}-${index}`}
+              type="button"
+              className={`sf-thumb-button${index === activeIndex ? " is-active" : ""}`}
+              onClick={() => setActiveIndex(index)}
+              aria-label={`Show ${title} image ${index + 1}`}
+            >
+              <img src={imageUrl} alt={`${title} view ${index + 1}`} />
+            </button>
           ))}
         </div>
       )}
@@ -611,18 +859,18 @@ function RailLanePanel({ railAllocation }: { railAllocation: RailAllocationStatu
   return (
     <div className="sf-subpanel">
       <div className="sf-subpanel-head">
-        <strong>Payment lane test</strong>
-        <span>first come, first served</span>
+        <strong>Payment rails</strong>
+        <span>shared 50-pack inventory</span>
       </div>
       <div className="sf-step-list">
         {railAllocation.lanes.map((lane) => (
           <div key={lane.rail}>
-            {lane.rail.toUpperCase()}: {lane.claimed}/{lane.limit} claimed, {lane.remaining} left
+            {lane.rail.toUpperCase()}: {lane.claimed} claimed through this rail
           </div>
         ))}
       </div>
       <div className="sf-inline-note">
-        Stripe is the public checkout path here. USDC and x402 are separate rails for the same pack so the payment flows get real testing instead of one lane taking the whole run.
+        All three rails point at the same 50-pack run. Buyers are not waiting on separate per-rail caps, and each fulfilled pack should also receive the proof NFT.
       </div>
     </div>
   );

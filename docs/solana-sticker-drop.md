@@ -28,6 +28,12 @@ Then you:
 3. collect shipping info offchain
 4. mail the stickers yourself
 
+For the live Cozy Devs run, the intended buyer promise is:
+
+1. buy one sticker pack
+2. receive one shipped pack of all three stickers
+3. receive one proof NFT in the buyer wallet
+
 ## Commands
 
 Create the collection:

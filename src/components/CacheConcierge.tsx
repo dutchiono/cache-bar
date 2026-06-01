@@ -30,7 +30,7 @@ export function CacheConcierge() {
     {
       role: "assistant",
       content:
-        "Ask what .cache has for sale and I will pitch the sticker pre-pre sale demo. Or drop an image here and ask for a one-off t-shirt.",
+        "Ask what .cache has for sale, ask how DTOUR plugs into the same pack, ask what to send the DTOUR owner, or drop an image here and ask for a one-off t-shirt.",
     },
   ]);
   const [busy, setBusy] = useState(false);

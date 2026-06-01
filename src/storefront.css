@@ -289,13 +289,25 @@
   padding: 0 12px 12px;
 }
 
+.sf-thumb-button {
+  padding: 0;
+  border: 1px solid var(--sf-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  transition: 180ms ease;
+}
+
+.sf-thumb-button.is-active {
+  border-color: rgba(196, 164, 121, 0.45);
+  box-shadow: 0 0 0 1px rgba(196, 164, 121, 0.16);
+}
+
 .sf-thumb-row img {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 18px;
-  border: 1px solid var(--sf-line);
-  background: rgba(255, 255, 255, 0.03);
+  display: block;
 }
 
 .sf-section-head {

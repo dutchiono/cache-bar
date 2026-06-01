@@ -37,3 +37,5 @@ Convex component wiring is tracked in [docs/convex-components.md](docs/convex-co
 Teemill hybrid mode notes live in [docs/teemill-integration-plan.md](docs/teemill-integration-plan.md).
 Sticker proof NFT notes live in [docs/sticker-drop-nft.md](docs/sticker-drop-nft.md).
 Solana DTOUR sticker flow notes live in [docs/solana-sticker-drop.md](docs/solana-sticker-drop.md).
+Partner-agent promo notes live in [docs/partner-agent-promo-playbook.md](docs/partner-agent-promo-playbook.md).
+The local partner-agent skill lives in [skills/partner-agent-shop/SKILL.md](skills/partner-agent-shop/SKILL.md).

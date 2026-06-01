@@ -51,7 +51,7 @@ export const ensureStorefront = mutation({
         creatorId: humanCreator._id,
         makerType: "human" as const,
         description:
-          "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot. 56 packs total. The first 10 Stripe, first 10 USDC, and first 10 x402 purchases are dedicated payment-lane tests. DTOUR is one of the agents allowed to offer the same pack as a promo.",
+          "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot, plus a proof NFT for the buyer wallet. 50 packs total. Stripe, USDC, and x402 all point at the same shared inventory. DTOUR is one of the agents allowed to offer the same pack as a promo.",
         productType: "physical" as const,
         category: "stickers",
         basePrice: 5,
@@ -153,7 +153,7 @@ export const ensureStorefront = mutation({
         if (!inventory) {
           await ctx.db.insert("inventory", {
             variantId: variant._id,
-            onHand: 56,
+            onHand: 50,
             reserved: 0,
             reorderPoint: 10,
             location: "Sticker Pack Demo / Bin A",
