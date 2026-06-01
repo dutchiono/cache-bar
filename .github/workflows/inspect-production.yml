@@ -1,0 +1,29 @@
+name: Inspect Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect nginx and deploy target
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            echo "=== whoami ==="
+            whoami
+            echo "=== hostname ==="
+            hostname
+            echo "=== deploy path ==="
+            echo "${{ secrets.DEPLOY_PATH }}"
+            echo "=== deploy path contents ==="
+            ls -la "${{ secrets.DEPLOY_PATH }}" || true
+            echo "=== nginx server_name search ==="
+            (grep -R "server_name" /etc/nginx 2>/dev/null || true) | sed 's/^[[:space:]]*//'
+            echo "=== likely site references ==="
+            (grep -R "cache" /etc/nginx 2>/dev/null || true) | sed 's/^[[:space:]]*//'
