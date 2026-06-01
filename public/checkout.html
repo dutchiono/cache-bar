@@ -208,6 +208,30 @@
   let step = 0;
   let shippingMethod = 'standard';
   let formData = {};
+  let lastRequest = null;
+
+  const REQUESTS_KEY = 'dotcache.podRequests.v1';
+  const LAST_REQUEST_KEY = 'dotcache.podLastRequest.v1';
+
+  function loadRequests() {
+    try { return JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function persistRequest(request) {
+    const existing = loadRequests();
+    existing.unshift(request);
+    try {
+      localStorage.setItem(REQUESTS_KEY, JSON.stringify(existing.slice(0, 100)));
+      localStorage.setItem(LAST_REQUEST_KEY, JSON.stringify(request));
+    } catch {}
+  }
+
+  function nextRequestId() {
+    const stamp = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    const nonce = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `POD-${stamp}-${nonce}`;
+  }
 
   function renderSteps(){
     const labels = t('checkout.steps');
@@ -243,7 +267,7 @@
     const taxText = pricingOpen ? 'After quote' : '$' + tax;
     const totalText = pricingOpen ? 'No charge' : '$' + total;
     return `
-      <div class="ck-summary">
+        <div class="ck-summary">
         <h4>${t('checkout.review')}</h4>
         <div class="ck-items">
           ${items.map(({p, qty, sub}) => `
@@ -286,7 +310,7 @@
         <div class="ck-confirmed">
           <div class="big">${t('checkout.confirmedTitle')}</div>
           <p>${t('checkout.confirmedSub')}</p>
-          <div class="num">${t('checkout.confirmedOrder')} · ORD-0015 · ${new Date().toISOString().slice(0,10)}</div>
+          <div class="num">${t('checkout.confirmedOrder')} · ${lastRequest?.id || 'POD-PENDING'} · ${new Date().toISOString().slice(0,10)}</div>
           <a href="cache.html">${t('checkout.keepShopping')}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></a>
         </div>`;
       return;
@@ -344,7 +368,7 @@
                 <label for="ship-std">
                   <div>
                     <div class="nm">${t('checkout.standard')}</div>
-                    <div class="desc">Quote after proof approval</div>
+                    <div class="desc">${t('checkout.standardDesc')}</div>
                   </div>
                   <span class="price">TBD</span>
                 </label>
@@ -352,7 +376,7 @@
                 <label for="ship-exp">
                   <div>
                     <div class="nm">${t('checkout.express')}</div>
-                    <div class="desc">Enable after price lock</div>
+                    <div class="desc">${t('checkout.expressDesc')}</div>
                   </div>
                   <span class="price">TBD</span>
                 </label>
@@ -389,8 +413,8 @@
           <div class="checkout__main">
             <div class="ck-card">
               <h3>${t('checkout.payment')} <span class="num">01 / 01</span></h3>
-              <div class="ck-row full"><div class="field"><label>${t('checkout.cardNum')}</label><input id="f-pod-note" placeholder="Proof notes, edge finish, or delivery constraints"></div></div>
-              <div class="ck-row"><div class="field"><label>${t('checkout.expiry')}</label><input id="f-proof" value="Before production"></div><div class="field"><label>${t('checkout.cvc')}</label><input id="f-qty" value="3 types · 50 each" readonly></div></div>
+              <div class="ck-row full"><div class="field"><label>${t('checkout.cardNum')}</label><input id="f-pod-note" placeholder="${t('checkout.notePlaceholder')}"></div></div>
+              <div class="ck-row"><div class="field"><label>${t('checkout.expiry')}</label><input id="f-proof" value="${t('checkout.proofTargetValue')}"></div><div class="field"><label>${t('checkout.cvc')}</label><input id="f-qty" value="${t('checkout.qtySummary')}" readonly></div></div>
               <label class="ck-checkbox"><input type="checkbox" checked> ${t('checkout.billingSame')}</label>
               <button class="ck-continue" id="ck-place">
                 ${t('checkout.place')}
@@ -406,6 +430,38 @@
         </div>`;
 
       document.getElementById('ck-place').addEventListener('click', () => {
+        formData['f-pod-note'] = document.getElementById('f-pod-note').value.trim();
+        formData['f-proof'] = document.getElementById('f-proof').value.trim();
+        const request = {
+          id: nextRequestId(),
+          createdAt: new Date().toISOString(),
+          flow: 'pod_sticker_request',
+          shippingMethod,
+          contact: {
+            email: formData['f-email'] || '',
+            fullName: formData['f-name'] || '',
+            country: formData['f-country'] || '',
+            city: formData['f-city'] || '',
+            address1: formData['f-addr1'] || '',
+            address2: formData['f-addr2'] || '',
+            postal: formData['f-postal'] || '',
+            phone: formData['f-phone'] || '',
+          },
+          proof: {
+            note: formData['f-pod-note'] || '',
+            target: formData['f-proof'] || '',
+            summary: document.getElementById('f-qty').value,
+          },
+          items: lineItems().map(({ p, qty, sub }) => ({
+            sku: p.sku,
+            name: p.name,
+            quantity: qty,
+            lineTotal: sub,
+          })),
+          totals: totals(),
+        };
+        persistRequest(request);
+        lastRequest = request;
         cacheCart.clear();
         step = 3; renderAll();
       });
