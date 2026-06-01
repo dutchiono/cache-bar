@@ -39,6 +39,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
   const createStripeSession = useAction(api.stripeCheckout.createSession);
   const getConfigStatus = useAction(api.stripeCheckout.configStatus);
+  const legacySku = searchParams.get("legacySku") ?? "";
 
   const [selectedProductId, setSelectedProductId] = useState<Id<"products"> | "">(
     (searchParams.get("product") as Id<"products"> | null) ?? "",
@@ -69,15 +70,20 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
     };
   }, [getConfigStatus]);
 
+  const legacyMatchedProduct = resolveLegacyProduct(products ?? [], legacySku);
   const activeProductId =
     products?.some((product: StorefrontProduct) => product._id === selectedProductId)
       ? selectedProductId
-      : (products?.[0]?._id ?? "");
+      : (legacyMatchedProduct?._id ?? products?.[0]?._id ?? "");
   const selectedProduct =
     products?.find((product: StorefrontProduct) => product._id === activeProductId) ?? null;
+  const legacyMatchedVariantId =
+    selectedProduct && selectedProduct._id === legacyMatchedProduct?._id
+      ? resolveLegacyVariantId(selectedProduct, legacySku)
+      : "";
   const activeVariantId = selectedProduct?.variants.some((variant: StorefrontVariant) => variant._id === selectedVariantId)
     ? selectedVariantId
-    : (selectedProduct?.variants[0]?._id ?? "");
+    : (legacyMatchedVariantId || (selectedProduct?.variants[0]?._id ?? ""));
   const selectedVariant =
     selectedProduct?.variants.find((variant: StorefrontVariant) => variant._id === activeVariantId) ?? null;
   const unitPrice = selectedVariant?.priceOverride ?? selectedProduct?.basePrice ?? 0;
@@ -138,6 +144,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
         </Link>
         <nav className="sf-nav-links">
           <a href="#shop">Shop</a>
+          <a href="/drop-001-live.html">Drop 001 Demo</a>
           <Link to="/stash">.stash</Link>
           <a href="#launch">Start a drop</a>
         </nav>
@@ -585,4 +592,27 @@ function buildCheckoutHref(
   if (stashCode?.trim()) params.set("stash", stashCode.trim().toUpperCase());
   params.set("quantity", String(Math.max(1, quantity)));
   return `/checkout?${params.toString()}`;
+}
+
+function resolveLegacyProduct(products: StorefrontProduct[], legacySku: string) {
+  const normalizedSku = legacySku.trim().toUpperCase();
+  if (!normalizedSku) return null;
+
+  const legacyMappings = [
+    { prefix: "CSH-001", title: "Stack Tee" },
+    { prefix: "CSH-002", title: "Daemon Shell" },
+    { prefix: "CSH-D01", title: "Wallpaper Pack" },
+  ];
+
+  const mapping = legacyMappings.find(({ prefix }) => normalizedSku.startsWith(prefix));
+  if (!mapping) return null;
+  return products.find((product) => product.title === mapping.title) ?? null;
+}
+
+function resolveLegacyVariantId(product: StorefrontProduct, legacySku: string) {
+  const normalizedSku = legacySku.trim().toUpperCase();
+  if (!normalizedSku) return "";
+  return (
+    product.variants.find((variant) => variant.sku?.trim().toUpperCase() === normalizedSku)?._id ?? ""
+  );
 }
