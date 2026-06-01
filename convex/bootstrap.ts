@@ -13,8 +13,6 @@ export const ensureStorefront = mutation({
       treasuryTransactionsCreated: 0,
     };
 
-    const now = Date.now();
-
     const existingCreators = await ctx.db.query("creators").collect();
     let humanCreator = existingCreators.find((creator) => creator.name === ".cache Studio");
     if (!humanCreator) {
@@ -31,107 +29,87 @@ export const ensureStorefront = mutation({
       summary.creatorsCreated += 1;
     }
 
-    let agentCreator = existingCreators.find((creator) => creator.agentId === "waifu.fun/v2.0.0");
-    if (!agentCreator) {
-      const creatorId = await ctx.db.insert("creators", {
-        name: "WAIFU.FUN // Image Protocol",
-        type: "agent",
-        status: "active",
-        agentId: "waifu.fun/v2.0.0",
-        baseModel: "milady-ai/streetwear-gen",
-        reinvestPercent: 100,
-        capabilities: ["lookbook", "drop-copy", "merch-variant-ideation"],
-        payoutMethod: {
-          kind: "usdc_wallet",
-          chain: "evm",
-          address: "0xDEMO000000000000000000000000000000W41FU",
-        },
-      });
-      agentCreator = (await ctx.db.get(creatorId))!;
-      summary.creatorsCreated += 1;
+    const existingProducts = await ctx.db.query("products").collect();
+    const retiredDemoTitles = ["Stack Tee", "Daemon Shell", "Wallpaper Pack"];
+    for (const demoTitle of retiredDemoTitles) {
+      const demoProduct = existingProducts.find((item) => item.title === demoTitle);
+      if (demoProduct && demoProduct.status === "live") {
+        await ctx.db.patch(demoProduct._id, { status: "retired" });
+      }
     }
 
-    const existingProducts = await ctx.db.query("products").collect();
     const productSpecs = [
       {
-        title: "Stack Tee",
+        title: "Cozy Devs Moon Seal Sticker",
         creatorId: humanCreator._id,
         makerType: "human" as const,
         description:
-          "Oversized 14oz combed-cotton tee with washed finish, front stack graphic, and dense screenprint treatment.",
+          "Round moon-seal Cozy Devs sticker from the first pre-pre sale run. Hand-packed, hand-shipped, and capped by the physical batch on hand.",
         productType: "physical" as const,
-        category: "tees",
-        basePrice: 78,
+        category: "stickers",
+        basePrice: 5,
         currency: "USD",
-        demoImageUrls: ["/uploads/1.png"],
+        demoImageUrls: ["/uploads/cozy-devs-moon-seal.png"],
         tokenDiscountEligible: true,
         provenance: {
           makerType: "human" as const,
-          summary: "Designed and finished by the .cache studio in-house.",
+          summary: "Original Cozy Devs sticker art provided directly for the sticker proof drop.",
         },
         royaltySplits: [
           { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
           { role: "platform", percent: 10 as const },
         ],
         variants: [
-          { sku: "CSH-001-S", optionLabel: "Small" },
-          { sku: "CSH-001-M", optionLabel: "Medium" },
-          { sku: "CSH-001-L", optionLabel: "Large" },
+          { sku: "STICKER-MOON-001", optionLabel: "Single sticker" },
         ],
       },
       {
-        title: "Daemon Shell",
-        creatorId: agentCreator._id,
-        makerType: "agent" as const,
-        description:
-          "Quilted technical shell with cropped silhouette, webbing trim, and waifu.fun-generated capsule art direction.",
-        productType: "physical" as const,
-        category: "outerwear",
-        basePrice: 248,
-        currency: "USD",
-        demoImageUrls: ["/uploads/2.png"],
-        tokenDiscountEligible: true,
-        provenance: {
-          makerType: "agent" as const,
-          summary: "Agent-directed silhouette and graphics for Drop 001.",
-          baseModel: "milady-ai/streetwear-gen",
-          provider: "Eliza creator agent",
-          brief: "Dark internet shell with cropped proportions and quilted paneling.",
-          seed: "WF-2401",
-          runId: "daemon-shell-drop-001",
-          generatedAt: now,
-          license: "internal demo use",
-        },
-        royaltySplits: [
-          { role: "creator", percent: 90, payeeCreatorId: agentCreator._id },
-          { role: "platform", percent: 10 as const },
-        ],
-        variants: [
-          { sku: "CSH-002-M", optionLabel: "Medium" },
-          { sku: "CSH-002-L", optionLabel: "Large" },
-        ],
-      },
-      {
-        title: "Wallpaper Pack",
+        title: "Cozy Devs Floppy Sticker",
         creatorId: humanCreator._id,
         makerType: "human" as const,
         description:
-          "Twelve 5K wallpapers pulled from the Drop 001 visual system. Instant digital delivery.",
-        productType: "digital" as const,
-        category: "digital",
-        basePrice: 8,
+          "Retro floppy Cozy Devs sticker with the handwritten tape label. Part of the first physical proof run.",
+        productType: "physical" as const,
+        category: "stickers",
+        basePrice: 5,
         currency: "USD",
-        demoImageUrls: ["/uploads/3.png"],
-        tokenDiscountEligible: false,
+        demoImageUrls: ["/uploads/cozy-devs-floppy.png"],
+        tokenDiscountEligible: true,
         provenance: {
           makerType: "human" as const,
-          summary: "Curated by the .cache studio from the live campaign system.",
+          summary: "Original Cozy Devs floppy sticker art provided directly for the sticker proof drop.",
         },
         royaltySplits: [
-          { role: "creator", percent: 85, payeeCreatorId: humanCreator._id },
-          { role: "platform", percent: 15 as const },
+          { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
+          { role: "platform", percent: 10 as const },
         ],
-        variants: [],
+        variants: [
+          { sku: "STICKER-FLOPPY-001", optionLabel: "Single sticker" },
+        ],
+      },
+      {
+        title: "Cozy Devs Bus Riot Sticker",
+        creatorId: humanCreator._id,
+        makerType: "human" as const,
+        description:
+          "Full chaos bus collage sticker from the Cozy Devs drop stack. Loud on purpose, limited by the batch you physically have.",
+        productType: "physical" as const,
+        category: "stickers",
+        basePrice: 5,
+        currency: "USD",
+        demoImageUrls: ["/uploads/cozy-devs-bus-riot.png"],
+        tokenDiscountEligible: true,
+        provenance: {
+          makerType: "human" as const,
+          summary: "Original Cozy Devs collage sticker art provided directly for the sticker proof drop.",
+        },
+        royaltySplits: [
+          { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
+          { role: "platform", percent: 10 as const },
+        ],
+        variants: [
+          { sku: "STICKER-BUS-001", optionLabel: "Single sticker" },
+        ],
       },
     ];
 
@@ -156,9 +134,36 @@ export const ensureStorefront = mutation({
         });
         product = (await ctx.db.get(productId))!;
         summary.productsCreated += 1;
-      } else if (product.status !== "live") {
-        await ctx.db.patch(product._id, { status: "live" });
-        product = { ...product, status: "live" };
+      } else {
+        await ctx.db.patch(product._id, {
+          description: spec.description,
+          productType: spec.productType,
+          category: spec.category,
+          makerType: spec.makerType,
+          creatorId: spec.creatorId,
+          status: "live",
+          basePrice: spec.basePrice,
+          currency: spec.currency,
+          demoImageUrls: spec.demoImageUrls,
+          tokenDiscountEligible: spec.tokenDiscountEligible,
+          provenance: spec.provenance,
+          royaltySplits: spec.royaltySplits,
+        });
+        product = {
+          ...product,
+          description: spec.description,
+          productType: spec.productType,
+          category: spec.category,
+          makerType: spec.makerType,
+          creatorId: spec.creatorId,
+          status: "live",
+          basePrice: spec.basePrice,
+          currency: spec.currency,
+          demoImageUrls: spec.demoImageUrls,
+          tokenDiscountEligible: spec.tokenDiscountEligible,
+          provenance: spec.provenance,
+          royaltySplits: spec.royaltySplits,
+        };
       }
 
       for (const variantSpec of spec.variants) {
@@ -183,10 +188,10 @@ export const ensureStorefront = mutation({
         if (!inventory) {
           await ctx.db.insert("inventory", {
             variantId: variant._id,
-            onHand: 25,
+            onHand: 60,
             reserved: 0,
-            reorderPoint: 5,
-            location: "Drop 001 / Rack A",
+            reorderPoint: 12,
+            location: "Sticker Demo / Bin A",
           });
           summary.inventoryRowsCreated += 1;
         }
@@ -194,50 +199,80 @@ export const ensureStorefront = mutation({
     }
 
     const existingPrograms = await ctx.db.query("tokenPrograms").collect();
-    let demoProgram = existingPrograms.find((program) => program.projectName === "Example Drop Token");
+    let demoProgram = existingPrograms.find((program) => program.projectName === "DTOUR Sticker Pre-Pre Sale");
     if (!demoProgram) {
       const tokenProgramId = await ctx.db.insert("tokenPrograms", {
-        projectName: "Example Drop Token",
-        tokenSymbol: "DROP",
-        chain: "evm",
-        tokenKind: "erc20",
-        tokenAddress: "0xDROp000000000000000000000000000000000000",
-        tokenDecimals: 18,
-        burnTarget: "0x000000000000000000000000000000000000dEaD",
-        burnMechanism: "transfer_to_burn",
-        discountPerTokenUsd: 0.25,
-        maxDiscountUsd: 35,
+        projectName: "DTOUR Sticker Pre-Pre Sale",
+        tokenSymbol: "DTOUR",
+        chain: "solana",
+        tokenKind: "spl",
+        tokenAddress: "DTOUR_MINT_PENDING",
+        tokenDecimals: 9,
+        burnTarget: "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX",
+        burnMechanism: "manual_verify",
+        discountPerTokenUsd: 5,
+        maxDiscountUsd: 5,
         active: true,
         redemptionEnabled: true,
-        minimumRedemptionTokens: 10,
-        promotionCodePrefix: "DROP",
-        promotionCodeExpiresInDays: 14,
+        minimumRedemptionTokens: 1,
+        promotionCodePrefix: "DTOUR",
+        promotionCodeExpiresInDays: 21,
         preDropNft: {
           enabled: true,
-          collectionName: ".cache Pre-drop Pass",
-          contractOrMint: "0xPREdrop00000000000000000000000000000000",
-          mintPriceUsdc: 18,
-          discountPercent: 20,
+          collectionName: "Cozy Devs Sticker Claim",
+          contractOrMint: "SOLANA_COLLECTION_PENDING",
+          mintPriceUsdc: 5,
+          discountPercent: 100,
         },
-        notes: "Deploy bootstrap token program.",
+        notes: "Manual-verify DTOUR sticker demo program for the first physical proof run.",
       });
       demoProgram = (await ctx.db.get(tokenProgramId))!;
       summary.tokenProgramsCreated += 1;
     } else {
       await ctx.db.patch(demoProgram._id, {
-        tokenDecimals: 18,
+        tokenSymbol: "DTOUR",
+        chain: "solana",
+        tokenKind: "spl",
+        tokenAddress: "DTOUR_MINT_PENDING",
+        tokenDecimals: 9,
+        burnTarget: "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX",
+        burnMechanism: "manual_verify",
+        discountPerTokenUsd: 5,
+        maxDiscountUsd: 5,
         redemptionEnabled: true,
-        minimumRedemptionTokens: 10,
-        promotionCodePrefix: demoProgram.promotionCodePrefix ?? "DROP",
-        promotionCodeExpiresInDays: demoProgram.promotionCodeExpiresInDays ?? 14,
+        minimumRedemptionTokens: 1,
+        promotionCodePrefix: "DTOUR",
+        promotionCodeExpiresInDays: 21,
+        preDropNft: {
+          enabled: true,
+          collectionName: "Cozy Devs Sticker Claim",
+          contractOrMint: "SOLANA_COLLECTION_PENDING",
+          mintPriceUsdc: 5,
+          discountPercent: 100,
+        },
       });
       demoProgram = {
         ...demoProgram,
-        tokenDecimals: 18,
+        tokenSymbol: "DTOUR",
+        chain: "solana",
+        tokenKind: "spl",
+        tokenAddress: "DTOUR_MINT_PENDING",
+        tokenDecimals: 9,
+        burnTarget: "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX",
+        burnMechanism: "manual_verify",
+        discountPerTokenUsd: 5,
+        maxDiscountUsd: 5,
         redemptionEnabled: true,
-        minimumRedemptionTokens: 10,
-        promotionCodePrefix: demoProgram.promotionCodePrefix ?? "DROP",
-        promotionCodeExpiresInDays: demoProgram.promotionCodeExpiresInDays ?? 14,
+        minimumRedemptionTokens: 1,
+        promotionCodePrefix: "DTOUR",
+        promotionCodeExpiresInDays: 21,
+        preDropNft: {
+          enabled: true,
+          collectionName: "Cozy Devs Sticker Claim",
+          contractOrMint: "SOLANA_COLLECTION_PENDING",
+          mintPriceUsdc: 5,
+          discountPercent: 100,
+        },
       };
     }
 

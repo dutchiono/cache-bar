@@ -625,7 +625,7 @@ function isStickerDemoIntent(content: string) {
 function stickerDemoReply() {
   return [
     "Right now .cache is running the sticker pre-pre sale demo.",
-    "Offer: a 50-wallet proof run for the first Cozy Devs sticker drop.",
+    "Offer: a 50-wallet proof run for the first Cozy Devs sticker drop: Moon Seal, Floppy, and Bus Riot.",
     "What you get: a DTOUR-gated sticker claim, a collectible claim NFT, and the first batch of physical stickers shipped by hand.",
     "This is the point of the demo: the agent is already attached to a real product before the full 24-hour waifu launch cycle exists.",
     "If you want in, say `claim a sticker pack` and I will walk you through the DTOUR/Solana claim flow.",
