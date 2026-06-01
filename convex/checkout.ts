@@ -63,6 +63,12 @@ const x402Networks = {
 };
 
 const facilitatorUrl = "https://x402.org/facilitator";
+const stickerPackTitle = "Cozy Devs Sticker Pack";
+const stickerPackRailLimits = {
+  stripe: 10,
+  usdc: 10,
+  x402: 10,
+} as const;
 
 export const storefrontProducts = query({
   args: {},
@@ -75,6 +81,15 @@ export const publicStorefrontProducts = query({
   args: {},
   handler: async (ctx) => {
     return await listLiveStorefrontProducts(ctx);
+  },
+});
+
+export const publicRailAllocationStatus = query({
+  args: {
+    productId: v.id("products"),
+  },
+  handler: async (ctx, { productId }) => {
+    return await getRailAllocationStatus(ctx, productId);
   },
 });
 
@@ -239,6 +254,7 @@ export const createStripeCheckoutDraft = internalMutation({
     if (product.status !== "live") {
       throw new Error("Only live products can be checked out.");
     }
+    await assertRailCapacity(ctx, product, "stripe", args.quantity);
 
     let variant = null;
     if (args.variantId) {
@@ -554,6 +570,7 @@ async function createPaymentIntentRecord(
   if (product.status !== "live") {
     throw new Error("Only live products can be checked out.");
   }
+  await assertRailCapacity(ctx, product, args.rail, args.quantity);
 
   let variant = null;
   if (args.variantId) {
@@ -722,6 +739,90 @@ async function listLiveStorefrontProducts(ctx: QueryCtx) {
       };
     }),
   );
+}
+
+async function getRailAllocationStatus(
+  ctx: Pick<QueryCtx, "db">,
+  productId: Id<"products">,
+) {
+  const product = await ctx.db.get(productId);
+  if (!product || product.title !== stickerPackTitle) {
+    return null;
+  }
+
+  const counts = await countRailReservations(ctx, productId);
+  return {
+    productTitle: product.title,
+    totalInventory: 56,
+    lanes: [
+      {
+        rail: "stripe" as const,
+        claimed: counts.stripe,
+        limit: stickerPackRailLimits.stripe,
+        remaining: Math.max(0, stickerPackRailLimits.stripe - counts.stripe),
+      },
+      {
+        rail: "usdc" as const,
+        claimed: counts.usdc,
+        limit: stickerPackRailLimits.usdc,
+        remaining: Math.max(0, stickerPackRailLimits.usdc - counts.usdc),
+      },
+      {
+        rail: "x402" as const,
+        claimed: counts.x402,
+        limit: stickerPackRailLimits.x402,
+        remaining: Math.max(0, stickerPackRailLimits.x402 - counts.x402),
+      },
+    ],
+  };
+}
+
+async function countRailReservations(
+  ctx: Pick<QueryCtx, "db"> | Pick<MutationCtx, "db">,
+  productId: Id<"products">,
+) {
+  const items = await ctx.db
+    .query("orderItems")
+    .withIndex("by_product", (q) => q.eq("productId", productId))
+    .collect();
+
+  const counts = { stripe: 0, usdc: 0, x402: 0 };
+  for (const item of items) {
+    const order = await ctx.db.get(item.orderId);
+    if (!order || order.status === "cancelled" || order.status === "refunded") continue;
+    const payments = await ctx.db
+      .query("payments")
+      .withIndex("by_order", (q) => q.eq("orderId", item.orderId))
+      .collect();
+    const payment = payments.find(
+      (candidate) =>
+        candidate.status !== "failed" &&
+        candidate.status !== "refunded" &&
+        (candidate.rail === "stripe" || candidate.rail === "usdc" || candidate.rail === "x402"),
+    );
+    if (!payment) continue;
+    if (payment.rail === "stripe" || payment.rail === "usdc" || payment.rail === "x402") {
+      counts[payment.rail] += item.quantity;
+    }
+  }
+  return counts;
+}
+
+async function assertRailCapacity(
+  ctx: MutationCtx,
+  product: Doc<"products">,
+  rail: "stripe" | "usdc" | "x402",
+  quantity: number,
+) {
+  if (product.title !== stickerPackTitle) return;
+
+  const counts = await countRailReservations(ctx, product._id);
+  const limit = stickerPackRailLimits[rail];
+  if (counts[rail] + quantity > limit) {
+    throw new Error(
+      `The ${rail.toUpperCase()} test lane is full. That lane was capped at ${limit} first-come-first-served sticker packs.`,
+    );
+  }
 }
 
 async function resolveProductTokenProgram(

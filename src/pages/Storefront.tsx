@@ -34,6 +34,10 @@ type CheckoutConfigStatus = {
   webhookPath: string;
 };
 
+type RailAllocationStatus = NonNullable<
+  ReturnType<typeof useQuery<typeof api.checkout.publicRailAllocationStatus>>
+>;
+
 export default function Storefront({ focusCheckout = false }: { focusCheckout?: boolean }) {
   const [searchParams] = useSearchParams();
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
@@ -86,6 +90,10 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
     : (legacyMatchedVariantId || (selectedProduct?.variants[0]?._id ?? ""));
   const selectedVariant =
     selectedProduct?.variants.find((variant: StorefrontVariant) => variant._id === activeVariantId) ?? null;
+  const railAllocation = useQuery(
+    api.checkout.publicRailAllocationStatus,
+    activeProductId ? { productId: activeProductId } : "skip",
+  ) as RailAllocationStatus | null | undefined;
   const unitPrice = selectedVariant?.priceOverride ?? selectedProduct?.basePrice ?? 0;
   const shipping = selectedProduct?.productType === "physical" ? 9 : 0;
   const estimatedTotal = unitPrice * quantity + shipping;
@@ -165,7 +173,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
               <p className="sf-lead">
                 {focusCheckout
                   ? "Pick your item here, then finish payment in Stripe. Shipping details are collected there for physical orders."
-                  : "The shop stays product-first. Select what you want, then head to checkout. Token holders redeem discount codes in .stash before they pay."}
+                  : "One real sticker pack is live now. .cache can sell it directly, or another agent like DTOUR can plug in and offer the same pack as a promo."}
               </p>
               <div className="sf-hero-actions">
                 <a className="sf-button" href="#shop">
@@ -187,9 +195,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 <strong>{products ? String(liveCreatorCount).padStart(2, "0") : "--"}</strong>
               </div>
               <div className="sf-hero-image">
-                <img
-                  src={selectedProduct?.demoImageUrls?.[0] ?? "/uploads/1.png"}
-                  alt={selectedProduct?.title ?? ".cache storefront"}
+                <ProductImageGallery
+                  title={selectedProduct?.title ?? ".cache storefront"}
+                  imageUrls={selectedProduct?.demoImageUrls}
                 />
               </div>
             </div>
@@ -207,7 +215,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
             <p>
               {focusCheckout
                 ? "This page only handles item selection, buyer identity, and optional .stash codes. Payment and shipping details complete inside Stripe."
-                : "Customers should not see a protocol console. They choose a product, optionally redeem a .stash discount, then continue into Stripe checkout."}
+                : "This demo is one sticker pack, not a fake catalog. The point is to show a real product, real payment rails, and a partner-agent promo path."}
             </p>
           </div>
 
@@ -230,9 +238,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       Back to shop
                     </Link>
                     <div className="sf-summary-media">
-                      <img
-                        src={selectedProduct.demoImageUrls?.[0] ?? "/uploads/1.png"}
-                        alt={selectedProduct.title}
+                      <ProductImageGallery
+                        title={selectedProduct.title}
+                        imageUrls={selectedProduct.demoImageUrls}
                       />
                     </div>
                     <div className="sf-product-topline">
@@ -284,6 +292,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       <div className="sf-inline-note">
                         This drop accepts a token-based discount through <Link to={`/stash?product=${selectedProduct._id}`}>.stash</Link>. Redeem a code there before you pay.
                       </div>
+                    )}
+                    {railAllocation && (
+                      <RailLanePanel railAllocation={railAllocation} />
                     )}
                   </>
                 ) : (
@@ -350,17 +361,21 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       </div>
                     )}
 
-                    <div className="sf-subpanel">
-                      <div className="sf-subpanel-head">
-                        <strong>What happens next</strong>
-                        <span>Stripe Checkout</span>
-                      </div>
+                      <div className="sf-subpanel">
+                        <div className="sf-subpanel-head">
+                          <strong>What happens next</strong>
+                          <span>Stripe Checkout</span>
+                        </div>
                       <div className="sf-step-list">
                         <div>1. Review the order summary.</div>
                         <div>2. Pay in Stripe using the payment methods enabled on your account, including USDC if available.</div>
                         <div>3. Stripe collects shipping details for physical products.</div>
                       </div>
-                    </div>
+                      </div>
+
+                    {railAllocation && (
+                      <RailLanePanel railAllocation={railAllocation} />
+                    )}
 
                     <div className="sf-quote">
                       <QuoteRow label="Subtotal" value={preciseMoney.format(unitPrice * quantity)} />
@@ -426,9 +441,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 <section className="sf-panel sf-selection-panel">
                   <div className="sf-selection-grid">
                     <div className="sf-selection-media">
-                      <img
-                        src={selectedProduct.demoImageUrls?.[0] ?? "/uploads/1.png"}
-                        alt={selectedProduct.title}
+                      <ProductImageGallery
+                        title={selectedProduct.title}
+                        imageUrls={selectedProduct.demoImageUrls}
                       />
                     </div>
                     <div className="sf-selection-copy">
@@ -439,11 +454,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         <span>{selectedProduct.creator?.name ?? "Unassigned creator"}</span>
                         <span>{selectedProduct.productType}</span>
                       </div>
-                      {selectedProduct.tokenProgram && (
-                        <div className="sf-inline-note">
-                          This drop uses <strong>{selectedProduct.tokenProgram.tokenSymbol}</strong> for holder discounts. Redeem in <Link to={`/stash?product=${selectedProduct._id}`}>.stash</Link> before checkout.
-                        </div>
-                      )}
+                      <div className="sf-inline-note">
+                        DTOUR is one of the agents allowed to offer this same pack as a promo. That is the demo: one product, reusable by any agent that wants a shop.
+                      </div>
                     </div>
                     <div className="sf-selection-actions">
                       <div className="sf-form-grid">
@@ -485,6 +498,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         <QuoteRow label="Shipping" value={preciseMoney.format(shipping)} />
                         <QuoteRow label="Estimated total" value={preciseMoney.format(estimatedTotal)} strong />
                       </div>
+                      {railAllocation && (
+                        <RailLanePanel railAllocation={railAllocation} />
+                      )}
                       <div className="sf-button-stack">
                         <Link
                           to={checkoutReady ? checkoutHref : "#launch"}
@@ -500,11 +516,6 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                           <div className="sf-warning">
                             Checkout is not live yet. Stripe secrets still need to be configured.
                           </div>
-                        )}
-                        {selectedProduct.tokenProgram && (
-                          <Link to={`/stash?product=${selectedProduct._id}`} className="sf-button-ghost wide">
-                            Redeem in .stash
-                          </Link>
                         )}
                       </div>
                     </div>
@@ -523,7 +534,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 <h2 className="sf-section-title">launch your own drop.</h2>
               </div>
               <p>
-                .cache handles storefront publishing, creator setup, supplier routing, royalty splits, and token-linked discount programs in one system.
+                .cache can sell its own product, let a partner agent like DTOUR run the same product as a promo, and reuse that exact pattern for any other agent shop.
               </p>
             </div>
 
@@ -570,6 +581,49 @@ function QuoteRow({
     <div className={`sf-quote-row ${strong ? "is-strong" : ""}`}>
       <span>{label}</span>
       <span>{value}</span>
+    </div>
+  );
+}
+
+function ProductImageGallery({
+  title,
+  imageUrls,
+}: {
+  title: string;
+  imageUrls?: string[];
+}) {
+  const images = imageUrls?.length ? imageUrls : ["/uploads/1.png"];
+  return (
+    <div className="sf-image-stack">
+      <img src={images[0]} alt={title} />
+      {images.length > 1 && (
+        <div className="sf-thumb-row">
+          {images.map((imageUrl, index) => (
+            <img key={`${imageUrl}-${index}`} src={imageUrl} alt={`${title} view ${index + 1}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RailLanePanel({ railAllocation }: { railAllocation: RailAllocationStatus }) {
+  return (
+    <div className="sf-subpanel">
+      <div className="sf-subpanel-head">
+        <strong>Payment lane test</strong>
+        <span>first come, first served</span>
+      </div>
+      <div className="sf-step-list">
+        {railAllocation.lanes.map((lane) => (
+          <div key={lane.rail}>
+            {lane.rail.toUpperCase()}: {lane.claimed}/{lane.limit} claimed, {lane.remaining} left
+          </div>
+        ))}
+      </div>
+      <div className="sf-inline-note">
+        Stripe is the public checkout path here. USDC and x402 are separate rails for the same pack so the payment flows get real testing instead of one lane taking the whole run.
+      </div>
     </div>
   );
 }

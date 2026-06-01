@@ -618,6 +618,10 @@ function isStickerDemoIntent(content: string) {
     lower.includes("what are you selling") ||
     lower.includes("what can i buy") ||
     lower.includes("pre-pre sale") ||
+    lower.includes("dto ur") ||
+    lower.includes("dtour") ||
+    lower.includes("promo") ||
+    lower.includes("agent shop") ||
     lower.includes("sticker")
   );
 }
@@ -625,10 +629,11 @@ function isStickerDemoIntent(content: string) {
 function stickerDemoReply() {
   return [
     "Right now .cache is running the sticker pre-pre sale demo.",
-    "Offer: a 50-wallet proof run for the first Cozy Devs sticker drop: Moon Seal, Floppy, and Bus Riot.",
-    "What you get: a DTOUR-gated sticker claim, a collectible claim NFT, and the first batch of physical stickers shipped by hand.",
-    "This is the point of the demo: the agent is already attached to a real product before the full 24-hour waifu launch cycle exists.",
-    "If you want in, say `claim a sticker pack` and I will walk you through the DTOUR/Solana claim flow.",
+    "Offer: one Cozy Devs Sticker Pack containing Moon Seal, Floppy, and Bus Riot.",
+    "There are 56 packs total.",
+    "Testing lanes: first 10 Stripe, first 10 USDC, first 10 x402, first come first served.",
+    "DTOUR is one of the agents allowed to offer the same pack as a promo, and that is the point of the demo: one real product, reusable by any agent that wants a shop.",
+    "If you want in, say `claim a sticker pack` and I will route you to the right payment path.",
   ].join(" ");
 }
 

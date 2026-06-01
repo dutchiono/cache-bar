@@ -30,7 +30,14 @@ export const ensureStorefront = mutation({
     }
 
     const existingProducts = await ctx.db.query("products").collect();
-    const retiredDemoTitles = ["Stack Tee", "Daemon Shell", "Wallpaper Pack"];
+    const retiredDemoTitles = [
+      "Stack Tee",
+      "Daemon Shell",
+      "Wallpaper Pack",
+      "Cozy Devs Moon Seal Sticker",
+      "Cozy Devs Floppy Sticker",
+      "Cozy Devs Bus Riot Sticker",
+    ];
     for (const demoTitle of retiredDemoTitles) {
       const demoProduct = existingProducts.find((item) => item.title === demoTitle);
       if (demoProduct && demoProduct.status === "live") {
@@ -40,75 +47,31 @@ export const ensureStorefront = mutation({
 
     const productSpecs = [
       {
-        title: "Cozy Devs Moon Seal Sticker",
+        title: "Cozy Devs Sticker Pack",
         creatorId: humanCreator._id,
         makerType: "human" as const,
         description:
-          "Round moon-seal Cozy Devs sticker from the first pre-pre sale run. Hand-packed, hand-shipped, and capped by the physical batch on hand.",
+          "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot. 56 packs total. The first 10 Stripe, first 10 USDC, and first 10 x402 purchases are dedicated payment-lane tests. DTOUR is one of the agents allowed to offer the same pack as a promo.",
         productType: "physical" as const,
         category: "stickers",
         basePrice: 5,
         currency: "USD",
-        demoImageUrls: ["/uploads/cozy-devs-moon-seal.png"],
-        tokenDiscountEligible: true,
+        demoImageUrls: [
+          "/uploads/cozy-devs-moon-seal.png",
+          "/uploads/cozy-devs-floppy.png",
+          "/uploads/cozy-devs-bus-riot.png",
+        ],
+        tokenDiscountEligible: false,
         provenance: {
           makerType: "human" as const,
-          summary: "Original Cozy Devs sticker art provided directly for the sticker proof drop.",
+          summary: "Original Cozy Devs sticker pack art provided directly for the sticker proof drop.",
         },
         royaltySplits: [
           { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
           { role: "platform", percent: 10 as const },
         ],
         variants: [
-          { sku: "STICKER-MOON-001", optionLabel: "Single sticker" },
-        ],
-      },
-      {
-        title: "Cozy Devs Floppy Sticker",
-        creatorId: humanCreator._id,
-        makerType: "human" as const,
-        description:
-          "Retro floppy Cozy Devs sticker with the handwritten tape label. Part of the first physical proof run.",
-        productType: "physical" as const,
-        category: "stickers",
-        basePrice: 5,
-        currency: "USD",
-        demoImageUrls: ["/uploads/cozy-devs-floppy.png"],
-        tokenDiscountEligible: true,
-        provenance: {
-          makerType: "human" as const,
-          summary: "Original Cozy Devs floppy sticker art provided directly for the sticker proof drop.",
-        },
-        royaltySplits: [
-          { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
-          { role: "platform", percent: 10 as const },
-        ],
-        variants: [
-          { sku: "STICKER-FLOPPY-001", optionLabel: "Single sticker" },
-        ],
-      },
-      {
-        title: "Cozy Devs Bus Riot Sticker",
-        creatorId: humanCreator._id,
-        makerType: "human" as const,
-        description:
-          "Full chaos bus collage sticker from the Cozy Devs drop stack. Loud on purpose, limited by the batch you physically have.",
-        productType: "physical" as const,
-        category: "stickers",
-        basePrice: 5,
-        currency: "USD",
-        demoImageUrls: ["/uploads/cozy-devs-bus-riot.png"],
-        tokenDiscountEligible: true,
-        provenance: {
-          makerType: "human" as const,
-          summary: "Original Cozy Devs collage sticker art provided directly for the sticker proof drop.",
-        },
-        royaltySplits: [
-          { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
-          { role: "platform", percent: 10 as const },
-        ],
-        variants: [
-          { sku: "STICKER-BUS-001", optionLabel: "Single sticker" },
+          { sku: "STICKER-PACK-001", optionLabel: "3-sticker pack" },
         ],
       },
     ];
@@ -146,6 +109,7 @@ export const ensureStorefront = mutation({
           currency: spec.currency,
           demoImageUrls: spec.demoImageUrls,
           tokenDiscountEligible: spec.tokenDiscountEligible,
+          tokenProgramId: undefined,
           provenance: spec.provenance,
           royaltySplits: spec.royaltySplits,
         });
@@ -161,6 +125,7 @@ export const ensureStorefront = mutation({
           currency: spec.currency,
           demoImageUrls: spec.demoImageUrls,
           tokenDiscountEligible: spec.tokenDiscountEligible,
+          tokenProgramId: undefined,
           provenance: spec.provenance,
           royaltySplits: spec.royaltySplits,
         };
@@ -188,21 +153,31 @@ export const ensureStorefront = mutation({
         if (!inventory) {
           await ctx.db.insert("inventory", {
             variantId: variant._id,
-            onHand: 60,
+            onHand: 56,
             reserved: 0,
-            reorderPoint: 12,
-            location: "Sticker Demo / Bin A",
+            reorderPoint: 10,
+            location: "Sticker Pack Demo / Bin A",
           });
           summary.inventoryRowsCreated += 1;
+        } else if (
+          inventory.onHand !== 56 ||
+          inventory.reorderPoint !== 10 ||
+          inventory.location !== "Sticker Pack Demo / Bin A"
+        ) {
+          await ctx.db.patch(inventory._id, {
+            onHand: 56,
+            reorderPoint: 10,
+            location: "Sticker Pack Demo / Bin A",
+          });
         }
       }
     }
 
     const existingPrograms = await ctx.db.query("tokenPrograms").collect();
-    let demoProgram = existingPrograms.find((program) => program.projectName === "DTOUR Sticker Pre-Pre Sale");
+    let demoProgram = existingPrograms.find((program) => program.projectName === "DTOUR Sticker Pack Promo");
     if (!demoProgram) {
       const tokenProgramId = await ctx.db.insert("tokenPrograms", {
-        projectName: "DTOUR Sticker Pre-Pre Sale",
+        projectName: "DTOUR Sticker Pack Promo",
         tokenSymbol: "DTOUR",
         chain: "solana",
         tokenKind: "spl",
@@ -224,7 +199,7 @@ export const ensureStorefront = mutation({
           mintPriceUsdc: 5,
           discountPercent: 100,
         },
-        notes: "Manual-verify DTOUR sticker demo program for the first physical proof run.",
+        notes: "Manual-verify DTOUR sticker pack promo for the first physical proof run.",
       });
       demoProgram = (await ctx.db.get(tokenProgramId))!;
       summary.tokenProgramsCreated += 1;
@@ -279,10 +254,19 @@ export const ensureStorefront = mutation({
     if (demoProgram) {
       const products = await ctx.db.query("products").collect();
       for (const product of products) {
-        if (!product.tokenDiscountEligible || product.tokenProgramId) continue;
-        await ctx.db.patch(product._id, {
-          tokenProgramId: demoProgram._id,
-        });
+        if (!product.tokenDiscountEligible) {
+          if (product.tokenProgramId) {
+            await ctx.db.patch(product._id, {
+              tokenProgramId: undefined,
+            });
+          }
+          continue;
+        }
+        if (!product.tokenProgramId) {
+          await ctx.db.patch(product._id, {
+            tokenProgramId: demoProgram._id,
+          });
+        }
       }
     }
 
