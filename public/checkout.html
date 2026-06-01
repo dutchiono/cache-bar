@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>.cache — Checkout</title>
+<title>.cache — POD request</title>
 <link rel='icon' type='image/svg+xml' href='/favicon.svg' />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -121,12 +121,12 @@
     <span>.cache</span>
   </a>
   <div class="nav__center">
-    <a href="cache.html#drop" data-i18n="nav.drop">Drop 001</a>
-    <a href="cache.html#shop" data-i18n="nav.inventory">Inventory</a>
-    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Manifesto</a>
+    <a href="cache.html#drop" data-i18n="nav.drop">Sticker Run</a>
+    <a href="cache.html#shop" data-i18n="nav.inventory">Stickers</a>
+    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Method</a>
     <a href="archive.html" data-i18n="nav.archive">Archive</a>
-    <a href="ambassador.html" data-i18n="nav.ambassador">Ambassador</a>
-    <a href="login.html" data-i18n="nav.members">Members</a>
+    <a href="cache.html#shop" data-i18n="nav.ambassador">Reserve</a>
+    <a href="cache.html#members" data-i18n="nav.members">POD</a>
   </div>
   <div class="nav__right">
     <div class="lang" id="lang">
@@ -149,10 +149,10 @@
 <main class="checkout">
   <div class="checkout__head">
     <div>
-      <div class="section-eyebrow" data-i18n="checkout.eyebrow">// Commit your order</div>
-      <h1 class="title" data-i18n="checkout.title">Checkout</h1>
+      <div class="section-eyebrow" data-i18n="checkout.eyebrow">// POD sticker request</div>
+      <h1 class="title" data-i18n="checkout.title">POD request</h1>
     </div>
-    <a href="cache.html#shop" class="checkout__back" data-i18n="checkout.backCart">← Back to cart</a>
+    <a href="cache.html#shop" class="checkout__back" data-i18n="checkout.backCart">← Back to stickers</a>
   </div>
 
   <div class="checkout__steps" id="ck-steps"><!-- rendered --></div>
@@ -168,9 +168,9 @@
     <div class="left">
       <span data-i18n="footer.rights">© .cache 2026</span>
       <span data-i18n="footer.cities">Berlin / Tokyo</span>
-      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.4</span></span>
+      <span class="build"><span class="d"></span> <span data-i18n="footer.build">Build v1.0.5 — 2026.06.01</span></span>
     </div>
-    <div data-i18n="footer.tagline">No Resellers / No Lies</div>
+    <div data-i18n="footer.tagline">No Stripe / Price TBD</div>
   </div>
 </footer>
 
@@ -178,14 +178,14 @@
 <div class="cart-backdrop" id="cart-backdrop"></div>
 <aside class="cart" id="cart" aria-hidden="true">
   <div class="cart__head">
-    <div><h3 data-i18n="cart.title">Your Cache</h3><div class="meta" id="cart-summary">0 items</div></div>
+    <div><h3 data-i18n="cart.title">Sticker Reserve</h3><div class="meta" id="cart-summary">0 stickers · awaiting proof</div></div>
     <button class="cart__close" id="cart-close" aria-label="Close cart"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.2"/></svg></button>
   </div>
   <div class="cart__body" id="cart-body"></div>
   <div class="cart__foot" id="cart-foot">
-    <div class="cart__totals"><span data-i18n="cart.subtotal">Subtotal</span><span class="v" id="cart-subtotal">$0</span></div>
-    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">Checkout</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
-    <div class="cart__notes"><b data-i18n="cart.noteFree">Free</b> <span data-i18n="cart.noteRest">worldwide shipping over $200</span></div>
+    <div class="cart__totals"><span data-i18n="cart.subtotal">Price</span><span class="v" id="cart-subtotal">TBD</span></div>
+    <a href="checkout.html" class="cart__checkout"><span data-i18n="cart.checkout">POD request</span><svg viewBox="0 0 14 14" fill="none"><path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="currentColor" stroke-width="1.2"/></svg></a>
+    <div class="cart__notes"><b data-i18n="cart.noteFree">TBD</b> <span data-i18n="cart.noteRest">pricing decided after POD proof and quote</span></div>
   </div>
 </aside>
 
@@ -205,9 +205,33 @@
     return m ? parseFloat(m[1]) : 0;
   }
 
-  let step = 0; // 0 cart, 1 shipping, 2 payment, 3 confirmed
+  let step = 0;
   let shippingMethod = 'standard';
   let formData = {};
+  let lastRequest = null;
+
+  const REQUESTS_KEY = 'dotcache.podRequests.v1';
+  const LAST_REQUEST_KEY = 'dotcache.podLastRequest.v1';
+
+  function loadRequests() {
+    try { return JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function persistRequest(request) {
+    const existing = loadRequests();
+    existing.unshift(request);
+    try {
+      localStorage.setItem(REQUESTS_KEY, JSON.stringify(existing.slice(0, 100)));
+      localStorage.setItem(LAST_REQUEST_KEY, JSON.stringify(request));
+    } catch {}
+  }
+
+  function nextRequestId() {
+    const stamp = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    const nonce = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `POD-${stamp}-${nonce}`;
+  }
 
   function renderSteps(){
     const labels = t('checkout.steps');
@@ -232,14 +256,18 @@
     const shippingCost = subtotal === 0 || subtotal >= 200 ? 0 : (shippingMethod === 'express' ? 24 : 0);
     const tax = Math.round(subtotal * 0.07);
     const total = subtotal + shippingCost + tax;
-    return { items, subtotal, shippingCost, tax, total };
+    const pricingOpen = items.some(({ p }) => /tbd/i.test(String(p.price)));
+    return { items, subtotal, shippingCost, tax, total, pricingOpen };
   }
 
   function summaryHTML(){
-    const { items, subtotal, shippingCost, tax, total } = totals();
-    const free = shippingCost === 0 ? t('checkout.free') : '$' + shippingCost;
+    const { items, subtotal, shippingCost, tax, total, pricingOpen } = totals();
+    const free = pricingOpen ? t('checkout.free') : shippingCost === 0 ? t('checkout.free') : '$' + shippingCost;
+    const subtotalText = pricingOpen ? 'TBD' : '$' + subtotal;
+    const taxText = pricingOpen ? 'After quote' : '$' + tax;
+    const totalText = pricingOpen ? 'No charge' : '$' + total;
     return `
-      <div class="ck-summary">
+        <div class="ck-summary">
         <h4>${t('checkout.review')}</h4>
         <div class="ck-items">
           ${items.map(({p, qty, sub}) => `
@@ -251,10 +279,10 @@
           `).join('')}
         </div>
         <div class="ck-totals">
-          <div class="ck-line"><span>${t('checkout.subtotal')}</span><span class="v">$${subtotal}</span></div>
+          <div class="ck-line"><span>${t('checkout.subtotal')}</span><span class="v">${subtotalText}</span></div>
           <div class="ck-line"><span>${t('checkout.shippingFee')}</span><span class="v">${free}</span></div>
-          <div class="ck-line"><span>${t('checkout.tax')}</span><span class="v">$${tax}</span></div>
-          <div class="ck-total"><span>${t('checkout.total')}</span><span class="v">$${total}</span></div>
+          <div class="ck-line"><span>${t('checkout.tax')}</span><span class="v">${taxText}</span></div>
+          <div class="ck-total"><span>${t('checkout.total')}</span><span class="v">${totalText}</span></div>
         </div>
         <div class="ck-secure">
           <svg viewBox="0 0 12 12" fill="none"><path d="M2 5V4a4 4 0 1 1 8 0v1M2 5h8v6H2V5zM6 7v2" stroke="currentColor" stroke-width="1.2"/></svg>
@@ -282,7 +310,7 @@
         <div class="ck-confirmed">
           <div class="big">${t('checkout.confirmedTitle')}</div>
           <p>${t('checkout.confirmedSub')}</p>
-          <div class="num">${t('checkout.confirmedOrder')} · ORD-0015 · ${new Date().toISOString().slice(0,10)}</div>
+          <div class="num">${t('checkout.confirmedOrder')} · ${lastRequest?.id || 'POD-PENDING'} · ${new Date().toISOString().slice(0,10)}</div>
           <a href="cache.html">${t('checkout.keepShopping')}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg></a>
         </div>`;
       return;
@@ -340,17 +368,17 @@
                 <label for="ship-std">
                   <div>
                     <div class="nm">${t('checkout.standard')}</div>
-                    <div class="desc">Tracked · signed</div>
+                    <div class="desc">${t('checkout.standardDesc')}</div>
                   </div>
-                  <span class="price">${t('checkout.free')}</span>
+                  <span class="price">TBD</span>
                 </label>
                 <input type="radio" name="ship" id="ship-exp" value="express" ${shippingMethod==='express'?'checked':''}>
                 <label for="ship-exp">
                   <div>
                     <div class="nm">${t('checkout.express')}</div>
-                    <div class="desc">DHL Express</div>
+                    <div class="desc">${t('checkout.expressDesc')}</div>
                   </div>
-                  <span class="price">$24</span>
+                  <span class="price">TBD</span>
                 </label>
               </div>
               <button class="ck-continue" id="ck-next">
@@ -369,7 +397,7 @@
         const required = ['f-email', 'f-name', 'f-country', 'f-city', 'f-addr1', 'f-postal'];
         const missing = required.filter(id => !document.getElementById(id).value.trim());
         if (missing.length) {
-          showToast('Complete shipping');
+          showToast('Complete contact');
           missing.forEach(id => document.getElementById(id).style.borderColor = 'var(--hot)');
           setTimeout(() => missing.forEach(id => document.getElementById(id).style.borderColor = ''), 1800);
           return;
@@ -380,14 +408,13 @@
     }
 
     if (step === 2) {
-      // Payment
       stage.innerHTML = `
         <div class="checkout__grid">
           <div class="checkout__main">
             <div class="ck-card">
               <h3>${t('checkout.payment')} <span class="num">01 / 01</span></h3>
-              <div class="ck-row full"><div class="field"><label>${t('checkout.cardNum')}</label><input id="f-card" required placeholder="4242 4242 4242 4242"></div></div>
-              <div class="ck-row"><div class="field"><label>${t('checkout.expiry')}</label><input id="f-exp" required placeholder="MM / YY"></div><div class="field"><label>${t('checkout.cvc')}</label><input id="f-cvc" required placeholder="•••"></div></div>
+              <div class="ck-row full"><div class="field"><label>${t('checkout.cardNum')}</label><input id="f-pod-note" placeholder="${t('checkout.notePlaceholder')}"></div></div>
+              <div class="ck-row"><div class="field"><label>${t('checkout.expiry')}</label><input id="f-proof" value="${t('checkout.proofTargetValue')}"></div><div class="field"><label>${t('checkout.cvc')}</label><input id="f-qty" value="${t('checkout.qtySummary')}" readonly></div></div>
               <label class="ck-checkbox"><input type="checkbox" checked> ${t('checkout.billingSame')}</label>
               <button class="ck-continue" id="ck-place">
                 ${t('checkout.place')}
@@ -403,14 +430,38 @@
         </div>`;
 
       document.getElementById('ck-place').addEventListener('click', () => {
-        const card = document.getElementById('f-card').value.replace(/\s/g,'');
-        if (card.length < 12) {
-          showToast('Card incomplete');
-          document.getElementById('f-card').style.borderColor = 'var(--hot)';
-          setTimeout(() => { document.getElementById('f-card').style.borderColor = ''; }, 1800);
-          return;
-        }
-        // Clear cart
+        formData['f-pod-note'] = document.getElementById('f-pod-note').value.trim();
+        formData['f-proof'] = document.getElementById('f-proof').value.trim();
+        const request = {
+          id: nextRequestId(),
+          createdAt: new Date().toISOString(),
+          flow: 'pod_sticker_request',
+          shippingMethod,
+          contact: {
+            email: formData['f-email'] || '',
+            fullName: formData['f-name'] || '',
+            country: formData['f-country'] || '',
+            city: formData['f-city'] || '',
+            address1: formData['f-addr1'] || '',
+            address2: formData['f-addr2'] || '',
+            postal: formData['f-postal'] || '',
+            phone: formData['f-phone'] || '',
+          },
+          proof: {
+            note: formData['f-pod-note'] || '',
+            target: formData['f-proof'] || '',
+            summary: document.getElementById('f-qty').value,
+          },
+          items: lineItems().map(({ p, qty, sub }) => ({
+            sku: p.sku,
+            name: p.name,
+            quantity: qty,
+            lineTotal: sub,
+          })),
+          totals: totals(),
+        };
+        persistRequest(request);
+        lastRequest = request;
         cacheCart.clear();
         step = 3; renderAll();
       });

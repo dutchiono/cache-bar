@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:selfhost": "VITE_CONVEX_URL=http://127.0.0.1:3210 vite",
+    "selfhost:up": "docker compose -f self-hosted/convex/docker-compose.yml --env-file self-hosted/convex/.env.example up -d",
+    "selfhost:down": "docker compose -f self-hosted/convex/docker-compose.yml --env-file self-hosted/convex/.env.example down",
+    "selfhost:key": "docker compose -f self-hosted/convex/docker-compose.yml --env-file self-hosted/convex/.env.example exec backend ./generate_admin_key.sh",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
