@@ -13,8 +13,6 @@ export const ensureStorefront = mutation({
       treasuryTransactionsCreated: 0,
     };
 
-    const now = Date.now();
-
     const existingCreators = await ctx.db.query("creators").collect();
     let humanCreator = existingCreators.find((creator) => creator.name === ".cache Studio");
     if (!humanCreator) {
@@ -31,109 +29,86 @@ export const ensureStorefront = mutation({
       summary.creatorsCreated += 1;
     }
 
-    let agentCreator = existingCreators.find((creator) => creator.agentId === "waifu.fun/v2.0.0");
-    if (!agentCreator) {
-      const creatorId = await ctx.db.insert("creators", {
-        name: "WAIFU.FUN // Image Protocol",
-        type: "agent",
-        status: "active",
-        agentId: "waifu.fun/v2.0.0",
-        baseModel: "milady-ai/streetwear-gen",
-        reinvestPercent: 100,
-        capabilities: ["lookbook", "drop-copy", "merch-variant-ideation"],
-        payoutMethod: {
-          kind: "usdc_wallet",
-          chain: "evm",
-          address: "0xDEMO000000000000000000000000000000W41FU",
-        },
-      });
-      agentCreator = (await ctx.db.get(creatorId))!;
-      summary.creatorsCreated += 1;
-    }
-
     const existingProducts = await ctx.db.query("products").collect();
     const productSpecs = [
       {
-        title: "Stack Tee",
+        title: "Cache Mark",
         creatorId: humanCreator._id,
         makerType: "human" as const,
-        description:
-          "Oversized 14oz combed-cotton tee with washed finish, front stack graphic, and dense screenprint treatment.",
+        description: "Die-cut .cache mark sticker prepared for the first POD proof batch. Quantity is capped at fifty and price is TBD until proof approval.",
         productType: "physical" as const,
-        category: "tees",
-        basePrice: 78,
+        category: "stickers",
+        basePrice: 0,
         currency: "USD",
         demoImageUrls: ["/uploads/1.png"],
-        tokenDiscountEligible: true,
+        tokenDiscountEligible: false,
         provenance: {
           makerType: "human" as const,
-          summary: "Designed and finished by the .cache studio in-house.",
+          summary: "Prepared by .cache for POD sticker proofing.",
         },
         royaltySplits: [
           { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
           { role: "platform", percent: 10 as const },
         ],
         variants: [
-          { sku: "CSH-001-S", optionLabel: "Small" },
-          { sku: "CSH-001-M", optionLabel: "Medium" },
-          { sku: "CSH-001-L", optionLabel: "Large" },
+          { sku: "CST-001", optionLabel: "50-unit POD batch" },
         ],
       },
       {
-        title: "Daemon Shell",
-        creatorId: agentCreator._id,
-        makerType: "agent" as const,
-        description:
-          "Quilted technical shell with cropped silhouette, webbing trim, and waifu.fun-generated capsule art direction.",
+        title: "Proof Label",
+        creatorId: humanCreator._id,
+        makerType: "human" as const,
+        description: "Matte proof label sticker for the POD run. Quantity is capped at fifty and price is TBD until the provider quote is locked.",
         productType: "physical" as const,
-        category: "outerwear",
-        basePrice: 248,
+        category: "stickers",
+        basePrice: 0,
         currency: "USD",
         demoImageUrls: ["/uploads/2.png"],
-        tokenDiscountEligible: true,
+        tokenDiscountEligible: false,
         provenance: {
-          makerType: "agent" as const,
-          summary: "Agent-directed silhouette and graphics for Drop 001.",
-          baseModel: "milady-ai/streetwear-gen",
-          provider: "Eliza creator agent",
-          brief: "Dark internet shell with cropped proportions and quilted paneling.",
-          seed: "WF-2401",
-          runId: "daemon-shell-drop-001",
-          generatedAt: now,
-          license: "internal demo use",
+          makerType: "human" as const,
+          summary: "Prepared by .cache for POD sticker proofing.",
         },
         royaltySplits: [
-          { role: "creator", percent: 90, payeeCreatorId: agentCreator._id },
+          { role: "creator", percent: 90, payeeCreatorId: humanCreator._id },
           { role: "platform", percent: 10 as const },
         ],
         variants: [
-          { sku: "CSH-002-M", optionLabel: "Medium" },
-          { sku: "CSH-002-L", optionLabel: "Large" },
+          { sku: "CST-002", optionLabel: "50-unit POD batch" },
         ],
       },
       {
-        title: "Wallpaper Pack",
+        title: "Seal Holo",
         creatorId: humanCreator._id,
         makerType: "human" as const,
-        description:
-          "Twelve 5K wallpapers pulled from the Drop 001 visual system. Instant digital delivery.",
-        productType: "digital" as const,
-        category: "digital",
-        basePrice: 8,
+        description: "Holographic .cache seal sticker for the POD run. Quantity is capped at fifty and price is TBD until the provider quote is locked.",
+        productType: "physical" as const,
+        category: "stickers",
+        basePrice: 0,
         currency: "USD",
         demoImageUrls: ["/uploads/3.png"],
         tokenDiscountEligible: false,
         provenance: {
           makerType: "human" as const,
-          summary: "Curated by the .cache studio from the live campaign system.",
+          summary: "Prepared by .cache for POD sticker proofing.",
         },
         royaltySplits: [
           { role: "creator", percent: 85, payeeCreatorId: humanCreator._id },
           { role: "platform", percent: 15 as const },
         ],
-        variants: [],
+        variants: [
+          { sku: "CST-003", optionLabel: "50-unit POD batch" },
+        ],
       },
     ];
+
+    const activeStickerTitles = new Set(productSpecs.map((spec) => spec.title));
+    const legacyDemoTitles = new Set(["Stack Tee", "Daemon Shell", "Wallpaper Pack"]);
+    for (const product of existingProducts) {
+      if (legacyDemoTitles.has(product.title) && !activeStickerTitles.has(product.title) && product.status === "live") {
+        await ctx.db.patch(product._id, { status: "retired" });
+      }
+    }
 
     for (const spec of productSpecs) {
       let product = existingProducts.find((item) => item.title === spec.title);
@@ -156,9 +131,25 @@ export const ensureStorefront = mutation({
         });
         product = (await ctx.db.get(productId))!;
         summary.productsCreated += 1;
-      } else if (product.status !== "live") {
-        await ctx.db.patch(product._id, { status: "live" });
-        product = { ...product, status: "live" };
+      } else {
+        const productPatch = {
+          title: spec.title,
+          description: spec.description,
+          productType: spec.productType,
+          category: spec.category,
+          makerType: spec.makerType,
+          creatorId: spec.creatorId,
+          status: "live" as const,
+          basePrice: spec.basePrice,
+          currency: spec.currency,
+          imageStorageIds: [],
+          demoImageUrls: spec.demoImageUrls,
+          tokenDiscountEligible: spec.tokenDiscountEligible,
+          provenance: spec.provenance,
+          royaltySplits: spec.royaltySplits,
+        };
+        await ctx.db.patch(product._id, productPatch);
+        product = { ...product, ...productPatch };
       }
 
       for (const variantSpec of spec.variants) {
@@ -183,10 +174,10 @@ export const ensureStorefront = mutation({
         if (!inventory) {
           await ctx.db.insert("inventory", {
             variantId: variant._id,
-            onHand: 25,
+            onHand: 50,
             reserved: 0,
             reorderPoint: 5,
-            location: "Drop 001 / Rack A",
+            location: "Drop 001 / POD sticker batch",
           });
           summary.inventoryRowsCreated += 1;
         }
@@ -299,7 +290,7 @@ export const ensureStorefront = mutation({
         type: "supplier_payment",
         amount: 2150,
         currency: "USD",
-        ref: "blank-tee-po-0007",
+        ref: "sticker-pod-proof-0001",
         status: "confirmed",
       });
       summary.treasuryTransactionsCreated += 3;

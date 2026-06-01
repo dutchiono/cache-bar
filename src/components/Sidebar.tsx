@@ -44,8 +44,8 @@ const groups: Group[] = [
     label: "Storefront",
     items: [
       { to: "/", label: "Live Storefront" },
-      { to: "/stash", label: "Public .stash" },
-      { to: "/checkout", label: "Live Checkout" },
+      { to: "/stash", label: "Sticker .stash Pause" },
+      { to: "/checkout", label: "POD Request" },
     ],
   },
   {

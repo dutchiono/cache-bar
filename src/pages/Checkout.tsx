@@ -1,23 +1,7 @@
-import { useAction, useQuery } from "convex/react";
-import { useEffect, useMemo, useState } from "react";
+import { useAction } from "convex/react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
-
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-type ConfigStatus = {
-  stripeSecretConfigured: boolean;
-  stripeWebhookSecretConfigured: boolean;
-  siteUrl: string | null;
-  usesBrowserOriginFallback: boolean;
-  siteUrlLooksLocal: boolean;
-  convexSiteUrl: string | null;
-  webhookPath: string;
-};
 
 type TeemillStatus = {
   configured: boolean;
@@ -39,32 +23,33 @@ type TeemillCatalogSmoke = {
   }>;
 };
 
+const stickerRun = [
+  {
+    sku: "CST-001",
+    name: "Cache Mark",
+    type: "Die-cut vinyl",
+    quantity: 50,
+  },
+  {
+    sku: "CST-002",
+    name: "Proof Label",
+    type: "Matte proof label",
+    quantity: 50,
+  },
+  {
+    sku: "CST-003",
+    name: "Seal Holo",
+    type: "Holographic seal",
+    quantity: 50,
+  },
+];
+
 export default function Checkout() {
-  const products = useQuery(api.checkout.publicStorefrontProducts, {});
-  const getConfigStatus = useAction(api.stripeCheckout.configStatus);
   const getTeemillStatus = useAction(api.teemill.configStatus);
   const getTeemillCatalogSmoke = useAction(api.teemill.catalogSmoke);
-  const [config, setConfig] = useState<ConfigStatus | null>(null);
   const [teemill, setTeemill] = useState<TeemillStatus | null>(null);
   const [teemillCatalog, setTeemillCatalog] = useState<TeemillCatalogSmoke | null>(null);
-  const [configError, setConfigError] = useState<string | null>(null);
   const [teemillError, setTeemillError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void getConfigStatus({})
-      .then((result) => {
-        if (active) setConfig(result);
-      })
-      .catch((error) => {
-        if (active) {
-          setConfigError(error instanceof Error ? error.message : "Unable to load Stripe status.");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [getConfigStatus]);
 
   useEffect(() => {
     let active = true;
@@ -76,7 +61,7 @@ export default function Checkout() {
       })
       .catch((error) => {
         if (active) {
-          setTeemillError(error instanceof Error ? error.message : "Unable to load Teemill status.");
+          setTeemillError(error instanceof Error ? error.message : "Unable to load POD provider status.");
         }
       });
     return () => {
@@ -84,108 +69,68 @@ export default function Checkout() {
     };
   }, [getTeemillCatalogSmoke, getTeemillStatus]);
 
-  const featuredProduct = useMemo(() => products?.[0] ?? null, [products]);
-  const previewHref = featuredProduct
-    ? `/checkout?product=${featuredProduct._id}${featuredProduct.variants[0]?._id ? `&variant=${featuredProduct.variants[0]._id}` : ""}&quantity=1`
-    : "/checkout";
-
   return (
     <div className="space-y-5">
       <section className="cb-panel-dark p-5">
-        <p className="cb-kicker text-[var(--cb-gold)]">Checkout launchpad</p>
-        <h1 className="cb-display mt-2 text-4xl font-semibold">Stripe + .stash</h1>
+        <p className="cb-kicker text-[var(--cb-gold)]">POD launchpad</p>
+        <h1 className="cb-display mt-2 text-4xl font-semibold">Sticker run setup</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          This is the handoff surface for the live storefront checkout. Buyers use the public
-          `/checkout` and `/stash` routes. Ops uses this page to verify config, preview the buyer
-          path, and check the webhook target before Stripe testing.
+          The active storefront is a sticker POD reservation flow: three sticker types, fifty each,
+          price TBD until the provider proof and production quote are approved.
         </p>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-4">
           <section className="cb-panel p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Readiness</h2>
-            {configError && (
-              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {configError}
-              </p>
-            )}
-            {!config && !configError && (
-              <p className="text-sm text-[var(--cb-muted)]">Loading Stripe config…</p>
-            )}
-            {config && (
-              <div className="grid gap-3 md:grid-cols-2">
-                <StatusCard
-                  label="Stripe secret"
-                  ok={config.stripeSecretConfigured}
-                  good="Configured in Convex"
-                  bad="Missing STRIPE_SECRET_KEY"
-                />
-                <StatusCard
-                  label="Webhook secret"
-                  ok={config.stripeWebhookSecretConfigured}
-                  good="Configured in Convex"
-                  bad="Missing STRIPE_WEBHOOK_SECRET"
-                />
-                <InfoCard
-                  label="Public site"
-                  value={config.siteUrl ?? "Inferred from buyer browser origin"}
-                  mono
-                />
-                <InfoCard
-                  label="Stripe webhook endpoint"
-                  value={`${config.convexSiteUrl ?? "Set CONVEX_SITE_URL"}/stripe/webhook`}
-                  mono
-                />
-              </div>
-            )}
-            {config?.usesBrowserOriginFallback && (
-              <p className="mt-3 text-xs text-[var(--cb-muted)]">
-                No explicit `SITE_URL` or `APP_URL` is set in Convex. Buyer checkout still works because
-                the storefront sends its current origin when creating the Stripe session.
-              </p>
-            )}
-            {config?.siteUrlLooksLocal && (
-              <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                The configured site URL still points at localhost. Stripe success and cancel URLs should use the real storefront host before live testing.
-              </p>
-            )}
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Sticker SKUs</h2>
+            <div className="grid gap-3 md:grid-cols-3">
+              {stickerRun.map((sticker) => (
+                <div key={sticker.sku} className="rounded-md border border-[var(--cb-line)] bg-white/40 p-3">
+                  <div className="cb-label">{sticker.sku}</div>
+                  <div className="mt-2 font-semibold">{sticker.name}</div>
+                  <div className="mt-1 text-sm text-[var(--cb-muted)]">{sticker.type}</div>
+                  <div className="mt-3 text-sm font-medium">{sticker.quantity} units · price TBD</div>
+                </div>
+              ))}
+            </div>
           </section>
 
           <section className="cb-panel p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Teemill</h2>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">POD Provider</h2>
             {teemillError && (
               <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {teemillError}
               </p>
             )}
             {!teemill && !teemillError && (
-              <p className="text-sm text-[var(--cb-muted)]">Loading Teemill config…</p>
+              <p className="text-sm text-[var(--cb-muted)]">Loading POD provider status...</p>
             )}
             {teemill && (
               <div className="grid gap-3 md:grid-cols-2">
                 <StatusCard
                   label="Catalog / orders"
                   ok={teemill.configured}
-                  good="Project + private key configured"
-                  bad="Missing project or private key"
+                  good="Provider project + private key configured"
+                  bad="Missing provider project or private key"
                 />
                 <StatusCard
                   label="Custom product"
                   ok={teemill.customProductConfigured}
-                  good="Public safe key configured"
-                  bad="Missing public safe key"
+                  good="Custom-product key configured"
+                  bad="Missing custom-product public key"
                 />
-                <InfoCard label="Teemill project" value={teemill.projectName ?? "Not configured"} mono />
+                <InfoCard label="Provider project" value={teemill.projectName ?? "Not configured"} mono />
                 <InfoCard
                   label="Catalog products"
-                  value={teemillCatalog ? String(teemillCatalog.productCount) : "Loading…"}
+                  value={teemillCatalog ? String(teemillCatalog.productCount) : "Loading..."}
                 />
               </div>
             )}
             {teemillCatalog && teemillCatalog.productCount === 0 && (
               <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                Teemill credentials are live, but this project currently has zero catalog products. Custom-product mode is ready; catalog/orders mode still needs products created in Teemill.
+                Provider credentials are reachable, but the catalog has no products yet. Create or map
+                the three sticker SKUs before turning on paid checkout.
               </p>
             )}
           </section>
@@ -193,82 +138,44 @@ export default function Checkout() {
           <section className="cb-panel p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Buyer Flow</h2>
             <div className="space-y-2 text-sm text-[var(--cb-muted)]">
-              <p>1. Buyer selects a live product on the storefront.</p>
-              <p>2. If the drop is token-linked, buyer redeems in `.stash` and receives a one-time Stripe code.</p>
-              <p>3. Buyer enters name and email on `/checkout` and is redirected into hosted Stripe Checkout.</p>
-              <p>4. Stripe posts `checkout.session.completed` to Convex and the order moves to paid automatically.</p>
-            </div>
-          </section>
-
-          <section className="cb-panel p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Teemill Modes</h2>
-            <div className="space-y-2 text-sm text-[var(--cb-muted)]">
-              <p>Option A: use Teemill custom-product mode for one-off generated shirts and return the Teemill checkout URL to the buyer.</p>
-              <p>Option B: use `.cache` Stripe checkout for prebuilt products, then send paid orders to Teemill catalog/orders fulfillment.</p>
-              <p>The agent should choose between A and B based on the customer request rather than assuming a single fulfillment path.</p>
-            </div>
-          </section>
-
-          <section className="cb-panel p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Constraints</h2>
-            <div className="space-y-2 text-sm text-[var(--cb-muted)]">
-              <p>Self-serve `.stash` verification is currently for EVM ERC-20 transfer-to-burn programs.</p>
-              <p>Physical shipping details are collected inside Stripe Checkout, not on the storefront form.</p>
-              <p>Stripe remains the source of truth for payment success, failure, and refund lifecycle.</p>
-              <p>Ops can submit a Stripe refund from the orders screen, but Stripe secrets and webhook delivery still need to be configured correctly.</p>
+              <p>1. Buyer reserves one of the three sticker types from the public storefront.</p>
+              <p>2. Checkout collects contact and fulfillment details only.</p>
+              <p>3. The final step submits a POD proof request, with no card or payment collection.</p>
+              <p>4. Ops locks price after artwork proof, provider quote, tax, and shipping are known.</p>
             </div>
           </section>
         </div>
 
         <div className="space-y-4">
           <section className="cb-panel p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Preview</h2>
-            {featuredProduct ? (
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  {featuredProduct.demoImageUrls?.[0] && (
-                    <img
-                      src={featuredProduct.demoImageUrls[0]}
-                      alt={featuredProduct.title}
-                      className="h-24 w-24 rounded-md border border-[var(--cb-line)] bg-[var(--cb-charcoal)] object-cover"
-                    />
-                  )}
-                  <div>
-                    <div className="font-semibold">{featuredProduct.title}</div>
-                    <div className="text-sm text-[var(--cb-muted)]">
-                      {money.format(featuredProduct.basePrice)}
-                      {featuredProduct.tokenProgram ? ` · ${featuredProduct.tokenProgram.tokenSymbol} in .stash` : ""}
-                    </div>
-                    <div className="mt-2 text-sm text-[var(--cb-muted)]">
-                      {featuredProduct.description}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Link to="/" className="cb-button">Open storefront</Link>
-                  <Link to={previewHref} className="cb-button-secondary">Open checkout</Link>
-                  {featuredProduct.tokenProgram && (
-                    <Link to={`/stash?product=${featuredProduct._id}`} className="cb-button-secondary">
-                      Open .stash
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-[var(--cb-muted)]">
-                No live products found yet. Publish at least one product to preview the public flow.
-              </p>
-            )}
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">POD Checklist</h2>
+            <div className="space-y-2 text-sm text-[var(--cb-muted)]">
+              <p>Export production artwork for `CST-001`, `CST-002`, and `CST-003`.</p>
+              <p>Confirm sticker material, cut line, bleed, finish, and backing requirements.</p>
+              <p>Create or map each SKU in the POD provider catalog at quantity 50.</p>
+              <p>Approve physical or digital proofs before production.</p>
+              <p>Set final unit price only after the provider quote and shipping rate are locked.</p>
+            </div>
           </section>
 
           <section className="cb-panel p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Launch Checklist</h2>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Preview</h2>
+            <p className="mb-4 text-sm text-[var(--cb-muted)]">
+              The live storefront route now renders the static `.cache` sticker bundle and the public
+              checkout is a POD request flow.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link to="/" className="cb-button">Open storefront</Link>
+              <Link to="/checkout" className="cb-button-secondary">Open POD request</Link>
+            </div>
+          </section>
+
+          <section className="cb-panel p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Pricing Gate</h2>
             <div className="space-y-2 text-sm text-[var(--cb-muted)]">
-              <p>Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Convex.</p>
-              <p>Register the Convex HTTP webhook route in Stripe at `/stripe/webhook`.</p>
-              <p>If `SITE_URL` or `APP_URL` is unset or still points at localhost, checkout now falls back to the buyer’s real browser origin automatically.</p>
-              <p>Confirm at least one live product is linked to a `.stash` program if token discounts are required.</p>
-              <p>Run one real Stripe Checkout payment and one refund recording pass in ops.</p>
+              <p>The current storefront intentionally shows `TBD` instead of `$0`.</p>
+              <p>Do not enable paid checkout until the proof, quote, margin, and shipping rules are final.</p>
+              <p>When price is decided, update the three sticker SKUs in `public/data.js` and the Convex product seed.</p>
             </div>
           </section>
         </div>

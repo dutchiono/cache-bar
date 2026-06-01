@@ -1,5 +1,7 @@
 # Teemill Integration Plan
 
+Current status: this document is legacy background for the old shirt/payment flow. The active run is the POD sticker setup in [docs/pod-sticker-run.md](docs/pod-sticker-run.md): three sticker SKUs, fifty units each, price TBD, and no public payment collection until proof and quote approval.
+
 This is the practical path for `.cache` to support both Teemill one-off custom shirts and catalog-backed dropship fulfillment without losing track of which checkout owns the order.
 
 ## Use the right Teemill API

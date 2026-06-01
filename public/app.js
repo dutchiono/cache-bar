@@ -280,7 +280,8 @@ function renderList(filter='all'){
                        : p.stock === 'digital' ? t('inv.instant')
                        : t('inv.soldOut');
       const stockCls = p.stock === 'ok' ? '' : p.stock === 'digital' ? 'digital' : p.stock;
-      const catLabel = p.cat === 'apparel' ? t('inv.apparel')
+      const catLabel = p.categoryLabel ? p.categoryLabel
+                     : p.cat === 'apparel' ? t('inv.apparel')
                      : p.cat === 'cap' ? t('inv.headwear')
                      : p.cat === 'obj' ? t('inv.objects')
                      : p.cat === 'digital' ? t('inv.digital')
@@ -376,6 +377,10 @@ function cartSubtotal(){
   }, 0);
 }
 
+function cartHasOpenPricing(){
+  return cart.some(l => /tbd/i.test(String(productLookup[l.sku]?.price || '')));
+}
+
 function persist(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(cart)); }catch{}
 }
@@ -414,7 +419,7 @@ function renderCart(){
       const unit = linePrice(p, line.variant);
       const lineTotal = unit * line.qty;
       const isFree = unit === 0;
-      const catLabel = p.cat === 'digital' ? t('inv.digital') : p.cat || '';
+      const catLabel = p.categoryLabel || (p.cat === 'digital' ? t('inv.digital') : p.cat || '');
       const vbits = [];
       if(line.variant){
         if(line.variant.format){ const f=(p.formats||[]).find(x=>x.id===line.variant.format); vbits.push(f?f.name:line.variant.format); }
@@ -442,7 +447,7 @@ function renderCart(){
       `;
     }).join('');
     cartFoot.style.display = 'flex';
-    cartSubtotalEl.textContent = '$' + cartSubtotal().toFixed(0);
+    cartSubtotalEl.textContent = cartHasOpenPricing() ? 'TBD' : '$' + cartSubtotal().toFixed(0);
   }
 
   // tag the nav badge bump
