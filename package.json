@@ -21,8 +21,9 @@
     "test:indexer": "bun test platform/indexer",
     "test:cachebar-capability": "bun test platform/capabilities/cachebar",
     "test:trading-machine-capability": "bun test platform/capabilities/trading-machine",
+    "test:foundry-demo": "bun test platform/foundry",
     "validate:capabilities": "bun run scripts/validateCapabilityRegistry.ts",
-    "check:platform": "bun run validate:capabilities && bun run test:provisioner && bun run test:fee-operator && bun run test:indexer && bun run test:cachebar-capability && bun run test:trading-machine-capability && bun run test:foundry && bun run compile:foundry",
+    "check:platform": "bun run validate:capabilities && bun run test:provisioner && bun run test:fee-operator && bun run test:indexer && bun run test:cachebar-capability && bun run test:trading-machine-capability && bun run test:foundry-demo && bun run test:foundry && bun run compile:foundry",
     "trading-machine:adapter": "bun run scripts/startTradingMachineAdapter.ts",
     "solana:sticker": "bun run scripts/solanaStickerDrop.ts"
   },

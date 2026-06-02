@@ -615,6 +615,42 @@ export default defineSchema({
     .index("by_agent_idempotency", ["agentId", "idempotencyKey"])
     .index("by_status", ["status"]),
 
+  // ---------- Foundry public architecture demo ----------
+  foundryDemoLaunches: defineTable({
+    publicId: v.string(),
+    idempotencyKey: v.string(),
+    requestFingerprint: v.string(),
+    slug: v.string(),
+    name: v.string(),
+    ticker: v.string(),
+    capabilities: v.array(v.string()),
+    status: v.union(v.literal("provisioning"), v.literal("online")),
+    market: v.string(),
+    installedLead: v.string(),
+    computeBuffer: v.string(),
+    runtimePath: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_public_id", ["publicId"])
+    .index("by_idempotency", ["idempotencyKey"])
+    .index("by_created_at", ["createdAt"]),
+
+  foundryDemoAuditEvents: defineTable({
+    launchId: v.id("foundryDemoLaunches"),
+    sequence: v.number(),
+    detail: v.string(),
+    at: v.number(),
+  }).index("by_launch_sequence", ["launchId", "sequence"]),
+
+  foundryDemoRateLimits: defineTable({
+    key: v.string(),
+    windowStartedAt: v.number(),
+    count: v.number(),
+  })
+    .index("by_key", ["key"])
+    .index("by_window_started_at", ["windowStartedAt"]),
+
   backendJobs: defineTable({
     kind: v.union(
       v.literal("payment_reconciliation"),

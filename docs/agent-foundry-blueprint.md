@@ -211,10 +211,16 @@ Telegram, WebChat, and OpenAI-compatible endpoints.
 
 ## Demo Boundary
 
-`https://foundry.bushleague.xyz/` is an interactive architecture demo. It intentionally simulates
-provisioning and uses representative network records. It does not deploy tokens, request wallet
-signatures, or claim that indexer-backed records already exist. The independent
+`https://foundry.bushleague.xyz/` is an interactive architecture demo. Its launch simulator now
+persists an idempotent demo record and ordered provisioning audit trail through Convex, then renders
+the durable simulation beside representative network fixtures. The API rate-limits writes by a
+hashed visitor fingerprint and removes demo records after seven days. It does not deploy tokens,
+request wallet signatures, or claim that indexer-backed records already exist. Verse stays visible
+but operator-gated in the public launch picker. The independent
 `https://cachebar.bushleague.xyz/` storefront remains the working `.cache` commerce proof of concept.
+
+The demo control-plane HTTP contract, fallback behavior, and production replacement path are
+documented in `docs/foundry-demo-control-plane.md`.
 
 ## Delivery Order
 

@@ -23,6 +23,8 @@ import type * as crons from "../crons.js";
 import type * as customers from "../customers.js";
 import type * as digitalAssets from "../digitalAssets.js";
 import type * as email from "../email.js";
+import type * as foundryDemo from "../foundryDemo.js";
+import type * as foundryDemoHttp from "../foundryDemoHttp.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
 import type * as lib_stripe from "../lib/stripe.js";
@@ -68,6 +70,8 @@ declare const fullApi: ApiFromModules<{
   customers: typeof customers;
   digitalAssets: typeof digitalAssets;
   email: typeof email;
+  foundryDemo: typeof foundryDemo;
+  foundryDemoHttp: typeof foundryDemoHttp;
   http: typeof http;
   inventory: typeof inventory;
   "lib/stripe": typeof lib_stripe;

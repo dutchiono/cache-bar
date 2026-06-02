@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { auth } from "./auth";
 import { catalog, health, proposals } from "./capabilityHttp";
 import { handleResendWebhook } from "./email";
+import { demoLaunch, network } from "./foundryDemoHttp";
 import { handle as stripeWebhook } from "./stripeWebhook";
 
 const http = httpRouter();
@@ -35,5 +36,25 @@ http.route({
   path: "/capabilities/cachebar/v1/proposals",
   method: "POST",
   handler: proposals,
+});
+http.route({
+  path: "/foundry/v1/network",
+  method: "GET",
+  handler: network,
+});
+http.route({
+  path: "/foundry/v1/demo/launch",
+  method: "GET",
+  handler: demoLaunch,
+});
+http.route({
+  path: "/foundry/v1/demo/launch",
+  method: "POST",
+  handler: demoLaunch,
+});
+http.route({
+  path: "/foundry/v1/demo/launch",
+  method: "OPTIONS",
+  handler: demoLaunch,
 });
 export default http;

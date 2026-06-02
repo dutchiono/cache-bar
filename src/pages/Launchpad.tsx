@@ -1,40 +1,50 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  FOUNDRY_DEMO_PROVISIONING_STEPS,
+  type FoundryDemoCapability,
+} from "../../platform/foundry/demoPolicy";
 import { capabilityRegistry, type CapabilityId } from "../foundry/capabilities";
+import {
+  createFoundryDemoLaunch,
+  readFoundryNetwork,
+  type FoundryDemoLaunch,
+  type FoundryNetworkAgent,
+} from "../foundry/demoApi";
 import "../launchpad.css";
 
-const provisioningSteps = [
-  "registering agent identity",
-  "assigning Base inference wallet",
-  "creating Solana capability wallet",
-  "attaching Milady / elizaOS runtime",
-  "installing capability manifests",
-  "arming x402 bootstrap inference",
-];
-
-const liveAgents = [
+const fallbackAgents: FoundryNetworkAgent[] = [
   {
+    publicId: "fixture-cache",
+    slug: "cache",
     name: ".cache",
-    symbol: "CACHE",
+    ticker: "CACHE",
     status: "selling",
-    pool: "CACHE / PLATFORM",
-    capability: "commerce",
-    budget: "$28.14",
+    market: "CACHE / PLATFORM",
+    installedLead: "commerce",
+    computeBuffer: "$28.14",
+    source: "fixture",
   },
   {
+    publicId: "fixture-trade",
+    slug: "trading-machine",
     name: "Trading Machine",
-    symbol: "TRADE",
+    ticker: "TRADE",
     status: "proposing",
-    pool: "TRADE / PLATFORM",
-    capability: "solana analysis",
-    budget: "$20 target",
+    market: "TRADE / PLATFORM",
+    installedLead: "solana analysis",
+    computeBuffer: "$20 target",
+    source: "fixture",
   },
   {
+    publicId: "fixture-miono",
+    slug: "miono",
     name: "Miono",
-    symbol: "MIONO",
+    ticker: "MIONO",
     status: "learning",
-    pool: "MIONO / PLATFORM",
-    capability: "runtime ops",
-    budget: "$20 target",
+    market: "MIONO / PLATFORM",
+    installedLead: "runtime ops",
+    computeBuffer: "$20 target",
+    source: "fixture",
   },
 ];
 
@@ -54,6 +64,30 @@ export default function Launchpad() {
   ]);
   const [launchState, setLaunchState] = useState<"idle" | "provisioning" | "ready">("idle");
   const [visibleSteps, setVisibleSteps] = useState(0);
+  const [launchSteps, setLaunchSteps] = useState<string[]>([...FOUNDRY_DEMO_PROVISIONING_STEPS]);
+  const [demoLaunch, setDemoLaunch] = useState<FoundryDemoLaunch>();
+  const [networkAgents, setNetworkAgents] = useState<FoundryNetworkAgent[]>(fallbackAgents);
+  const [controlPlane, setControlPlane] = useState<"syncing" | "connected" | "fallback">("syncing");
+  const [launchError, setLaunchError] = useState<string>();
+  const revealTimers = useRef<number[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    readFoundryNetwork()
+      .then(({ agents }) => {
+        if (!active) return;
+        setNetworkAgents(agents);
+        setControlPlane("connected");
+      })
+      .catch(() => {
+        if (!active) return;
+        setControlPlane("fallback");
+      });
+    return () => {
+      active = false;
+      clearRevealTimers();
+    };
+  }, []);
 
   function toggleModule(id: CapabilityId) {
     setSelectedModules((current) =>
@@ -61,26 +95,67 @@ export default function Launchpad() {
     );
   }
 
-  function runLaunchDemo() {
+  async function runLaunchDemo() {
     setLaunchState("provisioning");
     setVisibleSteps(0);
-    provisioningSteps.forEach((_, index) => {
-      window.setTimeout(() => {
-        setVisibleSteps(index + 1);
-        if (index === provisioningSteps.length - 1) {
-          setLaunchState("ready");
-        }
-      }, 360 * (index + 1));
-    });
+    setLaunchError(undefined);
+    setDemoLaunch(undefined);
+    const publicCapabilities = selectedModules.filter(
+      (id): id is FoundryDemoCapability => id !== "verse",
+    );
+    try {
+      const created = await createFoundryDemoLaunch({
+        name: normalizedName,
+        ticker: normalizedTicker,
+        capabilities: publicCapabilities,
+        idempotencyKey: `demo:${crypto.randomUUID()}`,
+      });
+      const serverSteps = created.auditEvents.map((event) => event.detail);
+      setLaunchSteps(serverSteps);
+      setDemoLaunch(created.launch);
+      setNetworkAgents((current) => [
+        created.launch,
+        ...current.filter((agent) => agent.publicId !== created.launch.publicId),
+      ]);
+      setControlPlane("connected");
+      revealSteps(serverSteps);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Foundry demo API unavailable.";
+      setLaunchError(`${message} Running a local fallback simulation.`);
+      setControlPlane("fallback");
+      const fallbackSteps = [...FOUNDRY_DEMO_PROVISIONING_STEPS];
+      setLaunchSteps(fallbackSteps);
+      revealSteps(fallbackSteps);
+    }
   }
 
   function resetDemo() {
+    clearRevealTimers();
     setLaunchState("idle");
     setVisibleSteps(0);
+    setDemoLaunch(undefined);
+    setLaunchError(undefined);
+    setLaunchSteps([...FOUNDRY_DEMO_PROVISIONING_STEPS]);
   }
 
   const normalizedTicker = ticker.trim().toUpperCase().slice(0, 8) || "AGENT";
   const normalizedName = agentName.trim() || "Untitled agent";
+  const selectedPublicModules = selectedModules.filter((id) => id !== "verse");
+
+  function clearRevealTimers() {
+    revealTimers.current.forEach((timer) => window.clearTimeout(timer));
+    revealTimers.current = [];
+  }
+
+  function revealSteps(steps: string[]) {
+    clearRevealTimers();
+    steps.forEach((_, index) => {
+      revealTimers.current.push(window.setTimeout(() => {
+        setVisibleSteps(index + 1);
+        if (index === steps.length - 1) setLaunchState("ready");
+      }, 360 * (index + 1)));
+    });
+  }
 
   return (
     <div className="lp-root">
@@ -171,8 +246,8 @@ export default function Launchpad() {
               <h2>one transaction.<br />one working agent.</h2>
             </div>
             <p>
-              This page simulates provisioning honestly. The contract deployment and managed-runtime
-              calls are the next implementation layer; the product contract is visible now.
+              This page persists simulated launches through the demo control plane and replays their
+              audit log. Contract deployment and managed-runtime calls remain the next implementation layer.
             </p>
           </div>
 
@@ -194,11 +269,13 @@ export default function Launchpad() {
               <div className="lp-module-picker">
                 {capabilityRegistry.map((module) => {
                   const selected = selectedModules.includes(module.id);
+                  const operatorOnly = module.defaultMode === "operator-only";
                   return (
                     <button
                       className={`lp-picker-row ${selected ? "is-selected" : ""}`}
+                      disabled={operatorOnly}
                       key={module.id}
-                      onClick={() => toggleModule(module.id)}
+                      onClick={() => !operatorOnly && toggleModule(module.id)}
                       type="button"
                     >
                       <span className="lp-check">{selected ? "x" : ""}</span>
@@ -206,7 +283,7 @@ export default function Launchpad() {
                         <strong>{module.display.name}</strong>
                         <small>{module.defaultMode}</small>
                       </span>
-                      <em>{module.display.status}</em>
+                      <em>{operatorOnly ? "operator gate" : module.display.status}</em>
                     </button>
                   );
                 })}
@@ -214,7 +291,7 @@ export default function Launchpad() {
 
               <button
                 className="lp-button lp-launch-button"
-                disabled={launchState === "provisioning"}
+                disabled={launchState === "provisioning" || selectedPublicModules.length === 0}
                 onClick={launchState === "ready" ? resetDemo : runLaunchDemo}
                 type="button"
               >
@@ -223,18 +300,22 @@ export default function Launchpad() {
                 {launchState === "ready" && "reset launch demo"}
               </button>
               <div className="lp-disclaimer">
-                Interactive architecture demo. No token is deployed and no wallet transaction is requested.
+                Durable simulation only. No token is deployed and no wallet transaction is requested.
               </div>
+              <div className={`lp-control-plane is-${controlPlane}`}>
+                control plane / {controlPlane}
+              </div>
+              {launchError && <div className="lp-control-plane-error">{launchError}</div>}
             </section>
 
             <section className="lp-panel lp-terminal-panel">
               <div className="lp-terminal-head">
                 <span>launch-orchestrator.log</span>
-                <span>{launchState}</span>
+                <span>{demoLaunch ? "durable simulation" : launchState}</span>
               </div>
               <div className="lp-terminal">
                 <div><i>$</i> launch-agent --name {normalizedName} --ticker {normalizedTicker}</div>
-                {provisioningSteps.map((step, index) => (
+                {launchSteps.map((step, index) => (
                   <div
                     className={index < visibleSteps ? "is-visible" : ""}
                     key={step}
@@ -244,7 +325,7 @@ export default function Launchpad() {
                 ))}
                 {launchState === "ready" && (
                   <div className="is-visible lp-terminal-ready">
-                    <i>up</i> {normalizedName} is alive at /agents/{normalizedTicker.toLowerCase()}
+                    <i>up</i> {normalizedName} is alive at {demoLaunch?.runtimePath ?? `/agents/${normalizedTicker.toLowerCase()}`}
                   </div>
                 )}
               </div>
@@ -264,7 +345,7 @@ export default function Launchpad() {
               <dl>
                 <div><dt>compute</dt><dd>{launchState === "ready" ? "x402 armed" : "pending"}</dd></div>
                 <div><dt>Base wallet</dt><dd>{launchState === "ready" ? "assigned" : "pending"}</dd></div>
-                <div><dt>modules</dt><dd>{selectedModules.length} selected</dd></div>
+                <div><dt>modules</dt><dd>{selectedPublicModules.length} selected</dd></div>
               </dl>
             </section>
           </div>
@@ -344,21 +425,21 @@ export default function Launchpad() {
               <h2>agents already<br />have jobs.</h2>
             </div>
             <p>
-              Representative demo records show the intended public status surface. Indexer-backed
-              records replace these fixtures once the contracts are deployed.
+              Convex-backed durable simulations appear beside representative fixtures. Contract-indexed
+              records replace both once the Base adapter is deployed.
             </p>
           </div>
           <div className="lp-agent-table">
             <div className="lp-table-row lp-table-head">
               <span>Agent</span><span>Market</span><span>Installed lead</span><span>Status</span><span>Compute buffer</span>
             </div>
-            {liveAgents.map((agent) => (
-              <div className="lp-table-row" key={agent.symbol}>
-                <span><strong>{agent.name}</strong><small>${agent.symbol}</small></span>
-                <span>{agent.pool}</span>
-                <span>{agent.capability}</span>
+            {networkAgents.map((agent) => (
+              <div className="lp-table-row" key={agent.publicId}>
+                <span><strong>{agent.name}</strong><small>${agent.ticker} / {agent.source}</small></span>
+                <span>{agent.market}</span>
+                <span>{agent.installedLead}</span>
                 <span><i className="lp-live-dot" />{agent.status}</span>
-                <span>{agent.budget}</span>
+                <span>{agent.computeBuffer}</span>
               </div>
             ))}
           </div>

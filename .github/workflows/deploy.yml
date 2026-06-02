@@ -136,6 +136,8 @@ jobs:
         run: bun run build
 
       - name: Build Foundry site
+        env:
+          VITE_FOUNDRY_API_URL: ${{ secrets.VITE_FOUNDRY_API_URL }}
         run: bun run build:foundry
 
       - name: Ensure deploy directory exists
