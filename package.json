@@ -16,6 +16,7 @@
     "compile:foundry": "bunx solcjs --bin --abi --include-path node_modules --base-path . -o artifacts/foundry contracts/foundry/AgentToken.sol contracts/foundry/AgentRegistry.sol contracts/foundry/AgentFeeProcessor.sol contracts/foundry/AgentLaunchFactory.sol",
     "test:foundry": "forge test",
     "test:provisioner": "bun test platform/provisioner",
+    "test:fee-operator": "bun test platform/fee-operator",
     "validate:capabilities": "bun run scripts/validateCapabilityRegistry.ts",
     "solana:sticker": "bun run scripts/solanaStickerDrop.ts"
   },

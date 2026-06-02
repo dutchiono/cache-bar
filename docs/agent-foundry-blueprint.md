@@ -94,6 +94,14 @@ Solana capability wallet, ensures the managed runtime, installs the constrained 
 and arms bootstrap inference. Its current dependencies are interfaces with in-memory test doubles;
 Eliza Cloud, Steward, and x402 clients replace those doubles without changing the state machine.
 
+### Implemented Inference Treasury Boundary
+
+The wallet-bound treasury operator prototype lives under `platform/fee-operator/`. It journals each
+reconciliation cycle, converts routed `PLATFORM` revenue into USDC, preserves the configured x402
+bootstrap buffer, converts only surplus USDC into VVV, and stakes available VVV. All execution calls
+carry deterministic idempotency keys so retries do not repeat completed swaps or stakes. Its
+portfolio reader and Steward-backed execution client remain interfaces until testnet wiring.
+
 ## Launch State Machine
 
 ```text
