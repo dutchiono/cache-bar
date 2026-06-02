@@ -18,6 +18,8 @@ const policy = {
   minimumSettlementConversion: 1_000n,
   minimumUsdcStakeConversion: 1_000_000n,
   minimumVvvStake: 1_000n,
+  maximumUsdcStakeConversionPerCycle: 7_000_000n,
+  vvvStakeTarget: 5_000n,
 };
 
 function createHarness(
@@ -67,8 +69,8 @@ function createHarness(
 describe("InferenceTreasuryOperator", () => {
   test("converts settlement revenue but preserves the x402 bootstrap buffer", async () => {
     const { operator, calls } = createHarness([
-      { settlementAmount: 10_000n, usdcAmount: 0n, unstakedVvvAmount: 0n },
-      { settlementAmount: 0n, usdcAmount: 4_000_000n, unstakedVvvAmount: 0n },
+      { settlementAmount: 10_000n, usdcAmount: 0n, unstakedVvvAmount: 0n, stakedVvvAmount: 0n },
+      { settlementAmount: 0n, usdcAmount: 4_000_000n, unstakedVvvAmount: 0n, stakedVvvAmount: 0n },
     ]);
 
     const journal = await operator.reconcile(cycle);
@@ -83,8 +85,8 @@ describe("InferenceTreasuryOperator", () => {
 
   test("stakes only the USDC surplus above the x402 buffer", async () => {
     const { operator, calls } = createHarness([
-      { settlementAmount: 0n, usdcAmount: 12_000_000n, unstakedVvvAmount: 0n },
-      { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 3_500n },
+      { settlementAmount: 0n, usdcAmount: 12_000_000n, unstakedVvvAmount: 0n, stakedVvvAmount: 0n },
+      { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 3_500n, stakedVvvAmount: 0n },
     ]);
 
     const journal = await operator.reconcile(cycle);
@@ -103,9 +105,9 @@ describe("InferenceTreasuryOperator", () => {
 
   test("does not execute a completed cycle twice", async () => {
     const { operator, calls } = createHarness([
-      { settlementAmount: 0n, usdcAmount: 12_000_000n, unstakedVvvAmount: 0n },
-      { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 3_500n },
-      { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 0n },
+      { settlementAmount: 0n, usdcAmount: 12_000_000n, unstakedVvvAmount: 0n, stakedVvvAmount: 0n },
+      { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 3_500n, stakedVvvAmount: 0n },
+      { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 0n, stakedVvvAmount: 3_500n },
     ]);
 
     await operator.reconcile(cycle);
@@ -118,9 +120,9 @@ describe("InferenceTreasuryOperator", () => {
   test("retries staking without repeating the completed USDC swap", async () => {
     const { operator, calls } = createHarness(
       [
-        { settlementAmount: 0n, usdcAmount: 12_000_000n, unstakedVvvAmount: 0n },
-        { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 3_500n },
-        { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 3_500n },
+        { settlementAmount: 0n, usdcAmount: 12_000_000n, unstakedVvvAmount: 0n, stakedVvvAmount: 0n },
+        { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 3_500n, stakedVvvAmount: 0n },
+        { settlementAmount: 0n, usdcAmount: 5_000_000n, unstakedVvvAmount: 3_500n, stakedVvvAmount: 0n },
       ],
       { failStakeOnce: true },
     );
@@ -131,5 +133,16 @@ describe("InferenceTreasuryOperator", () => {
     expect(journal.vvvStaked).toBe(3_500n);
     expect(calls.usdcToVvv).toHaveLength(1);
     expect(calls.stakeVvv).toHaveLength(2);
+  });
+
+  test("does not compound VVV after the configured compute stake target is met", async () => {
+    const { operator, calls } = createHarness([
+      { settlementAmount: 0n, usdcAmount: 12_000_000n, unstakedVvvAmount: 0n, stakedVvvAmount: 5_000n },
+    ]);
+
+    await operator.reconcile(cycle);
+
+    expect(calls.usdcToVvv).toEqual([]);
+    expect(calls.stakeVvv).toEqual([]);
   });
 });

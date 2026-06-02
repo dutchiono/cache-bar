@@ -373,7 +373,6 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
         <nav className="sf-nav-links">
           <a href="#shop">Shop</a>
           <a href="/drop-001-live.html">Drop 001 Demo</a>
-          <Link to="/launchpad">Agent Foundry</Link>
           <Link to="/stash">.stash</Link>
           <a href="#launch">Start a drop</a>
         </nav>

@@ -7,7 +7,6 @@
 - `/` — public storefront
 - `/checkout` — buyer identity and Stripe handoff
 - `/stash` — token burn redemption for one-time Stripe discount codes
-- `/launchpad` — interactive agent-foundry architecture demo
 - `/app` — staff ops
 - `/app/agent` — .cache concierge status and ops chat
 
@@ -39,5 +38,19 @@ Teemill hybrid mode notes live in [docs/teemill-integration-plan.md](docs/teemil
 Sticker proof NFT notes live in [docs/sticker-drop-nft.md](docs/sticker-drop-nft.md).
 Solana DTOUR sticker flow notes live in [docs/solana-sticker-drop.md](docs/solana-sticker-drop.md).
 The agent launchpad architecture and build sequence live in [docs/agent-foundry-blueprint.md](docs/agent-foundry-blueprint.md).
+The separate Foundry launch-network demo deploys to [foundry.bushleague.xyz](https://foundry.bushleague.xyz).
 Partner-agent promo notes live in [docs/partner-agent-promo-playbook.md](docs/partner-agent-promo-playbook.md).
 The local partner-agent skill lives in [skills/partner-agent-shop/SKILL.md](skills/partner-agent-shop/SKILL.md).
+
+## Agent capability API
+
+The first `.cache` capability adapter is exposed from the Convex site URL:
+
+- `GET /capabilities/cachebar/v1/health`
+- `GET /capabilities/cachebar/v1/catalog`
+- `POST /capabilities/cachebar/v1/proposals`
+- `GET /capabilities/cachebar/v1/proposals?id=...`
+
+Catalog and proposal routes require `X-Cache-Agent-Id`, `Authorization: Bearer ...`, and, for
+proposal creation, `Idempotency-Key`. Configure the per-agent credentials as a JSON object in the
+Convex `CACHEBAR_CAPABILITY_API_TOKENS` environment variable and the matching GitHub Actions secret.

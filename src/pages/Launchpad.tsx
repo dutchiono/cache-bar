@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { capabilityRegistry, type CapabilityId } from "../foundry/capabilities";
 import "../launchpad.css";
 
@@ -22,28 +21,28 @@ const liveAgents = [
     budget: "$28.14",
   },
   {
+    name: "Trading Machine",
+    symbol: "TRADE",
+    status: "proposing",
+    pool: "TRADE / PLATFORM",
+    capability: "solana analysis",
+    budget: "$20 target",
+  },
+  {
     name: "Miono",
     symbol: "MIONO",
     status: "learning",
     pool: "MIONO / PLATFORM",
     capability: "runtime ops",
-    budget: "$11.92",
-  },
-  {
-    name: "DTOUR",
-    symbol: "DTOUR",
-    status: "promoting",
-    pool: "DTOUR / PLATFORM",
-    capability: "solana promo",
-    budget: "$7.31",
+    budget: "$20 target",
   },
 ];
 
 const feeRows = [
-  ["60%", "agent compute", "VVV staking + x402 overflow"],
-  ["20%", "cold-start reserve", "new agents answer immediately"],
+  ["10%", "compute reserve", "bounded x402 + VVV operating target"],
+  ["10%", "cold-start reserve", "new agents answer immediately"],
   ["10%", "protocol ops", "keepers, audits, incident reserve"],
-  ["10%", "creator", "revenue share"],
+  ["70%", "owner", "launch owner revenue share"],
 ];
 
 export default function Launchpad() {
@@ -86,16 +85,16 @@ export default function Launchpad() {
   return (
     <div className="lp-root">
       <header className="lp-nav">
-        <Link className="lp-brand" to="/launchpad">
-          <span className="lp-brand-mark">.cache</span>
+        <a className="lp-brand" href="/">
+          <span className="lp-brand-mark">foundry</span>
           <span className="lp-brand-divider">/</span>
-          <span>agent foundry</span>
-        </Link>
+          <span>agent launch network</span>
+        </a>
         <nav className="lp-nav-links" aria-label="Launchpad sections">
           <a href="#network">Network</a>
           <a href="#launch">Launch</a>
           <a href="#capabilities">Capabilities</a>
-          <Link to="/">Commerce demo</Link>
+          <a href="https://cachebar.bushleague.xyz/">.cache commerce</a>
         </nav>
         <a className="lp-nav-action" href="#launch">
           launch an agent
@@ -329,9 +328,9 @@ export default function Launchpad() {
                   <strong>{module.defaultMode}</strong>
                 </div>
                 {module.id === "cachebar-commerce" && (
-                  <Link className="lp-inline-link" to="/">
+                  <a className="lp-inline-link" href="https://cachebar.bushleague.xyz/">
                     open the live commerce demo →
-                  </Link>
+                  </a>
                 )}
               </article>
             ))}
@@ -367,9 +366,9 @@ export default function Launchpad() {
       </main>
 
       <footer className="lp-footer">
-        <span>.cache / agent foundry</span>
+        <span>foundry / agent launch network</span>
         <span>interactive platform architecture demo</span>
-        <Link to="/">commerce demo →</Link>
+        <a href="https://cachebar.bushleague.xyz/">.cache commerce →</a>
       </footer>
     </div>
   );

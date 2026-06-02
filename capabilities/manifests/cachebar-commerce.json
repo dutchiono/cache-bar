@@ -23,8 +23,8 @@
     "orders:read",
     "fulfillment:propose"
   ],
-  "secretRequirements": ["CACHE_ELIZA_BASE_URL", "CACHE_ELIZA_API_KEY"],
+  "secretRequirements": ["CACHEBAR_CAPABILITY_API_TOKENS"],
   "walletPolicy": "No signing authority. Commerce mutations remain Convex-owned and operator-approved.",
-  "healthCheck": "/",
+  "healthCheck": "/capabilities/cachebar/v1/health",
   "auditStatus": "prototype"
 }

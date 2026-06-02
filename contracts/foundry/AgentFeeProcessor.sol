@@ -90,12 +90,12 @@ contract AgentFeeProcessor {
         uint256 totalAmount = settlementToken.balanceOf(address(this));
         if (totalAmount == 0) revert NoFeesAvailable();
 
+        uint256 agentInferenceAmount = totalAmount * agentInferenceBps / BPS_DENOMINATOR;
         uint256 coldStartReserveAmount = totalAmount * coldStartReserveBps / BPS_DENOMINATOR;
         uint256 protocolOperationsAmount = totalAmount * protocolOperationsBps / BPS_DENOMINATOR;
-        uint256 creatorAmount = totalAmount * creatorBps / BPS_DENOMINATOR;
-        // Assign rounding dust to the agent that generated the revenue.
-        uint256 agentInferenceAmount =
-            totalAmount - coldStartReserveAmount - protocolOperationsAmount - creatorAmount;
+        // The creator is the launch owner. Assign rounding dust to the owner, not compute.
+        uint256 creatorAmount =
+            totalAmount - agentInferenceAmount - coldStartReserveAmount - protocolOperationsAmount;
 
         settlementToken.safeTransfer(inferenceWallet, agentInferenceAmount);
         settlementToken.safeTransfer(coldStartReserve, coldStartReserveAmount);

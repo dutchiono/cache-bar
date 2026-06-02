@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
   "id": "trading-machine",
-  "version": "0.1.0-local",
+  "version": "0.2.0-local",
   "display": {
     "name": "trading machine",
     "eyebrow": "solana engine",
-    "description": "Pool intelligence, Jupiter swaps, sequencer and swing runners, Telegram signals, and wallet investigation.",
-    "status": "adapter required",
+    "description": "Sanitized Solana pool intelligence, swing analysis, strategy simulation, and durable trade proposals behind a loopback-only adapter.",
+    "status": "watch / propose ready",
     "tone": "guarded"
   },
   "source": {
     "kind": "local-prototype",
     "repository": "local://trading-machine",
-    "ref": "unversioned-prototype"
+    "ref": "watch-simulate-propose-adapter"
   },
   "chains": ["solana"],
   "defaultMode": "watch-only",
@@ -20,10 +20,11 @@
     "solana:pools:read",
     "solana:wallets:read",
     "solana:signals:read",
-    "solana:strategies:simulate"
+    "solana:strategies:simulate",
+    "solana:trades:propose"
   ],
-  "secretRequirements": ["HELIUS_API_KEY"],
-  "walletPolicy": "Launches receive read-only and simulation scopes. Signing requires a separate capped-execution grant.",
-  "healthCheck": "/api/state",
+  "secretRequirements": ["TRADING_MACHINE_ADAPTER_AGENTS", "TRADING_MACHINE_UPSTREAM_URL"],
+  "walletPolicy": "Launches receive sanitized read, simulation, and proposal scopes only. The adapter has no execution endpoint and the upstream vault remains loopback-only.",
+  "healthCheck": "/health",
   "auditStatus": "prototype"
 }

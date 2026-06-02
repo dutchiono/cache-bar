@@ -599,6 +599,22 @@ export default defineSchema({
     metadata: v.optional(v.any()),
   }).index("by_session", ["sessionId"]),
 
+  capabilityProposals: defineTable({
+    capabilityId: v.string(),
+    agentId: v.string(),
+    idempotencyKey: v.string(),
+    requestFingerprint: v.string(),
+    action: v.union(v.literal("product-draft"), v.literal("fulfillment-support")),
+    payload: v.any(),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("rejected")),
+    requestedAt: v.number(),
+    reviewedByUserId: v.optional(v.id("users")),
+    reviewedAt: v.optional(v.number()),
+    reviewNotes: v.optional(v.string()),
+  })
+    .index("by_agent_idempotency", ["agentId", "idempotencyKey"])
+    .index("by_status", ["status"]),
+
   backendJobs: defineTable({
     kind: v.union(
       v.literal("payment_reconciliation"),

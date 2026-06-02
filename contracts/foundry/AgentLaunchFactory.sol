@@ -97,10 +97,10 @@ contract AgentLaunchFactory is Ownable {
         protocolOperations = protocolOperations_;
         registry = new AgentRegistry(address(this));
         _setFeePolicy(FeePolicy({
-            agentInferenceBps: 6_000,
-            coldStartReserveBps: 2_000,
+            agentInferenceBps: 1_000,
+            coldStartReserveBps: 1_000,
             protocolOperationsBps: 1_000,
-            creatorBps: 1_000
+            creatorBps: 7_000
         }));
     }
 

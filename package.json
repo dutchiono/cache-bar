@@ -10,6 +10,7 @@
     "selfhost:down": "docker compose -f self-hosted/convex/docker-compose.yml --env-file self-hosted/convex/.env.example down",
     "selfhost:key": "docker compose -f self-hosted/convex/docker-compose.yml --env-file self-hosted/convex/.env.example exec backend ./generate_admin_key.sh",
     "build": "tsc -b && vite build",
+    "build:foundry": "tsc -b && vite build --config vite.foundry.config.ts",
     "lint": "eslint .",
     "preview": "vite preview",
     "compile:contracts": "bunx solcjs --bin --abi --include-path node_modules --base-path . -o artifacts/contracts contracts/StickerClaim50.sol",
@@ -18,8 +19,11 @@
     "test:provisioner": "bun test platform/provisioner",
     "test:fee-operator": "bun test platform/fee-operator",
     "test:indexer": "bun test platform/indexer",
+    "test:cachebar-capability": "bun test platform/capabilities/cachebar",
+    "test:trading-machine-capability": "bun test platform/capabilities/trading-machine",
     "validate:capabilities": "bun run scripts/validateCapabilityRegistry.ts",
-    "check:platform": "bun run validate:capabilities && bun run test:provisioner && bun run test:fee-operator && bun run test:indexer && bun run test:foundry && bun run compile:foundry",
+    "check:platform": "bun run validate:capabilities && bun run test:provisioner && bun run test:fee-operator && bun run test:indexer && bun run test:cachebar-capability && bun run test:trading-machine-capability && bun run test:foundry && bun run compile:foundry",
+    "trading-machine:adapter": "bun run scripts/startTradingMachineAdapter.ts",
     "solana:sticker": "bun run scripts/solanaStickerDrop.ts"
   },
   "dependencies": {

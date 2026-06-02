@@ -2,6 +2,7 @@ export type TreasuryPortfolio = {
   settlementAmount: bigint;
   usdcAmount: bigint;
   unstakedVvvAmount: bigint;
+  stakedVvvAmount: bigint;
 };
 
 export type TreasuryCycle = {
@@ -22,6 +23,8 @@ export type TreasuryPolicy = {
   minimumSettlementConversion: bigint;
   minimumUsdcStakeConversion: bigint;
   minimumVvvStake: bigint;
+  maximumUsdcStakeConversionPerCycle: bigint;
+  vvvStakeTarget: bigint;
 };
 
 export interface TreasuryJournalStore {
@@ -82,10 +85,14 @@ export class InferenceTreasuryOperator {
       portfolio = await this.dependencies.portfolios.read(cycle.inferenceWallet);
     }
 
-    const stakeableUsdc = max(
-      0n,
-      portfolio.usdcAmount - this.dependencies.policy.x402UsdcBufferTarget,
-    );
+    const vvvStakeRoom = max(0n, this.dependencies.policy.vvvStakeTarget - portfolio.stakedVvvAmount);
+    const stakeableUsdc =
+      vvvStakeRoom > 0n
+        ? min(
+            max(0n, portfolio.usdcAmount - this.dependencies.policy.x402UsdcBufferTarget),
+            this.dependencies.policy.maximumUsdcStakeConversionPerCycle,
+          )
+        : 0n;
     if (
       !journal.completedSteps.includes("usdc-converted-to-vvv") &&
       stakeableUsdc >= this.dependencies.policy.minimumUsdcStakeConversion
@@ -104,7 +111,15 @@ export class InferenceTreasuryOperator {
       !journal.completedSteps.includes("vvv-staked") &&
       portfolio.unstakedVvvAmount >= this.dependencies.policy.minimumVvvStake
     ) {
-      const amount = portfolio.unstakedVvvAmount;
+      const amount = min(
+        portfolio.unstakedVvvAmount,
+        max(0n, this.dependencies.policy.vvvStakeTarget - portfolio.stakedVvvAmount),
+      );
+      if (amount === 0n) {
+        await this.completeStep(journal, "vvv-staked");
+        await this.completeStep(journal, "reconciled");
+        return journal;
+      }
       await this.dependencies.execution.ensureVvvStaked({
         inferenceWallet: cycle.inferenceWallet,
         amount,
@@ -157,4 +172,8 @@ export class InMemoryTreasuryJournalStore implements TreasuryJournalStore {
 
 function max(left: bigint, right: bigint) {
   return left > right ? left : right;
+}
+
+function min(left: bigint, right: bigint) {
+  return left < right ? left : right;
 }

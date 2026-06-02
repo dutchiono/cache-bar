@@ -1,5 +1,6 @@
 import { httpRouter } from "convex/server";
 import { auth } from "./auth";
+import { catalog, health, proposals } from "./capabilityHttp";
 import { handleResendWebhook } from "./email";
 import { handle as stripeWebhook } from "./stripeWebhook";
 
@@ -14,5 +15,25 @@ http.route({
   path: "/resend-webhook",
   method: "POST",
   handler: handleResendWebhook,
+});
+http.route({
+  path: "/capabilities/cachebar/v1/health",
+  method: "GET",
+  handler: health,
+});
+http.route({
+  path: "/capabilities/cachebar/v1/catalog",
+  method: "GET",
+  handler: catalog,
+});
+http.route({
+  path: "/capabilities/cachebar/v1/proposals",
+  method: "GET",
+  handler: proposals,
+});
+http.route({
+  path: "/capabilities/cachebar/v1/proposals",
+  method: "POST",
+  handler: proposals,
 });
 export default http;

@@ -27,16 +27,19 @@ The first deployment target is Base.
 - Recurring inference: acquire and stake VVV, then use wallet-derived Venice DIEM allocation.
 - Overflow inference: return to x402 when DIEM allocation is exhausted.
 
-The initial protocol-captured child-fee allocation is:
+Agent computer is a bounded operating cost, not the product's primary revenue sink. The initial
+protocol-captured child-fee allocation is:
 
 | Allocation | Share | Purpose |
 | --- | ---: | --- |
-| Agent inference wallet | 60% | VVV staking and x402 overflow |
-| Shared cold-start reserve | 20% | Immediately responsive new launches |
+| Agent inference wallet | 10% | Maintain the configured x402 and VVV compute target |
+| Shared cold-start reserve | 10% | Immediately responsive new launches |
 | Protocol operations | 10% | Keepers, audits, and incident reserve |
-| Creator | 10% | Creator revenue share |
+| Launch owner | 70% | Owner revenue share |
 
-These values remain configurable during testnet. Production changes require a timelock.
+The fee operator stops converting surplus USDC into VVV once the configured compute stake target is
+met. Excess remains available for owner-directed distribution. These values remain configurable
+during testnet. Production changes require a timelock.
 
 ## Contracts
 
@@ -63,7 +66,7 @@ The first executable prototype lives under `contracts/foundry/`:
 - `AgentToken.sol` is the cloneable fixed-supply child token;
 - `AgentRegistry.sol` stores launch identity, inference wallet, market attachment, and runtime state;
 - `AgentFeeProcessor.sol` is cloned per agent and routes collected `PLATFORM` fees under the
-  snapshotted launch-time 60/20/10/10 policy. Rounding dust returns to the agent inference wallet;
+  snapshotted launch-time 10/10/10/70 policy. Rounding dust returns to the launch owner;
 - `AgentLaunchFactory.sol` deploys a child token, registers the identity, records the initial fee
   policy, creates a market through an audited adapter when configured, and emits runtime
   provisioning requests.
@@ -100,7 +103,9 @@ The wallet-bound treasury operator prototype lives under `platform/fee-operator/
 reconciliation cycle, converts routed `PLATFORM` revenue into USDC, preserves the configured x402
 bootstrap buffer, converts only surplus USDC into VVV, and stakes available VVV. All execution calls
 carry deterministic idempotency keys so retries do not repeat completed swaps or stakes. Its
-portfolio reader and Steward-backed execution client remain interfaces until testnet wiring.
+portfolio reader and Steward-backed execution client remain interfaces until testnet wiring. Its
+configured x402 buffer, per-cycle conversion cap, and VVV stake target keep compute funding bounded
+instead of compounding indefinitely.
 
 ### Implemented Indexer Boundary
 
@@ -163,9 +168,29 @@ Enable by default. The existing Convex service owns products, inventory, checkou
 fulfillment, royalties, and durable workflows. The agent may propose and explain. It may not
 publish products, move treasury funds, issue refunds, burn user assets, or sign transactions.
 
+The first adapter ingress is implemented as a Convex HTTP capability API:
+
+- `GET /capabilities/cachebar/v1/health` is public and reports adapter readiness;
+- `GET /capabilities/cachebar/v1/catalog` returns the live public catalog to authenticated agents;
+- `POST /capabilities/cachebar/v1/proposals` accepts narrow, idempotent `product-draft` and
+  `fulfillment-support` proposals from per-agent bearer credentials;
+- `GET /capabilities/cachebar/v1/proposals?id=...` lets the proposing agent inspect review state.
+
+Credentials live in the Convex `CACHEBAR_CAPABILITY_API_TOKENS` environment variable as an
+agent-id-to-token JSON object. Agents never receive a staff session. Operator review can accept or
+reject a proposal, but acceptance deliberately does not execute a publish, refund, treasury, or
+wallet-signing action.
+
 ### Trading Machine
 
-Install in watch-only mode. Expose simulation, proposal, and capped execution only after:
+Install in watch-only mode. The first runnable adapter lives under
+`platform/capabilities/trading-machine/` and starts with `bun run trading-machine:adapter`. It
+binds to `127.0.0.1:7401`, keeps the existing Trading Machine service on loopback, sanitizes pool
+records so wallet identities never leave the vault process, scopes pools per launched agent, and
+exposes authenticated watch, simulation, and idempotent durable proposal routes. It intentionally
+has no execution endpoint.
+
+Expose capped execution only after:
 
 - README and source behavior are reconciled;
 - the local vault assumption is replaced with managed wallet policy;
@@ -186,10 +211,10 @@ Telegram, WebChat, and OpenAI-compatible endpoints.
 
 ## Demo Boundary
 
-`/launchpad` is an interactive architecture demo. It intentionally simulates provisioning and uses
-representative network records. It does not deploy tokens, request wallet signatures, or claim that
-indexer-backed records already exist. The existing `/` storefront remains the working `.cache`
-commerce proof of concept.
+`https://foundry.bushleague.xyz/` is an interactive architecture demo. It intentionally simulates
+provisioning and uses representative network records. It does not deploy tokens, request wallet
+signatures, or claim that indexer-backed records already exist. The independent
+`https://cachebar.bushleague.xyz/` storefront remains the working `.cache` commerce proof of concept.
 
 ## Delivery Order
 

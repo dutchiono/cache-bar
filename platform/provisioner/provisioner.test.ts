@@ -70,7 +70,7 @@ describe("AgentProvisioner", () => {
     expect(record.bootstrapInferenceArmed).toBe(true);
     expect(record.installedCapabilities).toEqual([
       { id: "cachebar-commerce", mode: "enabled", version: "0.1.0" },
-      { id: "trading-machine", mode: "watch-only", version: "0.1.0-local" },
+      { id: "trading-machine", mode: "watch-only", version: "0.2.0-local" },
       { id: "verse", mode: "operator-only", version: "0.1.0" },
     ]);
   });

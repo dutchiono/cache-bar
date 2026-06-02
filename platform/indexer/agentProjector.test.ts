@@ -32,10 +32,10 @@ const fees: FeesRouted = {
   eventId: "8453:0xbbb:0",
   agentId: "1",
   totalAmount: 100n,
-  agentInferenceAmount: 60n,
-  coldStartReserveAmount: 20n,
+  agentInferenceAmount: 10n,
+  coldStartReserveAmount: 10n,
   protocolOperationsAmount: 10n,
-  creatorAmount: 10n,
+  creatorAmount: 70n,
 };
 
 describe("AgentEventProjector", () => {
@@ -58,10 +58,10 @@ describe("AgentEventProjector", () => {
       runtimeStatus: "online",
       routedFees: {
         totalAmount: 100n,
-        agentInferenceAmount: 60n,
-        coldStartReserveAmount: 20n,
+        agentInferenceAmount: 10n,
+        coldStartReserveAmount: 10n,
         protocolOperationsAmount: 10n,
-        creatorAmount: 10n,
+        creatorAmount: 70n,
       },
     });
   });
@@ -83,7 +83,7 @@ describe("AgentEventProjector", () => {
     const agent = await projector.project(launch);
 
     expect(agent?.market).toBe(market.market);
-    expect(agent?.routedFees.agentInferenceAmount).toBe(60n);
+    expect(agent?.routedFees.agentInferenceAmount).toBe(10n);
   });
 
   test("rejects conflicting launch identity for an existing agent id", async () => {

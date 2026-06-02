@@ -59,6 +59,7 @@ jobs:
           TEEMILL_PROJECT_NAME: ${{ secrets.TEEMILL_PROJECT_NAME }}
           TEEMILL_PRIVATE_API_KEY: ${{ secrets.TEEMILL_PRIVATE_API_KEY }}
           TEEMILL_PUBLIC_SAFE_KEY: ${{ secrets.TEEMILL_PUBLIC_SAFE_KEY }}
+          CACHEBAR_CAPABILITY_API_TOKENS: ${{ secrets.CACHEBAR_CAPABILITY_API_TOKENS }}
         run: |
           set -e
           if [ -n "$STRIPE_SECRET_KEY" ]; then
@@ -115,6 +116,9 @@ jobs:
           if [ -n "$TEEMILL_PUBLIC_SAFE_KEY" ]; then
             bunx convex env set --prod TEEMILL_PUBLIC_SAFE_KEY "$TEEMILL_PUBLIC_SAFE_KEY"
           fi
+          if [ -n "$CACHEBAR_CAPABILITY_API_TOKENS" ]; then
+            bunx convex env set --prod CACHEBAR_CAPABILITY_API_TOKENS "$CACHEBAR_CAPABILITY_API_TOKENS"
+          fi
 
       - name: Seed storefront data
         env:
@@ -131,6 +135,9 @@ jobs:
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
         run: bun run build
 
+      - name: Build Foundry site
+        run: bun run build:foundry
+
       - name: Ensure deploy directory exists
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -141,6 +148,16 @@ jobs:
             set -e
             mkdir -p "${{ secrets.DEPLOY_PATH }}/dist"
 
+      - name: Ensure Foundry deploy directory exists
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.FOUNDRY_DEPLOY_USER }}
+          key: ${{ secrets.FOUNDRY_DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            mkdir -p "${{ secrets.FOUNDRY_DEPLOY_PATH }}/dist"
+
       - name: Upload dist
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -149,5 +166,16 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "dist/*"
           target: "${{ secrets.DEPLOY_PATH }}/dist"
+          strip_components: 1
+          rm: true
+
+      - name: Upload Foundry dist
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.FOUNDRY_DEPLOY_USER }}
+          key: ${{ secrets.FOUNDRY_DEPLOY_SSH_KEY }}
+          source: "dist-foundry/*"
+          target: "${{ secrets.FOUNDRY_DEPLOY_PATH }}/dist"
           strip_components: 1
           rm: true

@@ -88,10 +88,10 @@ contract AgentLaunchFactoryTest {
             uint16 creatorBps
         ) = factory.feePolicy();
 
-        assertEq(agentInferenceBps, 6_000, "agent inference bps");
-        assertEq(coldStartReserveBps, 2_000, "cold-start reserve bps");
+        assertEq(agentInferenceBps, 1_000, "agent inference bps");
+        assertEq(coldStartReserveBps, 1_000, "cold-start reserve bps");
         assertEq(protocolOperationsBps, 1_000, "protocol operations bps");
-        assertEq(creatorBps, 1_000, "creator bps");
+        assertEq(creatorBps, 7_000, "owner bps");
     }
 
     function testLaunchRegistersTokenAndQueuesMarketWhenAdapterIsMissing() public {
@@ -167,10 +167,10 @@ contract AgentLaunchFactoryTest {
         feeProcessor.routeFees();
 
         assertEq(feeProcessor.agentId(), agentId, "processor agent id");
-        assertEq(platformToken.balanceOf(INFERENCE_WALLET), 61, "inference plus rounding dust");
-        assertEq(platformToken.balanceOf(COLD_START_RESERVE), 20, "cold-start reserve");
+        assertEq(platformToken.balanceOf(INFERENCE_WALLET), 10, "bounded inference reserve");
+        assertEq(platformToken.balanceOf(COLD_START_RESERVE), 10, "cold-start reserve");
         assertEq(platformToken.balanceOf(PROTOCOL_OPERATIONS), 10, "protocol operations");
-        assertEq(platformToken.balanceOf(address(this)), 10, "creator revenue");
+        assertEq(platformToken.balanceOf(address(this)), 71, "owner revenue plus rounding dust");
         assertEq(platformToken.balanceOf(feeProcessorAddress), 0, "processor fully drained");
     }
 
@@ -219,10 +219,10 @@ contract AgentLaunchFactoryTest {
             abi.encodeCall(
                 factory.setFeePolicy,
                 (AgentLaunchFactory.FeePolicy({
-                    agentInferenceBps: 6_000,
-                    coldStartReserveBps: 2_000,
+                    agentInferenceBps: 1_000,
+                    coldStartReserveBps: 1_000,
                     protocolOperationsBps: 1_000,
-                    creatorBps: 999
+                    creatorBps: 6_999
                 }))
             ),
             "fee policy must total denominator"

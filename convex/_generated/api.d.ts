@@ -13,6 +13,8 @@ import type * as agent from "../agent.js";
 import type * as auth from "../auth.js";
 import type * as automations from "../automations.js";
 import type * as bootstrap from "../bootstrap.js";
+import type * as capabilityApi from "../capabilityApi.js";
+import type * as capabilityHttp from "../capabilityHttp.js";
 import type * as checkout from "../checkout.js";
 import type * as componentLimits from "../componentLimits.js";
 import type * as componentMetrics from "../componentMetrics.js";
@@ -56,6 +58,8 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   automations: typeof automations;
   bootstrap: typeof bootstrap;
+  capabilityApi: typeof capabilityApi;
+  capabilityHttp: typeof capabilityHttp;
   checkout: typeof checkout;
   componentLimits: typeof componentLimits;
   componentMetrics: typeof componentMetrics;
