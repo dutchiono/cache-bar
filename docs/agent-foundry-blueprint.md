@@ -151,6 +151,10 @@ The first versioned manifests live under `capabilities/manifests/`. Run
 `bun run validate:capabilities` before publishing registry changes. The launchpad demo reads those
 same manifests, so the visible module catalog cannot silently drift from provisioner inputs.
 
+Run `bun run check:platform` for the complete platform gate. The production deployment workflow runs
+that command before deploying Convex or uploading the website, so broken contracts, manifests,
+provisioning behavior, treasury reconciliation, or index projection stop the release.
+
 ## Initial Capabilities
 
 ### `.cache`

@@ -19,6 +19,7 @@
     "test:fee-operator": "bun test platform/fee-operator",
     "test:indexer": "bun test platform/indexer",
     "validate:capabilities": "bun run scripts/validateCapabilityRegistry.ts",
+    "check:platform": "bun run validate:capabilities && bun run test:provisioner && bun run test:fee-operator && bun run test:indexer && bun run test:foundry && bun run compile:foundry",
     "solana:sticker": "bun run scripts/solanaStickerDrop.ts"
   },
   "dependencies": {
