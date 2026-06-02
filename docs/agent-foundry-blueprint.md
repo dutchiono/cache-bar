@@ -86,6 +86,14 @@ of unsafe placeholders.
 | `provider-venice` | Venice OpenAI-compatible provider and x402-authenticated transport |
 | `capability-sdk` | Manifest schema, scopes, install state, health checks, and rollback |
 
+### Implemented Provisioner Boundary
+
+The first idempotent event-consumer prototype lives under `platform/provisioner/`. It journals each
+completed step, rejects conflicting event replays, resumes cleanly after partial failure, assigns the
+Solana capability wallet, ensures the managed runtime, installs the constrained capability registry,
+and arms bootstrap inference. Its current dependencies are interfaces with in-memory test doubles;
+Eliza Cloud, Steward, and x402 clients replace those doubles without changing the state machine.
+
 ## Launch State Machine
 
 ```text
