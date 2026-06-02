@@ -1,51 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { capabilityRegistry, type CapabilityId } from "../foundry/capabilities";
 import "../launchpad.css";
-
-type ModuleId = "cachebar" | "trading" | "verse";
-
-type ModuleDefinition = {
-  id: ModuleId;
-  name: string;
-  eyebrow: string;
-  description: string;
-  mode: string;
-  status: string;
-  tone: "live" | "guarded" | "restricted";
-};
-
-const modules: ModuleDefinition[] = [
-  {
-    id: "cachebar",
-    name: ".cache commerce",
-    eyebrow: "default install",
-    description:
-      "Product catalog, checkout rails, inventory, fulfillment ops, and agent-led storefront proposals.",
-    mode: "proposal authority",
-    status: "working demo",
-    tone: "live",
-  },
-  {
-    id: "trading",
-    name: "trading machine",
-    eyebrow: "solana engine",
-    description:
-      "Pool intelligence, Jupiter swaps, sequencer and swing runners, Telegram signals, and wallet investigation.",
-    mode: "watch-only at launch",
-    status: "adapter required",
-    tone: "guarded",
-  },
-  {
-    id: "verse",
-    name: "verse",
-    eyebrow: "operator surface",
-    description:
-      "Sequenced Solana execution, ARM and cleanup workflows, and vanity-wallet roster operations.",
-    mode: "operator-only",
-    status: "restricted",
-    tone: "restricted",
-  },
-];
 
 const provisioningSteps = [
   "registering agent identity",
@@ -93,11 +49,14 @@ const feeRows = [
 export default function Launchpad() {
   const [agentName, setAgentName] = useState("Afterimage");
   const [ticker, setTicker] = useState("AFTR");
-  const [selectedModules, setSelectedModules] = useState<ModuleId[]>(["cachebar", "trading"]);
+  const [selectedModules, setSelectedModules] = useState<CapabilityId[]>([
+    "cachebar-commerce",
+    "trading-machine",
+  ]);
   const [launchState, setLaunchState] = useState<"idle" | "provisioning" | "ready">("idle");
   const [visibleSteps, setVisibleSteps] = useState(0);
 
-  function toggleModule(id: ModuleId) {
+  function toggleModule(id: CapabilityId) {
     setSelectedModules((current) =>
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
     );
@@ -234,7 +193,7 @@ export default function Launchpad() {
 
               <div className="lp-panel-label lp-module-label">02 / install capabilities</div>
               <div className="lp-module-picker">
-                {modules.map((module) => {
+                {capabilityRegistry.map((module) => {
                   const selected = selectedModules.includes(module.id);
                   return (
                     <button
@@ -245,10 +204,10 @@ export default function Launchpad() {
                     >
                       <span className="lp-check">{selected ? "x" : ""}</span>
                       <span>
-                        <strong>{module.name}</strong>
-                        <small>{module.mode}</small>
+                        <strong>{module.display.name}</strong>
+                        <small>{module.defaultMode}</small>
                       </span>
-                      <em>{module.status}</em>
+                      <em>{module.display.status}</em>
                     </button>
                   );
                 })}
@@ -357,19 +316,19 @@ export default function Launchpad() {
             </p>
           </div>
           <div className="lp-capability-grid">
-            {modules.map((module, index) => (
-              <article className={`lp-capability-card is-${module.tone}`} key={module.id}>
+            {capabilityRegistry.map((module, index) => (
+              <article className={`lp-capability-card is-${module.display.tone}`} key={module.id}>
                 <div className="lp-card-topline">
-                  <span>0{index + 1} / {module.eyebrow}</span>
-                  <span className="lp-status">{module.status}</span>
+                  <span>0{index + 1} / {module.display.eyebrow}</span>
+                  <span className="lp-status">{module.display.status}</span>
                 </div>
-                <h3>{module.name}</h3>
-                <p>{module.description}</p>
+                <h3>{module.display.name}</h3>
+                <p>{module.display.description}</p>
                 <div className="lp-capability-foot">
                   <span>launch mode</span>
-                  <strong>{module.mode}</strong>
+                  <strong>{module.defaultMode}</strong>
                 </div>
-                {module.id === "cachebar" && (
+                {module.id === "cachebar-commerce" && (
                   <Link className="lp-inline-link" to="/">
                     open the live commerce demo →
                   </Link>

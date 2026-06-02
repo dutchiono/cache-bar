@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "verse",
+  "version": "0.1.0",
+  "display": {
+    "name": "verse",
+    "eyebrow": "operator surface",
+    "description": "Sequenced Solana execution, ARM and cleanup workflows, and vanity-wallet roster operations.",
+    "status": "restricted",
+    "tone": "restricted"
+  },
+  "source": {
+    "kind": "git",
+    "repository": "https://github.com/dutchiono/verse",
+    "ref": "main"
+  },
+  "chains": ["solana"],
+  "defaultMode": "operator-only",
+  "scopes": [
+    "solana:pools:read",
+    "solana:sequences:read"
+  ],
+  "secretRequirements": ["HELIUS_API_KEY"],
+  "walletPolicy": "Disabled for public autonomous agents. ARM, fire, cleanup, and withdraw remain operator-only.",
+  "healthCheck": "/api/auth/bootstrap",
+  "auditStatus": "prototype"
+}

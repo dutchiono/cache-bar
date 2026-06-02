@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "trading-machine",
+  "version": "0.1.0-local",
+  "display": {
+    "name": "trading machine",
+    "eyebrow": "solana engine",
+    "description": "Pool intelligence, Jupiter swaps, sequencer and swing runners, Telegram signals, and wallet investigation.",
+    "status": "adapter required",
+    "tone": "guarded"
+  },
+  "source": {
+    "kind": "local-prototype",
+    "repository": "local://trading-machine",
+    "ref": "unversioned-prototype"
+  },
+  "chains": ["solana"],
+  "defaultMode": "watch-only",
+  "scopes": [
+    "solana:pools:read",
+    "solana:wallets:read",
+    "solana:signals:read",
+    "solana:strategies:simulate"
+  ],
+  "secretRequirements": ["HELIUS_API_KEY"],
+  "walletPolicy": "Launches receive read-only and simulation scopes. Signing requires a separate capped-execution grant.",
+  "healthCheck": "/api/state",
+  "auditStatus": "prototype"
+}

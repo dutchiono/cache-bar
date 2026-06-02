@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "cachebar-commerce",
+  "version": "0.1.0",
+  "display": {
+    "name": ".cache commerce",
+    "eyebrow": "default install",
+    "description": "Product catalog, checkout rails, inventory, fulfillment ops, and agent-led storefront proposals.",
+    "status": "working demo",
+    "tone": "live"
+  },
+  "source": {
+    "kind": "git",
+    "repository": "https://github.com/dutchiono/cache-bar",
+    "ref": "main"
+  },
+  "chains": ["base", "solana"],
+  "defaultMode": "enabled",
+  "scopes": [
+    "catalog:read",
+    "products:propose",
+    "checkout:create",
+    "orders:read",
+    "fulfillment:propose"
+  ],
+  "secretRequirements": ["CACHE_ELIZA_BASE_URL", "CACHE_ELIZA_API_KEY"],
+  "walletPolicy": "No signing authority. Commerce mutations remain Convex-owned and operator-approved.",
+  "healthCheck": "/",
+  "auditStatus": "prototype"
+}

@@ -123,6 +123,10 @@ interface CapabilityManifest {
 Agents receive adapters, not arbitrary repositories. Wallet-signing capabilities require policy
 checks outside the language model runtime. Plugins never receive unrestricted raw private keys.
 
+The first versioned manifests live under `capabilities/manifests/`. Run
+`bun run validate:capabilities` before publishing registry changes. The launchpad demo reads those
+same manifests, so the visible module catalog cannot silently drift from provisioner inputs.
+
 ## Initial Capabilities
 
 ### `.cache`
