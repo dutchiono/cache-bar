@@ -40,6 +40,7 @@ Solana DTOUR sticker flow notes live in [docs/solana-sticker-drop.md](docs/solan
 The agent launchpad architecture and build sequence live in [docs/agent-foundry-blueprint.md](docs/agent-foundry-blueprint.md).
 The separate Foundry launch-network demo deploys to [foundry.bushleague.xyz](https://foundry.bushleague.xyz).
 Its durable simulated-launch HTTP boundary lives in [docs/foundry-demo-control-plane.md](docs/foundry-demo-control-plane.md).
+The combined `.cache` + Foundry operator handoff lives in [docs/platform-build-handoff.md](docs/platform-build-handoff.md).
 Partner-agent promo notes live in [docs/partner-agent-promo-playbook.md](docs/partner-agent-promo-playbook.md).
 The local partner-agent skill lives in [skills/partner-agent-shop/SKILL.md](skills/partner-agent-shop/SKILL.md).
 
