@@ -291,7 +291,13 @@ export default defineSchema({
 
   payments: defineTable({
     orderId: v.id("orders"),
-    rail: v.union(v.literal("card"), v.literal("usdc"), v.literal("x402"), v.literal("stripe")),
+    rail: v.union(
+      v.literal("card"),
+      v.literal("crypto"),
+      v.literal("usdc"),
+      v.literal("x402"),
+      v.literal("stripe"),
+    ),
     chain: v.optional(chain),
     // card:
     stripePaymentIntentId: v.optional(v.string()),
@@ -302,7 +308,12 @@ export default defineSchema({
     // usdc:
     txHash: v.optional(v.string()),
     fromAddress: v.optional(v.string()),
+    assetCode: v.optional(v.union(v.literal("usdc"), v.literal("eth"), v.literal("sol"))),
+    amountAsset: v.optional(v.number()),
+    amountAtomic: v.optional(v.string()),
     amountUsdc: v.optional(v.number()),
+    amountUsd: v.optional(v.number()),
+    quoteExpiresAt: v.optional(v.number()),
     confirmations: v.optional(v.number()),
     x402: v.optional(
       v.object({

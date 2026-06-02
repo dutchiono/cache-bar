@@ -70,7 +70,9 @@ export default function OrderDetail() {
                     </>
                   ) : (
                     <>
-                      <div>Amount: {payment.amountUsdc?.toFixed(2) ?? "—"} USDC</div>
+                      <div>
+                        Amount: {payment.amountAsset?.toFixed(payment.assetCode === "eth" ? 8 : payment.assetCode === "sol" ? 6 : 2) ?? payment.amountUsdc?.toFixed(2) ?? "—"} {(payment.assetCode ?? "usdc").toUpperCase()}
+                      </div>
                       <div className="truncate font-mono">Tx: {payment.txHash ?? "—"}</div>
                     </>
                   )}

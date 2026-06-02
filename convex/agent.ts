@@ -669,7 +669,8 @@ function stickerDemoReply() {
     "Right now .cache is running the sticker pre-pre sale demo.",
     "Offer: one Cozy Devs Sticker Pack containing Moon Seal, Floppy, and Bus Riot.",
     "There are 50 packs total, and each buyer should get the sticker-pack proof NFT.",
-    "Stripe, USDC, and x402 are all live payment rails against that same shared inventory.",
+    "Stripe and connected-wallet Base ETH, Base USDC, Solana SOL, and Solana USDC checkout all draw from that same shared inventory.",
+    "x402 is the agent/API path once a production facilitator is configured.",
     "The same pack can be fronted by .cache directly or by a partner agent like DTOUR.",
     "That is the point of the demo: one real product, reusable by any agent that wants a shop.",
     "If you want in, say `claim a sticker pack` and I will route you to the right payment path.",
@@ -681,7 +682,7 @@ function partnerAgentModelReply() {
     "The sticker pack demo is one real product owned by .cache, not a separate product per agent.",
     ".cache keeps the SKU, inventory, payment-lane caps, checkout state, and mailing export.",
     "DTOUR or any other partner agent supplies the audience and promo framing, then points buyers into the same product flow.",
-    "For the live run that means one 50-pack inventory pool, and Stripe, USDC, and x402 all draw from that same inventory instead of waiting on separate caps.",
+    "For the live run that means one 50-pack inventory pool, and Stripe plus connected-wallet Base and Solana payments all draw from that same inventory instead of waiting on separate caps.",
     "That is the reusable pattern: the agent is the sales front, .cache is the commerce backend.",
   ].join(" ");
 }
@@ -689,7 +690,7 @@ function partnerAgentModelReply() {
 function partnerAgentPitchReply() {
   return [
     "Send this to the DTOUR owner:",
-    "`I am offering one real sticker pack plus a proof NFT through .cache and I want DTOUR to be allowed to offer the same pack as a promo. DTOUR does not need its own SKU, inventory, or checkout stack. It plugs into the existing .cache product, uses Stripe, USDC, or x402 against the same shared inventory, and .cache keeps the order record and fulfillment flow.`",
+    "`I am offering one real sticker pack plus a proof NFT through .cache and I want DTOUR to be allowed to offer the same pack as a promo. DTOUR does not need its own SKU, inventory, or checkout stack. It plugs into the existing .cache product, uses Stripe or connected-wallet Base and Solana payments against the same shared inventory, and .cache keeps the order record and fulfillment flow.`",
     "That same arrangement is the general pattern for any agent shop: the agent fronts the product, .cache runs the commerce backend.",
   ].join(" ");
 }

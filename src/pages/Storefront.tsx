@@ -1,6 +1,15 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import {
+  createAssociatedTokenAccountInstruction,
+  createTransferCheckedInstruction,
+  getAssociatedTokenAddress,
+} from "@solana/spl-token";
+import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import { useAccount, useConnect, useDisconnect, useSendTransaction, useWriteContract } from "wagmi";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { CacheConcierge } from "../components/CacheConcierge";
@@ -38,18 +47,21 @@ type RailAllocationStatus = NonNullable<
   ReturnType<typeof useQuery<typeof api.checkout.publicRailAllocationStatus>>
 >;
 
-type PaymentRail = "stripe" | "usdc" | "x402";
+type PaymentRail = "stripe" | "crypto";
+type CryptoAsset = "base-usdc" | "base-eth" | "solana-usdc" | "solana-sol";
 
 type WalletPaymentQuote = {
   orderId: Id<"orders">;
   paymentId: Id<"payments">;
-  rail: "usdc" | "x402";
+  rail: "crypto";
   total: number;
   burnDiscount: number;
   tokensSpentBurned: number;
   instruction: {
     amount: string;
+    amountAtomic: string;
     asset: string;
+    assetCode: "usdc" | "eth" | "sol";
     network: string;
     payTo: string;
   };
@@ -66,12 +78,43 @@ type WalletPaymentQuote = {
   };
 };
 
+const baseUsdcAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const solanaUsdcMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const erc20TransferAbi = [
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
+const cryptoAssets = {
+  "base-usdc": { label: "Base USDC", network: "base", assetCode: "usdc" },
+  "base-eth": { label: "Base ETH", network: "base", assetCode: "eth" },
+  "solana-usdc": { label: "Solana USDC", network: "solana", assetCode: "usdc" },
+  "solana-sol": { label: "Solana SOL", network: "solana", assetCode: "sol" },
+} as const;
+
 export default function Storefront({ focusCheckout = false }: { focusCheckout?: boolean }) {
   const [searchParams] = useSearchParams();
   const products = useQuery(api.checkout.publicStorefrontProducts, {});
   const createStripeSession = useAction(api.stripeCheckout.createSession);
-  const createPublicPaymentIntent = useMutation(api.checkout.createPublicPaymentIntent);
+  const createWalletPaymentIntent = useAction(api.walletCheckout.createPaymentIntent);
+  const cancelWalletPaymentIntent = useMutation(api.checkout.cancelPublicWalletPaymentIntent);
+  const verifySubmittedPayment = useAction(api.payments.verifySubmittedPayment);
   const getConfigStatus = useAction(api.stripeCheckout.configStatus);
+  const { address: evmAddress, isConnected: evmConnected } = useAccount();
+  const { connectors, connectAsync } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { sendTransactionAsync } = useSendTransaction();
+  const { writeContractAsync } = useWriteContract();
+  const { connection } = useConnection();
+  const solanaWallet = useWallet();
   const legacySku = searchParams.get("legacySku") ?? "";
 
   const [selectedProductId, setSelectedProductId] = useState<Id<"products"> | "">(
@@ -84,13 +127,16 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
   const [stashCode, setStashCode] = useState(searchParams.get("stash") ?? "");
   const [selectedRail, setSelectedRail] = useState<PaymentRail>(() => {
     const rail = searchParams.get("rail");
-    return rail === "usdc" || rail === "x402" ? rail : "stripe";
+    return rail === "crypto" || rail === "usdc" || rail === "x402" ? "crypto" : "stripe";
   });
+  const [selectedCryptoAsset, setSelectedCryptoAsset] = useState<CryptoAsset>("base-usdc");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [config, setConfig] = useState<CheckoutConfigStatus | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
   const [walletQuote, setWalletQuote] = useState<WalletPaymentQuote | null>(null);
+  const [walletTxHash, setWalletTxHash] = useState<string | null>(null);
+  const [walletPaymentStatus, setWalletPaymentStatus] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -147,9 +193,13 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
       : null);
 
   useEffect(() => {
-    setWalletQuote(null);
-    setError(null);
-  }, [activeProductId, activeVariantId, quantity, selectedRail]);
+    queueMicrotask(() => {
+      setWalletQuote(null);
+      setWalletTxHash(null);
+      setWalletPaymentStatus(null);
+      setError(null);
+    });
+  }, [activeProductId, activeVariantId, quantity, selectedRail, selectedCryptoAsset]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -165,6 +215,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
     const form = new FormData(event.currentTarget);
     setPending(true);
     setError(null);
+    setWalletPaymentStatus(null);
+    let createdQuote: WalletPaymentQuote | null = null;
+    let submittedTxHash: string | null = null;
 
     try {
       const customerName = String(form.get("customerName") ?? "");
@@ -199,21 +252,115 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
             }
           : undefined;
 
-      const quote = await createPublicPaymentIntent({
+      const cryptoAsset = cryptoAssets[selectedCryptoAsset];
+      const fromAddress =
+        cryptoAsset.network === "base"
+          ? evmAddress
+          : solanaWallet.publicKey?.toBase58();
+      if (!fromAddress) {
+        throw new Error(
+          cryptoAsset.network === "base"
+            ? "Connect a Base wallet before paying."
+            : "Connect a Solana wallet before paying.",
+        );
+      }
+
+      const quote = await createWalletPaymentIntent({
         productId: selectedProduct._id,
         variantId: activeVariantId || undefined,
         quantity,
         customerName,
         customerEmail,
         shippingAddress,
-        rail: selectedRail,
-        network: "base",
+        network: cryptoAsset.network,
+        assetCode: cryptoAsset.assetCode,
+        fromAddress,
       });
-      setWalletQuote(quote as WalletPaymentQuote);
+      createdQuote = quote as WalletPaymentQuote;
+      setWalletQuote(createdQuote);
+      setWalletPaymentStatus("Waiting for wallet signature...");
+      const txHash = await submitWalletPayment(createdQuote, selectedCryptoAsset);
+      submittedTxHash = txHash;
+      setWalletTxHash(txHash);
+      setWalletPaymentStatus("Transaction submitted. Verifying onchain...");
+      const verification = await verifySubmittedPayment({
+        paymentId: createdQuote.paymentId,
+        txHash,
+      });
+      setWalletPaymentStatus(
+        verification.status === "confirmed"
+          ? "Payment confirmed. Your sticker pack is reserved."
+          : "Transaction submitted. Confirmation is pending onchain.",
+      );
     } catch (err) {
+      if (createdQuote && !submittedTxHash) {
+        await cancelWalletPaymentIntent({ paymentId: createdQuote.paymentId }).catch(() => undefined);
+      }
       setError(err instanceof Error ? err.message : "Unable to start checkout.");
     }
     setPending(false);
+  }
+
+  async function submitWalletPayment(
+    quote: WalletPaymentQuote,
+    cryptoAsset: CryptoAsset,
+  ) {
+    const amountAtomic = BigInt(quote.instruction.amountAtomic);
+    if (cryptoAsset === "base-eth") {
+      return await sendTransactionAsync({
+        to: quote.instruction.payTo as `0x${string}`,
+        value: amountAtomic,
+      });
+    }
+    if (cryptoAsset === "base-usdc") {
+      return await writeContractAsync({
+        address: baseUsdcAddress,
+        abi: erc20TransferAbi,
+        functionName: "transfer",
+        args: [quote.instruction.payTo as `0x${string}`, amountAtomic],
+      });
+    }
+
+    if (!solanaWallet.publicKey || !solanaWallet.sendTransaction) {
+      throw new Error("Connect a Solana wallet before paying.");
+    }
+    const payer = solanaWallet.publicKey;
+    const recipient = new PublicKey(quote.instruction.payTo);
+    const transaction = new Transaction();
+    if (cryptoAsset === "solana-sol") {
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: payer,
+          toPubkey: recipient,
+          lamports: amountAtomic,
+        }),
+      );
+    } else {
+      const mint = new PublicKey(solanaUsdcMint);
+      const sourceAccount = await getAssociatedTokenAddress(mint, payer);
+      const destinationAccount = await getAssociatedTokenAddress(mint, recipient);
+      if (!(await connection.getAccountInfo(destinationAccount))) {
+        transaction.add(
+          createAssociatedTokenAccountInstruction(
+            payer,
+            destinationAccount,
+            recipient,
+            mint,
+          ),
+        );
+      }
+      transaction.add(
+        createTransferCheckedInstruction(
+          sourceAccount,
+          mint,
+          destinationAccount,
+          payer,
+          amountAtomic,
+          6,
+        ),
+      );
+    }
+    return await solanaWallet.sendTransaction(transaction, connection);
   }
 
   return (
@@ -241,11 +388,11 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
               <div className="sf-kicker">.cache storefront</div>
               <h1 className="sf-display">
                 {focusCheckout ? "secure checkout." : "shop live drops."}
-                <span>{focusCheckout ? "finish on stripe." : "redeem in .stash."}</span>
+                <span>{focusCheckout ? "pay by card or wallet." : "redeem in .stash."}</span>
               </h1>
               <p className="sf-lead">
                 {focusCheckout
-                  ? "Pick your item here, then finish payment in Stripe. Shipping details are collected there for physical orders."
+                  ? "Pay in Stripe, or connect a Base or Solana wallet and sign the crypto payment directly from this page."
                   : "One real sticker pack is live now. .cache owns the product, inventory, NFT fulfillment promise, and checkout flow. A partner agent like DTOUR can front the same pack to its own audience as a promo."}
               </p>
               <div className="sf-hero-actions">
@@ -287,7 +434,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
             </div>
             <p>
               {focusCheckout
-                ? "This page only handles item selection, buyer identity, and optional .stash codes. Payment and shipping details complete inside Stripe."
+                ? "Stripe collects shipping in hosted checkout. Connected-wallet checkout collects shipping here before the buyer signs a Base or Solana transaction."
                 : "This demo is one sticker pack plus a proof NFT, not a fake catalog. The point is to show one real product, real payment rails, and a reusable partner-agent sales pattern."}
             </p>
           </div>
@@ -383,7 +530,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                   <div className="sf-kicker">Checkout</div>
                   <h2 className="sf-checkout-title">Buyer details</h2>
                   <p className="sf-checkout-copy">
-                    Pick the payment rail first. Stripe redirects into hosted checkout. USDC and x402 create a pending order here and show the wallet payment instructions directly.
+                    Pick Stripe or connected-wallet checkout. Crypto payments are signed here through a Base or Solana wallet and verified onchain.
                   </p>
 
                   <form onSubmit={onSubmit} className="sf-form">
@@ -393,7 +540,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         <span>choose how this pack gets paid</span>
                       </div>
                       <div className="sf-toggle">
-                        {(["stripe", "usdc", "x402"] as const).map((rail) => (
+                        {(["stripe", "crypto"] as const).map((rail) => (
                           <button
                             key={rail}
                             type="button"
@@ -410,15 +557,69 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         </div>
                       ) : (
                         <div className="sf-inline-note">
-                          {selectedRail.toUpperCase()} stays on this page. We create the order first, show the payment destination, and ops can verify settlement from the order record.
+                          Connect a wallet, pick Base ETH, Base USDC, Solana SOL, or Solana USDC, then approve one transaction. Shipping stays attached to the order.
                         </div>
                       )}
                       {selectedRail === "stripe" && checkoutUnavailableMessage && (
                         <div className="sf-warning">
-                          {checkoutUnavailableMessage} You can still use USDC or x402 on this deployment.
+                          {checkoutUnavailableMessage} You can still use connected-wallet crypto checkout.
                         </div>
                       )}
                     </div>
+
+                    {selectedRail === "crypto" && (
+                      <div className="sf-subpanel">
+                        <div className="sf-subpanel-head">
+                          <strong>Wallet payment</strong>
+                          <span>choose network and asset</span>
+                        </div>
+                        <label className="sf-field full">
+                          <span>Pay with</span>
+                          <select
+                            value={selectedCryptoAsset}
+                            onChange={(event) =>
+                              setSelectedCryptoAsset(event.target.value as CryptoAsset)
+                            }
+                          >
+                            {Object.entries(cryptoAssets).map(([value, asset]) => (
+                              <option key={value} value={value}>
+                                {asset.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        {cryptoAssets[selectedCryptoAsset].network === "base" ? (
+                          <div className="sf-button-stack">
+                            {evmConnected ? (
+                              <>
+                                <div className="sf-inline-note">Base wallet connected: {evmAddress}</div>
+                                <button type="button" className="sf-button-ghost" onClick={() => disconnect()}>
+                                  Disconnect Base wallet
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                className="sf-button-ghost"
+                                onClick={() => {
+                                  const connector = connectors[0];
+                                  if (connector) void connectAsync({ connector });
+                                }}
+                              >
+                                Connect Base wallet
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="sf-button-stack">
+                            <WalletMultiButton />
+                          </div>
+                        )}
+                        <div className="sf-inline-note">
+                          x402 remains an agent/API rail. Public mainnet x402 needs a production facilitator; the human checkout does not fake that protocol with a raw address.
+                        </div>
+                      </div>
+                    )}
 
                     <div className="sf-form-grid">
                       <label className="sf-field">
@@ -510,9 +711,9 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                           </>
                         ) : (
                           <>
-                            <div>1. Submit the order here and lock in the buyer record.</div>
-                            <div>2. Send the exact amount to the displayed wallet destination.</div>
-                            <div>3. Ops verifies settlement and the pack stays tied to the same shared inventory.</div>
+                            <div>1. Enter shipping details and connect a Base or Solana wallet.</div>
+                            <div>2. Approve one wallet transaction for the selected asset.</div>
+                            <div>3. .cache verifies the transaction onchain and reserves the pack.</div>
                           </>
                         )}
                       </div>
@@ -526,7 +727,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       <QuoteRow label="Subtotal" value={preciseMoney.format(unitPrice * quantity)} />
                       <QuoteRow label="Shipping" value={preciseMoney.format(shipping)} />
                       <QuoteRow
-                        label={selectedRail === "stripe" ? "Due in Stripe" : `Due via ${selectedRail.toUpperCase()}`}
+                        label={selectedRail === "stripe" ? "Due in Stripe" : `Due via ${cryptoAssets[selectedCryptoAsset].label}`}
                         value={preciseMoney.format(estimatedTotal)}
                         strong
                       />
@@ -538,34 +739,13 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       <div className="sf-result">
                         <div className="sf-subpanel">
                           <div className="sf-subpanel-head">
-                            <strong>{walletQuote.rail.toUpperCase()} payment instructions</strong>
+                            <strong>Wallet payment</strong>
                             <span>order {walletQuote.orderId}</span>
                           </div>
-                          <div className="sf-code">
-                            <div className="sf-code-line">
-                              <span>amount</span>
-                              <span>{walletQuote.instruction.amount}</span>
-                            </div>
-                            <div className="sf-code-line">
-                              <span>network</span>
-                              <span>{walletQuote.instruction.network}</span>
-                            </div>
-                            <div className="sf-code-line">
-                              <span>asset</span>
-                              <span>{walletQuote.instruction.asset}</span>
-                            </div>
-                            <div className="sf-code-line">
-                              <span>pay to</span>
-                              <span>{walletQuote.instruction.payTo}</span>
-                            </div>
+                          <div className="sf-inline-note">
+                            {walletPaymentStatus ?? "Waiting for wallet approval."}
                           </div>
-                          {walletQuote.x402 && (
-                            <div className="sf-inline-note">
-                              x402 facilitator: {walletQuote.x402.facilitatorUrl}
-                              <br />
-                              resource: {walletQuote.x402.resource}
-                            </div>
-                          )}
+                          {walletTxHash && <div className="sf-code">tx: {walletTxHash}</div>}
                         </div>
                       </div>
                     )}
@@ -578,10 +758,10 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                       {pending
                         ? selectedRail === "stripe"
                           ? "Opening Stripe..."
-                          : `Creating ${selectedRail.toUpperCase()} order...`
+                          : "Opening wallet..."
                         : selectedRail === "stripe"
                           ? "Continue to secure checkout"
-                          : `Create ${selectedRail.toUpperCase()} payment`}
+                          : `Pay ${cryptoAssets[selectedCryptoAsset].label}`}
                     </button>
                   </form>
                 </div>
@@ -705,7 +885,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                         </Link>
                         {!checkoutReady && (
                           <div className="sf-warning">
-                            Stripe is not configured on this deployment yet, but USDC and x402 can still be used on the checkout screen.
+                            Stripe is not configured on this deployment yet, but connected-wallet crypto checkout is available.
                           </div>
                         )}
                       </div>
@@ -748,7 +928,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 </div>
               </div>
               <div className="sf-inline-note">
-                Live demo contract: one Cozy Devs Sticker Pack, 50 total packs, and one proof NFT per buyer. Stripe, USDC, and x402 all point at the same shared inventory.
+                Live demo contract: one Cozy Devs Sticker Pack, 50 total packs, and one proof NFT per buyer. Stripe and connected-wallet crypto checkout point at the same shared inventory.
               </div>
             </div>
 
@@ -764,7 +944,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
                 </div>
               </div>
               <p className="sf-subpanel-copy">
-                I am offering one real sticker pack plus a proof NFT through .cache and I want DTOUR to be allowed to offer the same pack as a promo. DTOUR does not need its own SKU, inventory, or checkout stack. It plugs into the existing .cache product, uses Stripe, USDC, or x402 against the same shared inventory, and .cache keeps the order record and fulfillment flow.
+                I am offering one real sticker pack plus a proof NFT through .cache and I want DTOUR to be allowed to offer the same pack as a promo. DTOUR does not need its own SKU, inventory, or checkout stack. It plugs into the existing .cache product, uses Stripe or connected-wallet crypto checkout against the same shared inventory, and .cache keeps the order record and fulfillment flow.
               </p>
               <div className="sf-inline-note">
                 This is the full point of the demo: one agent can front the sale, but the reusable commerce system stays in .cache.
@@ -829,7 +1009,7 @@ function ProductImageGallery({
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    setActiveIndex(0);
+    queueMicrotask(() => setActiveIndex(0));
   }, [title, imageUrls]);
 
   const activeImage = images[Math.min(activeIndex, images.length - 1)] ?? images[0];

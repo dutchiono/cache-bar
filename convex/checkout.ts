@@ -12,8 +12,9 @@ import {
 } from "./componentMetrics";
 import { requireRole, requireUser } from "./model/auth";
 
-const paymentRail = v.union(v.literal("usdc"), v.literal("x402"));
+const paymentRail = v.union(v.literal("crypto"), v.literal("usdc"), v.literal("x402"));
 const paymentNetwork = v.union(v.literal("base"), v.literal("solana"));
+const paymentAssetCode = v.union(v.literal("usdc"), v.literal("eth"), v.literal("sol"));
 const paymentIntentArgs = {
   productId: v.id("products"),
   variantId: v.optional(v.id("productVariants")),
@@ -32,6 +33,7 @@ const paymentIntentArgs = {
   ),
   rail: paymentRail,
   network: paymentNetwork,
+  assetCode: v.optional(paymentAssetCode),
   fromAddress: v.optional(v.string()),
   tokenProgramId: v.optional(v.id("tokenPrograms")),
   burnAmountTokens: v.optional(v.number()),
@@ -52,13 +54,13 @@ const x402Networks = {
     chain: "evm" as const,
     caip2: "eip155:8453",
     asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    fallbackPayTo: "0xCacHe0000000000000000000000000000000bAr",
+    fallbackPayTo: "0x8DFBdEEC8c5d4970BB5F481C6ec7f73fa1C65be5",
   },
   solana: {
     chain: "solana" as const,
     caip2: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
     asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    fallbackPayTo: "CACHEbarDemo1111111111111111111111111111",
+    fallbackPayTo: "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX",
   },
 };
 
@@ -66,10 +68,11 @@ const facilitatorUrl = "https://x402.org/facilitator";
 const stickerPackTitle = "Cozy Devs Sticker Pack";
 const stickerPackVariantSku = "STICKER-PACK-001";
 const stickerPackDescription =
-  "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot, plus a proof NFT for the buyer wallet. 50 packs total. Stripe, USDC, and x402 all point at the same shared inventory. DTOUR is one of the agents allowed to offer the same pack as a promo.";
+  "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot, plus a proof NFT for the buyer wallet. 50 packs total. Stripe and connected-wallet crypto checkout point at the same shared inventory. DTOUR is one of the agents allowed to offer the same pack as a promo.";
 const stickerPackInventoryOnHand = 50;
 const stickerPackRailLimits = {
   stripe: 50,
+  crypto: 50,
   usdc: 50,
   x402: 50,
 } as const;
@@ -300,6 +303,48 @@ export const createPublicPaymentIntent = mutation({
   args: paymentIntentArgs,
   handler: async (ctx, args) => {
     return await createPaymentIntentRecord(ctx, args);
+  },
+});
+
+export const createQuotedWalletPaymentIntent = internalMutation({
+  args: {
+    ...paymentIntentArgs,
+    rail: v.literal("crypto"),
+    assetCode: paymentAssetCode,
+    nativeUsdRate: v.optional(v.number()),
+    quoteExpiresAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return await createPaymentIntentRecord(ctx, args);
+  },
+});
+
+export const cancelPublicWalletPaymentIntent = mutation({
+  args: {
+    paymentId: v.id("payments"),
+  },
+  handler: async (ctx, { paymentId }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new Error("Payment not found.");
+    if (payment.rail !== "crypto" || payment.status !== "pending" || payment.txHash) {
+      throw new Error("Only unsigned pending wallet payments can be cancelled here.");
+    }
+    await ctx.db.patch(paymentId, {
+      status: "failed",
+      confirmations: 0,
+    });
+    const failedPayment = await ctx.db.get(paymentId);
+    if (failedPayment) {
+      await replacePaymentMetric(ctx, payment, failedPayment);
+    }
+    const order = await ctx.db.get(payment.orderId);
+    await ctx.db.patch(payment.orderId, { status: "cancelled" });
+    const cancelledOrder = await ctx.db.get(payment.orderId);
+    if (order && cancelledOrder) {
+      await replaceOrderMetric(ctx, order, cancelledOrder);
+    }
+    await releaseInventoryReservationForOrder(ctx, payment.orderId);
+    await failOpenFulfillments(ctx, payment.orderId);
   },
 });
 
@@ -650,8 +695,11 @@ async function createPaymentIntentRecord(
       postalCode: string;
       country: string;
     };
-    rail: "usdc" | "x402";
+    rail: "crypto" | "usdc" | "x402";
     network: "base" | "solana";
+    assetCode?: "usdc" | "eth" | "sol";
+    nativeUsdRate?: number;
+    quoteExpiresAt?: number;
     fromAddress?: string;
     tokenProgramId?: Id<"tokenPrograms">;
     burnAmountTokens?: number;
@@ -667,6 +715,8 @@ async function createPaymentIntentRecord(
   if (product.status !== "live") {
     throw new Error("Only live products can be checked out.");
   }
+  const assetCode = args.assetCode ?? "usdc";
+  assertSupportedPaymentAsset(args.network, assetCode);
   await assertRailCapacity(ctx, product, args.rail, args.quantity);
 
   let variant = null;
@@ -702,7 +752,7 @@ async function createPaymentIntentRecord(
   const orderId = await ctx.db.insert("orders", {
     number: await nextOrderNumber(ctx),
     customerId: customer,
-    channel: args.rail === "x402" ? "x402_checkout" : "usdc_checkout",
+    channel: args.rail === "x402" ? "x402_checkout" : "wallet_checkout",
     status: "awaiting_payment",
     subtotal,
     holdTierDiscount: 0,
@@ -742,6 +792,8 @@ async function createPaymentIntentRecord(
   const payTo = await receivingAddress(ctx, network.chain);
   const paymentId = `pay_${orderId}_${Date.now()}`;
   const total = subtotal - burnQuote.discount + shipping;
+  const amountAsset = quoteAssetAmount(total, assetCode, args.nativeUsdRate);
+  const amountAtomic = toAssetAtomic(amountAsset, assetCode).toString();
   const itemDescriptor = variant ? `${product.title} / ${variant.optionLabel}` : product.title;
 
   if (burnQuote.program) {
@@ -762,7 +814,12 @@ async function createPaymentIntentRecord(
     rail: args.rail,
     chain: network.chain,
     fromAddress: args.fromAddress,
-    amountUsdc: total,
+    assetCode,
+    amountAsset,
+    amountAtomic,
+    amountUsdc: assetCode === "usdc" ? total : undefined,
+    amountUsd: total,
+    quoteExpiresAt: args.quoteExpiresAt,
     confirmations: 0,
     status: "pending",
     x402:
@@ -794,9 +851,11 @@ async function createPaymentIntentRecord(
     rail: args.rail,
     instruction: {
       network: network.caip2,
-      asset: network.asset,
+      asset: assetCode === "usdc" ? network.asset : assetCode.toUpperCase(),
       payTo,
-      amount: `$${total.toFixed(2)}`,
+      amount: `${formatAssetAmount(amountAsset, assetCode)} ${assetCode.toUpperCase()}`,
+      amountAtomic,
+      assetCode,
     },
     x402:
       args.rail === "x402"
@@ -850,13 +909,19 @@ async function getRailAllocationStatus(
   const counts = await countRailReservations(ctx, productId);
   return {
     productTitle: product.title,
-    totalInventory: 56,
+    totalInventory: stickerPackInventoryOnHand,
     lanes: [
       {
         rail: "stripe" as const,
         claimed: counts.stripe,
         limit: stickerPackRailLimits.stripe,
         remaining: Math.max(0, stickerPackRailLimits.stripe - counts.stripe),
+      },
+      {
+        rail: "crypto" as const,
+        claimed: counts.crypto,
+        limit: stickerPackRailLimits.crypto,
+        remaining: Math.max(0, stickerPackRailLimits.crypto - counts.crypto),
       },
       {
         rail: "usdc" as const,
@@ -883,7 +948,7 @@ async function countRailReservations(
     .withIndex("by_product", (q) => q.eq("productId", productId))
     .collect();
 
-  const counts = { stripe: 0, usdc: 0, x402: 0 };
+  const counts = { stripe: 0, crypto: 0, usdc: 0, x402: 0 };
   for (const item of items) {
     const order = await ctx.db.get(item.orderId);
     if (!order || order.status === "cancelled" || order.status === "refunded") continue;
@@ -895,10 +960,18 @@ async function countRailReservations(
       (candidate) =>
         candidate.status !== "failed" &&
         candidate.status !== "refunded" &&
-        (candidate.rail === "stripe" || candidate.rail === "usdc" || candidate.rail === "x402"),
+        (candidate.rail === "stripe" ||
+          candidate.rail === "crypto" ||
+          candidate.rail === "usdc" ||
+          candidate.rail === "x402"),
     );
     if (!payment) continue;
-    if (payment.rail === "stripe" || payment.rail === "usdc" || payment.rail === "x402") {
+    if (
+      payment.rail === "stripe" ||
+      payment.rail === "crypto" ||
+      payment.rail === "usdc" ||
+      payment.rail === "x402"
+    ) {
       counts[payment.rail] += item.quantity;
     }
   }
@@ -908,7 +981,7 @@ async function countRailReservations(
 async function assertRailCapacity(
   ctx: MutationCtx,
   product: Doc<"products">,
-  rail: "stripe" | "usdc" | "x402",
+  rail: "stripe" | "crypto" | "usdc" | "x402",
   quantity: number,
 ) {
   if (product.title !== stickerPackTitle) return;
@@ -1609,6 +1682,47 @@ async function receivingAddressForReader(
   return account?.address ?? x402Networks[chain === "evm" ? "base" : "solana"].fallbackPayTo;
 }
 
+function assertSupportedPaymentAsset(
+  network: "base" | "solana",
+  assetCode: "usdc" | "eth" | "sol",
+) {
+  if (assetCode === "eth" && network !== "base") {
+    throw new Error("ETH checkout is available on Base.");
+  }
+  if (assetCode === "sol" && network !== "solana") {
+    throw new Error("SOL checkout is available on Solana.");
+  }
+}
+
+function quoteAssetAmount(
+  totalUsd: number,
+  assetCode: "usdc" | "eth" | "sol",
+  nativeUsdRate?: number,
+) {
+  if (assetCode === "usdc") return roundMoney(totalUsd);
+  if (!nativeUsdRate || !Number.isFinite(nativeUsdRate) || nativeUsdRate <= 0) {
+    throw new Error(`A current ${assetCode.toUpperCase()} quote is required.`);
+  }
+  const decimals = assetCode === "eth" ? 8 : 6;
+  const scale = 10 ** decimals;
+  return Math.ceil((totalUsd / nativeUsdRate) * scale) / scale;
+}
+
+function toAssetAtomic(
+  amount: number,
+  assetCode: "usdc" | "eth" | "sol",
+) {
+  const decimals = assetCode === "eth" ? 18 : assetCode === "sol" ? 9 : 6;
+  const [whole, fraction = ""] = amount.toFixed(decimals).split(".");
+  return BigInt(`${whole}${fraction.padEnd(decimals, "0")}`);
+}
+
+function formatAssetAmount(
+  amount: number,
+  assetCode: "usdc" | "eth" | "sol",
+) {
+  return amount.toFixed(assetCode === "eth" ? 8 : assetCode === "sol" ? 6 : 2);
+}
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;

@@ -45,20 +45,20 @@ export async function replaceOrderMetric(
 
 export async function recordPaymentMetric(
   ctx: MutationCtx,
-  payment: Pick<Doc<"payments">, "_id" | "status" | "amountUsdc">,
+  payment: Pick<Doc<"payments">, "_id" | "status" | "amountUsdc" | "amountUsd">,
 ) {
   await paymentMetrics.insertIfDoesNotExist(ctx, {
     namespace: "status",
     key: payment.status,
     id: payment._id,
-    sumValue: payment.amountUsdc ?? 0,
+    sumValue: payment.amountUsd ?? payment.amountUsdc ?? 0,
   });
 }
 
 export async function replacePaymentMetric(
   ctx: MutationCtx,
-  oldPayment: Pick<Doc<"payments">, "_id" | "status" | "amountUsdc">,
-  newPayment: Pick<Doc<"payments">, "_id" | "status" | "amountUsdc">,
+  oldPayment: Pick<Doc<"payments">, "_id" | "status" | "amountUsdc" | "amountUsd">,
+  newPayment: Pick<Doc<"payments">, "_id" | "status" | "amountUsdc" | "amountUsd">,
 ) {
   await paymentMetrics.replaceOrInsert(
     ctx,
@@ -70,7 +70,12 @@ export async function replacePaymentMetric(
     {
       namespace: "status",
       key: newPayment.status,
-      sumValue: newPayment.amountUsdc ?? oldPayment.amountUsdc ?? 0,
+      sumValue:
+        newPayment.amountUsd ??
+        newPayment.amountUsdc ??
+        oldPayment.amountUsd ??
+        oldPayment.amountUsdc ??
+        0,
     },
   );
 }

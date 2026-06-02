@@ -189,7 +189,7 @@ export const seedDemo = mutation({
       label: ".cache Safe - Base USDC",
       kind: "usdc_multisig",
       chain: "evm",
-      address: "0xCacHe0000000000000000000000000000000bAr",
+      address: "0x8DFBdEEC8c5d4970BB5F481C6ec7f73fa1C65be5",
       multisigConfig: "3/5 Safe",
       balanceCache: 18420.5,
     });
@@ -197,7 +197,7 @@ export const seedDemo = mutation({
       label: ".cache Squads - Solana USDC",
       kind: "usdc_multisig",
       chain: "solana",
-      address: "CACHEbarDemo1111111111111111111111111111",
+      address: "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX",
       multisigConfig: "2/4 Squads",
       balanceCache: 6420,
     });

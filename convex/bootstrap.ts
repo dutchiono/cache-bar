@@ -51,7 +51,7 @@ export const ensureStorefront = mutation({
         creatorId: humanCreator._id,
         makerType: "human" as const,
         description:
-          "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot, plus a proof NFT for the buyer wallet. 50 packs total. Stripe, USDC, and x402 all point at the same shared inventory. DTOUR is one of the agents allowed to offer the same pack as a promo.",
+          "One pack containing all three Cozy Devs stickers: Moon Seal, Floppy, and Bus Riot, plus a proof NFT for the buyer wallet. 50 packs total. Stripe and connected-wallet crypto checkout point at the same shared inventory. DTOUR is one of the agents allowed to offer the same pack as a promo.",
         productType: "physical" as const,
         category: "stickers",
         basePrice: 5,
@@ -160,12 +160,12 @@ export const ensureStorefront = mutation({
           });
           summary.inventoryRowsCreated += 1;
         } else if (
-          inventory.onHand !== 56 ||
+          inventory.onHand !== 50 ||
           inventory.reorderPoint !== 10 ||
           inventory.location !== "Sticker Pack Demo / Bin A"
         ) {
           await ctx.db.patch(inventory._id, {
-            onHand: 56,
+            onHand: 50,
             reorderPoint: 10,
             location: "Sticker Pack Demo / Bin A",
           });
@@ -271,12 +271,20 @@ export const ensureStorefront = mutation({
     }
 
     const existingAccounts = await ctx.db.query("treasuryAccounts").collect();
-    if (!existingAccounts.some((account) => account.label === ".cache Safe - Base USDC")) {
+    const baseReceivingAddress = "0x8DFBdEEC8c5d4970BB5F481C6ec7f73fa1C65be5";
+    const solanaReceivingAddress = "221CzKpjRaKqDvMMv2sR5pBNWaSvVx5T4a5MkffEXfGX";
+    const existingBaseAccount = existingAccounts.find(
+      (account) => account.label === ".cache Safe - Base USDC",
+    );
+    const existingSolanaAccount = existingAccounts.find(
+      (account) => account.label === ".cache Squads - Solana USDC",
+    );
+    if (!existingBaseAccount) {
       const safeId = await ctx.db.insert("treasuryAccounts", {
         label: ".cache Safe - Base USDC",
         kind: "usdc_multisig",
         chain: "evm",
-        address: "0xCacHe0000000000000000000000000000000bAr",
+        address: baseReceivingAddress,
         multisigConfig: "3/5 Safe",
         balanceCache: 18420.5,
       });
@@ -284,7 +292,7 @@ export const ensureStorefront = mutation({
         label: ".cache Squads - Solana USDC",
         kind: "usdc_multisig",
         chain: "solana",
-        address: "CACHEbarDemo1111111111111111111111111111",
+        address: solanaReceivingAddress,
         multisigConfig: "2/4 Squads",
         balanceCache: 6420,
       });
@@ -322,6 +330,24 @@ export const ensureStorefront = mutation({
         status: "confirmed",
       });
       summary.treasuryTransactionsCreated += 3;
+    } else {
+      if (existingBaseAccount.address !== baseReceivingAddress) {
+        await ctx.db.patch(existingBaseAccount._id, { address: baseReceivingAddress });
+      }
+      if (existingSolanaAccount && existingSolanaAccount.address !== solanaReceivingAddress) {
+        await ctx.db.patch(existingSolanaAccount._id, { address: solanaReceivingAddress });
+      }
+      if (!existingSolanaAccount) {
+        await ctx.db.insert("treasuryAccounts", {
+          label: ".cache Squads - Solana USDC",
+          kind: "usdc_multisig",
+          chain: "solana",
+          address: solanaReceivingAddress,
+          multisigConfig: "2/4 Squads",
+          balanceCache: 0,
+        });
+        summary.treasuryAccountsCreated += 1;
+      }
     }
 
     return summary;

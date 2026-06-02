@@ -20,6 +20,9 @@ type PaymentVerificationContext = {
   _id: Id<"payments">;
   status: "pending" | "confirmed" | "failed" | "refunded";
   chain?: "evm" | "solana";
+  assetCode?: "usdc" | "eth" | "sol";
+  amountAsset?: number;
+  amountAtomic?: string;
   amountUsdc?: number;
   fromAddress?: string;
   payTo: string;
@@ -71,6 +74,8 @@ type SolanaParsedInstruction = {
       sourceOwner?: string;
       owner?: string;
       destination?: string;
+      source?: string;
+      lamports?: number;
       amount?: string;
       tokenAmount?: {
         uiAmount?: number;
@@ -168,12 +173,15 @@ async function processPaymentVerification(
   }
   if (!payment.chain) throw new Error("Payment chain is missing.");
 
+  await ctx.runMutation(internal.checkout.recordPaymentSubmission, {
+    paymentId,
+    txHash: normalizedTxHash,
+    fromAddress: payment.fromAddress,
+  });
+
   let verification: VerificationResult;
   try {
-    verification =
-      payment.chain === "evm"
-        ? await verifyEvmUsdcTransfer(normalizedTxHash, payment)
-        : await verifySolanaUsdcTransfer(normalizedTxHash, payment);
+    verification = await verifyTransfer(normalizedTxHash, payment);
   } catch (error) {
     if (!options?.swallowRpcErrors) throw error;
     return {
@@ -221,6 +229,21 @@ async function processPaymentVerification(
     confirmations: verification.confirmations,
     amountUsdc: verification.amountUsdc,
   };
+}
+
+async function verifyTransfer(
+  txHash: string,
+  payment: PaymentVerificationContext,
+) {
+  const assetCode = payment.assetCode ?? "usdc";
+  if (payment.chain === "evm") {
+    return assetCode === "eth"
+      ? await verifyEvmNativeTransfer(txHash, payment)
+      : await verifyEvmUsdcTransfer(txHash, payment);
+  }
+  return assetCode === "sol"
+    ? await verifySolanaNativeTransfer(txHash, payment)
+    : await verifySolanaUsdcTransfer(txHash, payment);
 }
 
 async function verifyEvmUsdcTransfer(
@@ -275,6 +298,50 @@ async function verifyEvmUsdcTransfer(
     confirmations,
     amountUsdc: Number(BigInt(transfer.data ?? "0x0")) / 1_000_000,
     fromAddress: topicToAddress(transfer.topics?.[1] ?? ""),
+  };
+}
+
+async function verifyEvmNativeTransfer(
+  txHash: string,
+  payment: PaymentVerificationContext,
+): Promise<VerificationResult> {
+  const rpcUrl = envValue("EVM_RPC_URL") ?? envValue("VITE_EVM_RPC_URL") ?? "https://mainnet.base.org";
+  const [receipt, transaction, blockHex] = await Promise.all([
+    rpcJson(rpcUrl, "eth_getTransactionReceipt", [txHash]),
+    rpcJson(rpcUrl, "eth_getTransactionByHash", [txHash]),
+    rpcJson(rpcUrl, "eth_blockNumber", []),
+  ]);
+
+  if (!receipt || !transaction) {
+    return { status: "pending", reason: "Transaction not found on Base yet.", confirmations: 0 };
+  }
+  if (receipt.status === "0x0") {
+    return { status: "failed", reason: "Transaction reverted onchain.", confirmations: 0 };
+  }
+
+  const confirmations =
+    receipt.blockNumber && blockHex
+      ? Math.max(0, hexToInt(blockHex) - hexToInt(receipt.blockNumber) + 1)
+      : 0;
+  const expectedAtomic = BigInt(payment.amountAtomic ?? "0");
+  const recipientMatches = String(transaction.to ?? "").toLowerCase() === payment.payTo.toLowerCase();
+  const sender = String(transaction.from ?? "").toLowerCase();
+  const senderMatches = !payment.fromAddress || sender === payment.fromAddress.toLowerCase();
+  const amountMatches = BigInt(transaction.value ?? "0x0") >= expectedAtomic;
+
+  if (!recipientMatches || !senderMatches || !amountMatches) {
+    return {
+      status: "pending",
+      reason: "No matching ETH transfer to the treasury address was found in that transaction.",
+      confirmations,
+    };
+  }
+
+  return {
+    status: confirmations >= 2 ? "confirmed" : "pending",
+    reason: confirmations >= 2 ? undefined : "Waiting for Base confirmations.",
+    confirmations,
+    fromAddress: sender,
   };
 }
 
@@ -336,6 +403,55 @@ async function verifySolanaUsdcTransfer(
     confirmations: 1,
     amountUsdc: expectedAmount,
     fromAddress: matchingInstruction?.parsed?.info?.authority ?? payment.fromAddress,
+  };
+}
+
+async function verifySolanaNativeTransfer(
+  txHash: string,
+  payment: PaymentVerificationContext,
+): Promise<VerificationResult> {
+  const rpcUrl =
+    envValue("SOL_RPC_URL") ?? envValue("VITE_SOL_RPC_URL") ?? "https://api.mainnet-beta.solana.com";
+  const tx = (await rpcJson(rpcUrl, "getTransaction", [
+    txHash,
+    {
+      encoding: "jsonParsed",
+      commitment: "finalized",
+      maxSupportedTransactionVersion: 0,
+    },
+  ])) as SolanaTransactionResult | null;
+
+  if (!tx) {
+    return { status: "pending", reason: "Transaction not found on Solana yet.", confirmations: 0 };
+  }
+  if (tx.meta?.err) {
+    return { status: "failed", reason: "Transaction failed on Solana.", confirmations: 0 };
+  }
+
+  const expectedAtomic = BigInt(payment.amountAtomic ?? "0");
+  const matchingInstruction = collectSolanaTransferInstructions(tx).find(
+    (instruction: SolanaParsedInstruction) => {
+      const info = instruction.parsed?.info;
+      if (!info?.lamports) return false;
+      return (
+        info.destination === payment.payTo &&
+        BigInt(info.lamports) >= expectedAtomic &&
+        (!payment.fromAddress || info.source === payment.fromAddress)
+      );
+    },
+  );
+  if (!matchingInstruction) {
+    return {
+      status: "pending",
+      reason: "No matching SOL transfer to the treasury address was found in that transaction.",
+      confirmations: 1,
+    };
+  }
+
+  return {
+    status: "confirmed",
+    confirmations: 1,
+    fromAddress: matchingInstruction.parsed?.info?.source ?? payment.fromAddress,
   };
 }
 

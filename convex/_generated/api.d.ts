@@ -41,6 +41,7 @@ import type * as token from "../token.js";
 import type * as treasury from "../treasury.js";
 import type * as users from "../users.js";
 import type * as variants from "../variants.js";
+import type * as walletCheckout from "../walletCheckout.js";
 import type * as workflows from "../workflows.js";
 
 import type {
@@ -83,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   treasury: typeof treasury;
   users: typeof users;
   variants: typeof variants;
+  walletCheckout: typeof walletCheckout;
   workflows: typeof workflows;
 }>;
 

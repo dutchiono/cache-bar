@@ -154,11 +154,13 @@ function OrderCard({
             <Line label="Rail" value={payment.rail} />
             <Line label="Chain" value={payment.chain ?? "—"} />
             <Line
-              label={payment.rail === "stripe" ? "Stripe session" : "Amount USDC"}
+              label={payment.rail === "stripe" ? "Stripe session" : `Amount ${(payment.assetCode ?? "usdc").toUpperCase()}`}
               value={
                 payment.rail === "stripe"
                   ? payment.stripeCheckoutSessionId ?? "—"
-                  : payment.amountUsdc?.toFixed(2) ?? "—"
+                  : payment.amountAsset?.toFixed(payment.assetCode === "eth" ? 8 : payment.assetCode === "sol" ? 6 : 2) ??
+                    payment.amountUsdc?.toFixed(2) ??
+                    "—"
               }
               mono={payment.rail === "stripe"}
             />

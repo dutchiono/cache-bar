@@ -16,10 +16,13 @@ This is the plain contract for the sticker pack demo.
 - Buyer promise: one sticker pack plus one proof NFT
 - Payment rails:
   - `Stripe`
-  - `USDC`
-  - `x402`
+  - Connected-wallet `Base ETH`
+  - Connected-wallet `Base USDC`
+  - Connected-wallet `Solana SOL`
+  - Connected-wallet `Solana USDC`
+  - Agent/API `x402` after a production facilitator is configured
 
-All three rails point at the same shared 50-pack inventory.
+Every payment path points at the same shared 50-pack inventory.
 
 ## What DTOUR is allowed to do
 
@@ -66,12 +69,12 @@ Tell a partner agent owner this:
 ## Current repo status
 
 - The storefront is seeded to one sticker-pack product.
-- The backend keeps Stripe, USDC, and x402 live against the same shared inventory.
+- The storefront submits Base ETH, Base USDC, Solana SOL, and Solana USDC from a connected wallet and verifies the transaction onchain.
+- The x402 model remains agent/API-side. Do not describe a raw wallet transfer as x402; production x402 still needs facilitator configuration.
 - The concierge can pitch the sale and explain the partner-agent model.
 - The repo includes a reusable local skill at `skills/partner-agent-shop/SKILL.md`.
 
 What is still separate work:
 
-- dedicated public buy buttons for each non-Stripe rail
 - direct DTOUR or Discord claim collection flows
 - automated NFT issuance after payment verification
