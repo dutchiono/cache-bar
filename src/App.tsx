@@ -13,6 +13,7 @@ import Creators from "./pages/Creators";
 import CreatorDetail from "./pages/CreatorDetail";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
+import Launchpad from "./pages/Launchpad";
 import OrderDetail from "./pages/OrderDetail";
 import Orders from "./pages/Orders";
 import Products from "./pages/Products";
@@ -53,6 +54,7 @@ export default function App() {
       <Route path="/checkout" element={<Storefront focusCheckout />} />
       <Route path="/checkout/success" element={<CheckoutSuccess />} />
       <Route path="/stash" element={<Stash />} />
+      <Route path="/launchpad" element={<Launchpad />} />
       <Route path="/storefront" element={<Navigate to="/" replace />} />
 
       <Route path="/app" element={<ProtectedOpsLayout />}>

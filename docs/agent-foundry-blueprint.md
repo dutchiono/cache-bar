@@ -1,0 +1,167 @@
+# Agent Foundry Blueprint
+
+## Product Contract
+
+The platform launches tokenized agents, not tokens with decorative chat windows.
+
+One platform token anchors the network. Every child launch creates:
+
+1. an `AGENT/PLATFORM` market;
+2. an onchain agent identity;
+3. a fee processor dedicated to that agent;
+4. a Milady/elizaOS runtime;
+5. an EVM inference wallet and optional Solana capability wallet;
+6. a signed capability manifest;
+7. an x402-funded bootstrap path and a recurring VVV-staking inference path.
+
+The launchpad does not host models or operate GPUs. It still needs a thin control plane:
+an indexer, provisioner, fee operator, capability registry, status API, and durable audit log.
+
+## Economic Layer
+
+The first deployment target is Base.
+
+- Root market: `PLATFORM/VVV` when liquidity supports it. Use `PLATFORM/USDC` if the direct VVV route is too thin.
+- Child market: `AGENT/PLATFORM`.
+- Bootstrap inference: wallet-authenticated x402 USDC.
+- Recurring inference: acquire and stake VVV, then use wallet-derived Venice DIEM allocation.
+- Overflow inference: return to x402 when DIEM allocation is exhausted.
+
+The initial protocol-captured child-fee allocation is:
+
+| Allocation | Share | Purpose |
+| --- | ---: | --- |
+| Agent inference wallet | 60% | VVV staking and x402 overflow |
+| Shared cold-start reserve | 20% | Immediately responsive new launches |
+| Protocol operations | 10% | Keepers, audits, and incident reserve |
+| Creator | 10% | Creator revenue share |
+
+These values remain configurable during testnet. Production changes require a timelock.
+
+## Contracts
+
+| Contract | Responsibility |
+| --- | --- |
+| `PlatformToken` | Fixed-supply network token |
+| `AgentLaunchFactory` | Atomic child launch deployment |
+| `AgentToken` | Minimal cloneable ERC-20 |
+| `AgentRegistry` | Canonical identity, token, pool, wallet, metadata, and runtime status mapping |
+| `AgentHook` | Uniswap V4 fee and pool policy |
+| `LpLocker` | Deterministic liquidity lock and LP fee claims |
+| `AgentFeeProcessor` | Claims and routes the agent's protocol-captured fees |
+| `ProtocolTreasury` | Multisig-controlled cold-start and incident reserve |
+| `ExtensionRegistry` | Allowlisted, version-pinned launch extensions |
+
+The Fey topology is a design reference, not a vendored dependency. Before production, retrieve
+verified contract source, license terms, deployed-bytecode matches, audit reports, and hook tests.
+If that cannot be done, implement the topology independently against audited Uniswap V4 primitives.
+
+### Implemented Prototype Boundary
+
+The first executable prototype lives under `contracts/foundry/`:
+
+- `AgentToken.sol` is the cloneable fixed-supply child token;
+- `AgentRegistry.sol` stores launch identity, inference wallet, market attachment, and runtime state;
+- `AgentLaunchFactory.sol` deploys a child token, registers the identity, records the initial fee
+  policy, and emits market and runtime provisioning requests.
+
+The prototype intentionally does not deploy a Uniswap V4 market or route fees yet. That work belongs
+in the audited market adapter and fee processor layer instead of an unsafe placeholder.
+
+## Offchain Services
+
+| Service | Responsibility |
+| --- | --- |
+| `indexer` | Project launch, fee, staking, and runtime events into queryable state |
+| `provisioner` | Create runtime instance, identity, wallets, secrets, channels, and module installs |
+| `fee-operator` | Claim, swap, stake, top up x402, and reconcile |
+| `status-api` | Public agent market, runtime, module, and compute status |
+| `provider-venice` | Venice OpenAI-compatible provider and x402-authenticated transport |
+| `capability-sdk` | Manifest schema, scopes, install state, health checks, and rollback |
+
+## Launch State Machine
+
+```text
+draft
+  -> transaction_pending
+  -> market_created
+  -> identity_registered
+  -> runtime_provisioning
+  -> wallets_assigned
+  -> capabilities_installing
+  -> bootstrap_compute_armed
+  -> online
+```
+
+Failures after `market_created` must be retryable without deploying a second token or market.
+Every step is idempotent and journaled against the onchain `agentId`.
+
+## Capability Manifest
+
+```ts
+interface CapabilityManifest {
+  id: string;
+  version: string;
+  sourceCommit: string;
+  chains: ("base" | "solana")[];
+  defaultMode: "enabled" | "disabled" | "operator-only";
+  scopes: string[];
+  secretRequirements: string[];
+  walletPolicy: string;
+  healthCheck: string;
+  auditStatus: "prototype" | "reviewed" | "production";
+}
+```
+
+Agents receive adapters, not arbitrary repositories. Wallet-signing capabilities require policy
+checks outside the language model runtime. Plugins never receive unrestricted raw private keys.
+
+## Initial Capabilities
+
+### `.cache`
+
+Enable by default. The existing Convex service owns products, inventory, checkout, payment records,
+fulfillment, royalties, and durable workflows. The agent may propose and explain. It may not
+publish products, move treasury funds, issue refunds, burn user assets, or sign transactions.
+
+### Trading Machine
+
+Install in watch-only mode. Expose simulation, proposal, and capped execution only after:
+
+- README and source behavior are reconciled;
+- the local vault assumption is replaced with managed wallet policy;
+- tenant isolation is added;
+- every transaction receives budget, token, pool, and slippage checks;
+- execution is audited and kill-switchable.
+
+### Verse
+
+Install disabled and operator-only. Its ARM/fire workflows create market-manipulation risk if
+exposed as a default public autonomous capability. Any use requires separate policy and legal review.
+
+### Miono and Milady
+
+Use Miono as the state-isolated character-template pattern. Use Milady/elizaOS as the shared runtime:
+plugin loading, memory, Gateway auth, managed Eliza Cloud mode, Steward wallet support, Discord,
+Telegram, WebChat, and OpenAI-compatible endpoints.
+
+## Demo Boundary
+
+`/launchpad` is an interactive architecture demo. It intentionally simulates provisioning and uses
+representative network records. It does not deploy tokens, request wallet signatures, or claim that
+indexer-backed records already exist. The existing `/` storefront remains the working `.cache`
+commerce proof of concept.
+
+## Delivery Order
+
+1. Lock ADRs: platform token, root pair, fee policy, custody provider, Eliza Cloud provisioning API,
+   permissionless versus curated launch policy, and Verse restriction.
+2. Build the Base contract test harness and atomic child launch path.
+3. Prove the full economic loop on testnet: launch, trade, claim, swap, x402 inference, VVV stake,
+   and wallet-derived inference key.
+4. Implement the event indexer and idempotent runtime provisioner.
+5. Extract `capability-sdk` and ship the `.cache` adapter first.
+6. Build the Venice provider adapter inside Milady/elizaOS.
+7. Harden Trading Machine into watch, simulate, propose, and capped-execute modes.
+8. Complete external contract audit, wallet-policy review, and incident drills before permissionless
+   mainnet launches.

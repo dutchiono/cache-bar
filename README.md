@@ -7,6 +7,7 @@
 - `/` — public storefront
 - `/checkout` — buyer identity and Stripe handoff
 - `/stash` — token burn redemption for one-time Stripe discount codes
+- `/launchpad` — interactive agent-foundry architecture demo
 - `/app` — staff ops
 - `/app/agent` — .cache concierge status and ops chat
 
@@ -37,5 +38,6 @@ Convex component wiring is tracked in [docs/convex-components.md](docs/convex-co
 Teemill hybrid mode notes live in [docs/teemill-integration-plan.md](docs/teemill-integration-plan.md).
 Sticker proof NFT notes live in [docs/sticker-drop-nft.md](docs/sticker-drop-nft.md).
 Solana DTOUR sticker flow notes live in [docs/solana-sticker-drop.md](docs/solana-sticker-drop.md).
+The agent launchpad architecture and build sequence live in [docs/agent-foundry-blueprint.md](docs/agent-foundry-blueprint.md).
 Partner-agent promo notes live in [docs/partner-agent-promo-playbook.md](docs/partner-agent-promo-playbook.md).
 The local partner-agent skill lives in [skills/partner-agent-shop/SKILL.md](skills/partner-agent-shop/SKILL.md).

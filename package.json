@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "compile:contracts": "bunx solcjs --bin --abi --include-path node_modules --base-path . -o artifacts/contracts contracts/StickerClaim50.sol",
+    "compile:foundry": "bunx solcjs --bin --abi --include-path node_modules --base-path . -o artifacts/foundry contracts/foundry/AgentToken.sol contracts/foundry/AgentRegistry.sol contracts/foundry/AgentLaunchFactory.sol",
     "solana:sticker": "bun run scripts/solanaStickerDrop.ts"
   },
   "dependencies": {
