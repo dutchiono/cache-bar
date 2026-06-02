@@ -17,6 +17,7 @@
     "test:foundry": "forge test",
     "test:provisioner": "bun test platform/provisioner",
     "test:fee-operator": "bun test platform/fee-operator",
+    "test:indexer": "bun test platform/indexer",
     "validate:capabilities": "bun run scripts/validateCapabilityRegistry.ts",
     "solana:sticker": "bun run scripts/solanaStickerDrop.ts"
   },

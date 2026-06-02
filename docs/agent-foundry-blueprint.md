@@ -102,6 +102,14 @@ bootstrap buffer, converts only surplus USDC into VVV, and stakes available VVV.
 carry deterministic idempotency keys so retries do not repeat completed swaps or stakes. Its
 portfolio reader and Steward-backed execution client remain interfaces until testnet wiring.
 
+### Implemented Indexer Boundary
+
+The first contract-event projector lives under `platform/indexer/`. It creates public agent status
+records from launch, market, runtime, and fee-routing events. It deduplicates repeated chain logs,
+defers out-of-order events until the launch identity arrives, drains deferred events afterward, and
+rejects conflicting identity replays. Its in-memory store is a test double for the durable database
+adapter used by the status API.
+
 ## Launch State Machine
 
 ```text
