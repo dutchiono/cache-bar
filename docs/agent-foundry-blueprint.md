@@ -62,11 +62,18 @@ The first executable prototype lives under `contracts/foundry/`:
 
 - `AgentToken.sol` is the cloneable fixed-supply child token;
 - `AgentRegistry.sol` stores launch identity, inference wallet, market attachment, and runtime state;
+- `AgentFeeProcessor.sol` is cloned per agent and routes collected `PLATFORM` fees under the
+  snapshotted launch-time 60/20/10/10 policy. Rounding dust returns to the agent inference wallet;
 - `AgentLaunchFactory.sol` deploys a child token, registers the identity, records the initial fee
-  policy, and emits market and runtime provisioning requests.
+  policy, creates a market through an audited adapter when configured, and emits runtime
+  provisioning requests.
+- `interfaces/IAgentMarketAdapter.sol` isolates chain-specific market creation behind an audited
+  boundary. Without an adapter, launch identity remains valid and a retryable market provisioning
+  event is emitted.
 
-The prototype intentionally does not deploy a Uniswap V4 market or route fees yet. That work belongs
-in the audited market adapter and fee processor layer instead of an unsafe placeholder.
+The prototype intentionally does not include a production Uniswap V4 adapter, VVV swapper, staking
+operator, or x402 top-up operator yet. That work belongs behind audited adapter boundaries instead
+of unsafe placeholders.
 
 ## Offchain Services
 

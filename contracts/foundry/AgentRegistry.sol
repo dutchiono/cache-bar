@@ -19,6 +19,7 @@ contract AgentRegistry is Ownable {
         address creator;
         address token;
         address inferenceWallet;
+        address feeProcessor;
         address market;
         RuntimeStatus runtimeStatus;
         string metadataURI;
@@ -36,6 +37,7 @@ contract AgentRegistry is Ownable {
         address indexed creator,
         address indexed token,
         address inferenceWallet,
+        address feeProcessor,
         string metadataURI
     );
     event MarketAttached(uint256 indexed agentId, address indexed market);
@@ -48,9 +50,15 @@ contract AgentRegistry is Ownable {
         address creator,
         address token,
         address inferenceWallet,
+        address feeProcessor,
         string calldata metadataURI
     ) external onlyOwner {
-        if (creator == address(0) || token == address(0) || inferenceWallet == address(0)) {
+        if (
+            creator == address(0) ||
+            token == address(0) ||
+            inferenceWallet == address(0) ||
+            feeProcessor == address(0)
+        ) {
             revert InvalidAddress();
         }
         if (agents[agentId].token != address(0)) revert AgentAlreadyRegistered();
@@ -60,13 +68,14 @@ contract AgentRegistry is Ownable {
             creator: creator,
             token: token,
             inferenceWallet: inferenceWallet,
+            feeProcessor: feeProcessor,
             market: address(0),
             runtimeStatus: RuntimeStatus.Provisioning,
             metadataURI: metadataURI
         });
         agentIdByToken[token] = agentId;
 
-        emit AgentRegistered(agentId, creator, token, inferenceWallet, metadataURI);
+        emit AgentRegistered(agentId, creator, token, inferenceWallet, feeProcessor, metadataURI);
     }
 
     function attachMarket(uint256 agentId, address market) external onlyOwner {
