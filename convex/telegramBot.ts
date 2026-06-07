@@ -102,7 +102,7 @@ async function handleCallback(ctx: ActionCtx, callback: {
     await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, mode: "chat" });
     await sendTelegramMessage(
       chatId,
-      "Chat mode — ask about the drop, request flow, or shop ops.\n\nTap Menu anytime to go back to buttons.",
+      "Ask me anything — I'll answer here. Shop and cart buttons stay below whenever you want them.",
       menuKeyboard(),
     );
     return;
@@ -153,7 +153,11 @@ async function handleMessage(ctx: ActionCtx, message: {
   }
   if (lower === "/chat" || lower === "chat") {
     await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, mode: "chat" });
-    await sendTelegramMessage(chatId, "Chat mode on. Ask anything about the shop.", menuKeyboard());
+    await sendTelegramMessage(
+      chatId,
+      "Ask me anything — I'll answer here. Shop and cart buttons stay below whenever you want them.",
+      menuKeyboard(),
+    );
     return;
   }
   if (lower === "/website" || lower === "website") {
@@ -164,32 +168,21 @@ async function handleMessage(ctx: ActionCtx, message: {
     );
     return;
   }
-  if (looksLikeShopQuery(text)) {
-    await sendShopMenu(chatId);
-    return;
-  }
 
-  const session = await ctx.runQuery(internal.telegramBot.getSession, { chatId });
-  const mode = session?.mode ?? "menu";
-
-  if (mode === "chat" || looksLikeQuestion(text)) {
-    await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, mode: "chat" });
-    const reply = await elizaCloudChat(text);
-    await sendTelegramMessage(chatId, reply, menuKeyboard());
-    return;
-  }
-
-  await sendMainMenu(chatId, "Pick how you want to shop — buttons or chat.");
+  // Default: conversational reply + contextual buttons (hybrid, not either/or).
+  await sendConversationalReply(chatId, text);
 }
 
-function looksLikeQuestion(text: string) {
-  return text.includes("?") || text.split(/\s+/).length >= 4;
+async function sendConversationalReply(chatId: number, text: string) {
+  const reply = await elizaCloudChat(text);
+  const keyboard = looksLikeShopQuery(text) ? shopContextKeyboard() : menuKeyboard();
+  await sendTelegramMessage(chatId, reply, keyboard);
 }
 
 function looksLikeShopQuery(text: string) {
   const lower = text.toLowerCase();
   return (
-    /\b(shop|store|catalog|catalogue|drop|sticker|stickers|sku|inventory)\b/.test(lower) ||
+    /\b(shop|store|catalog|catalogue|drop|sticker|stickers|sku|inventory|buy|price|cost)\b/.test(lower) ||
     /\bwhat('s|s| is) in\b/.test(lower) ||
     /\bwhast in\b/.test(lower) ||
     /\bcst-\d{3}\b/.test(lower)
@@ -200,11 +193,10 @@ function welcomeText() {
   return [
     "<b>.cache · dotCache</b>",
     "",
-    "Shop the way you want:",
-    "• <b>Shop</b> — sticker catalog with buttons",
-    "• <b>Website</b> — full storefront in the browser",
-    "• <b>Chat</b> — ask me about the drop",
-    "• <b>Cart</b> — your Telegram selection → request on web",
+    "Talk to me, tap buttons, or both — whatever you're comfortable with.",
+    "• Type a question about the drop",
+    "• Tap <b>Shop</b> for the sticker catalog",
+    "• Tap <b>Website</b> for the full storefront",
     "",
     `Live drop: 3 stickers · 50 each · price after proof`,
   ].join("\n");
@@ -225,6 +217,21 @@ function menuKeyboard(): InlineKeyboard {
       { text: "📋 Cart", callback_data: "cart" },
     ],
     [{ text: "⚙️ Ops console", url: shopUrl("/app") }],
+  ]);
+}
+
+function shopContextKeyboard(): InlineKeyboard {
+  return inlineKeyboard([
+    LIVE_SHOP_PRODUCTS.map((p) => ({
+      text: p.sku,
+      callback_data: `p:${p.sku.slice(-3)}`,
+    })),
+    [
+      { text: "🛒 Full catalog", callback_data: "shop" },
+      { text: "📋 Cart", callback_data: "cart" },
+      { text: "🌐 Website", url: shopUrl() },
+    ],
+    menuRow(),
   ]);
 }
 
