@@ -1,6 +1,7 @@
 import { useAction } from "convex/react";
-import { useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { api } from "../../convex/_generated/api";
+import "../storefront.css";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -13,9 +14,16 @@ type PendingImage = {
   dataUrl: string;
 };
 
-export function CacheConcierge({ embedded = false }: { embedded?: boolean }) {
+export function CacheConcierge({
+  embedded = false,
+  className = "",
+}: {
+  embedded?: boolean;
+  className?: string;
+}) {
   const chat = useAction(api.agent.publicConciergeChat);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const logRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(embedded);
   const [visitorId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
@@ -30,12 +38,17 @@ export function CacheConcierge({ embedded = false }: { embedded?: boolean }) {
     {
       role: "assistant",
       content:
-        "I'm dotCache — same Eliza agent as Telegram and ops. Ask about the Cozy Devs sticker pack, fulfillment, or drop an image to start a product.",
+        "I'm dotCache — same Eliza agent as Telegram and ops. Ask about the Cozy Devs sticker pack, fulfillment, or attach an image to start a product.",
     },
   ]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
+
+  useEffect(() => {
+    if (!embedded || !logRef.current) return;
+    logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [embedded, messages, busy]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -97,20 +110,126 @@ export function CacheConcierge({ embedded = false }: { embedded?: boolean }) {
     }
   }
 
+  if (embedded) {
+    return (
+      <div className={className}>
+        <div
+          ref={logRef}
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-6"
+          aria-live="polite"
+        >
+          {messages.map((message, index) => (
+            <div
+              key={`${message.role}-${index}`}
+              className={`max-w-[88%] rounded-2xl border px-3 py-2.5 text-sm leading-relaxed sm:px-4 sm:py-3 ${
+                message.role === "user"
+                  ? "ml-auto border-[#c4a479]/40 bg-[#c4a479] text-[#111110]"
+                  : "mr-auto border-white/10 bg-white/[0.04] text-zinc-200"
+              }`}
+            >
+              {message.content}
+            </div>
+          ))}
+          {busy && (
+            <div className="mr-auto max-w-[88%] rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-zinc-400">
+              Checking the shop context…
+            </div>
+          )}
+        </div>
+
+        <div className="shrink-0 border-t border-white/10 bg-[#0a0a0a] px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:px-6">
+          {error && (
+            <p className="mb-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              {error}
+            </p>
+          )}
+
+          <form onSubmit={onSubmit} className="space-y-2">
+            {pendingImage && (
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-2">
+                <img
+                  src={pendingImage.previewUrl}
+                  alt={pendingImage.name}
+                  className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{pendingImage.name}</p>
+                  <button
+                    type="button"
+                    onClick={() => setPendingImage(null)}
+                    disabled={busy}
+                    className="mt-1 text-xs text-zinc-400 underline hover:text-white"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={busy || !visitorId}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 text-lg text-zinc-300 hover:border-white/30 hover:text-white disabled:opacity-40"
+                aria-label="Attach image"
+                title="Attach image"
+              >
+                +
+              </button>
+              <label className="sr-only" htmlFor="cache-concierge-message">
+                Message dotCache
+              </label>
+              <textarea
+                id="cache-concierge-message"
+                name="message"
+                rows={1}
+                placeholder="Ask about the sticker pack, checkout, or fulfillment…"
+                disabled={busy || !visitorId}
+                autoComplete="off"
+                enterKeyHint="send"
+                className="min-h-11 max-h-32 min-w-0 flex-1 resize-none rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-base text-[#e8e3d6] placeholder:text-zinc-500 focus:border-[#c4a479]/50 focus:outline-none disabled:opacity-40 sm:text-sm"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
+              />
+              <button
+                type="submit"
+                disabled={busy || !visitorId}
+                className="flex h-11 shrink-0 items-center justify-center rounded-full bg-[#c4a479] px-5 text-sm font-semibold text-[#111110] disabled:opacity-40"
+              >
+                Send
+              </button>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(event) => void onFileChange(event)}
+              hidden
+            />
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={embedded ? "sf-concierge sf-concierge--embedded" : "sf-concierge"}>
-      {(open || embedded) && (
+    <div className="sf-concierge">
+      {open && (
         <section className="sf-concierge-panel" aria-label=".cache concierge">
           <div className="sf-concierge-head">
             <div>
               <div className="sf-kicker">dotCache · Eliza Cloud</div>
-              <strong>{embedded ? "Web chat" : "Shop desk"}</strong>
+              <strong>Shop desk</strong>
             </div>
-            {!embedded && (
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close .cache chat">
-                Close
-              </button>
-            )}
+            <button type="button" onClick={() => setOpen(false)} aria-label="Close .cache chat">
+              Close
+            </button>
           </div>
 
           <div className="sf-concierge-log">
@@ -169,11 +288,9 @@ export function CacheConcierge({ embedded = false }: { embedded?: boolean }) {
         </section>
       )}
 
-      {!embedded && (
-        <button type="button" className="sf-concierge-button" onClick={() => setOpen((value) => !value)}>
-          Talk to dotCache
-        </button>
-      )}
+      <button type="button" className="sf-concierge-button" onClick={() => setOpen((value) => !value)}>
+        Talk to dotCache
+      </button>
     </div>
   );
 }
