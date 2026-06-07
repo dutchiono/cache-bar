@@ -180,20 +180,8 @@ jobs:
           key: ${{ secrets.DOTCACHE_DEPLOY_SSH_KEY }}
           script: |
             set -e
+            umask 022
             mkdir -p "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist"
-
-      - name: Prepare cachebar dist directory
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: root
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            rm -rf "${{ secrets.DEPLOY_PATH }}/dist"
-            mkdir -p "${{ secrets.DEPLOY_PATH }}/dist"
-            chown -R "${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }}" "${{ secrets.DEPLOY_PATH }}/dist"
-            chmod 755 "${{ secrets.DEPLOY_PATH }}/dist"
 
       - name: Upload dist
         uses: appleboy/scp-action@v0.1.7
@@ -232,30 +220,9 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
-          username: root
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          username: ${{ secrets.DOTCACHE_DEPLOY_USER }}
+          key: ${{ secrets.DOTCACHE_DEPLOY_SSH_KEY }}
           script: |
             set -e
             find "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist" -type d -exec chmod 755 {} \;
             find "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist" -type f -exec chmod 644 {} \;
-
-      - name: Sync nginx site configs
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: root
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "self-hosted/nginx/dotcache.bushleague.xyz,self-hosted/nginx/cachebar.bushleague.xyz"
-          target: "/etc/nginx/sites-available"
-          overwrite: true
-
-      - name: Reload nginx
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: root
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            nginx -t
-            systemctl reload nginx
