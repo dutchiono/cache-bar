@@ -95,7 +95,7 @@ export default function AgentConsole() {
         <StatusCard label="Eliza Cloud" ready={config?.elizaConfigured} detail={config?.elizaAgentId ?? "Missing CACHE_ELIZA_AGENT_ID / ELIZA_AGENT_ID"} />
         <StatusCard label="Web chat" ready={true} detail="Storefront concierge is enabled" />
         <StatusCard label="Discord" ready={config?.discordConfigured} detail="Requires DISCORD_APPLICATION_ID and DISCORD_API_TOKEN in Eliza" />
-        <StatusCard label="Telegram" ready={config?.telegramConfigured} detail="Requires TELEGRAM_BOT_TOKEN in Eliza" />
+        <StatusCard label="Telegram" ready={config?.telegramConfigured} detail="Shop buttons + chat via Convex webhook" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[320px_1fr]">

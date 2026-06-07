@@ -52,6 +52,7 @@ jobs:
           DISCORD_APPLICATION_ID: ${{ secrets.DISCORD_APPLICATION_ID }}
           DISCORD_API_TOKEN: ${{ secrets.DISCORD_API_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
           RESEND_TEST_MODE: ${{ secrets.RESEND_TEST_MODE }}
@@ -98,6 +99,10 @@ jobs:
           if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
             bunx convex env set --prod TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
           fi
+          if [ -n "$VITE_CONVEX_URL" ]; then
+            CONVEX_SITE_URL="${VITE_CONVEX_URL/.convex.cloud/.convex.site}"
+            bunx convex env set --prod CONVEX_SITE_URL "$CONVEX_SITE_URL"
+          fi
           if [ -n "$RESEND_API_KEY" ]; then
             bunx convex env set --prod RESEND_API_KEY "$RESEND_API_KEY"
           fi
@@ -141,6 +146,23 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: bunx convex run migrations:runAll
+
+      - name: Register Telegram webhook
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
+        run: |
+          set -e
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$VITE_CONVEX_URL" ]; then
+            echo "Skipping Telegram webhook registration (missing token or Convex URL)."
+            exit 0
+          fi
+          SITE="${VITE_CONVEX_URL/.convex.cloud/.convex.site}"
+          WEBHOOK="${SITE%/}/telegram/webhook"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
+            -H "Content-Type: application/json" \
+            -d "{\"url\":\"${WEBHOOK}\",\"allowed_updates\":[\"message\",\"callback_query\"],\"drop_pending_updates\":false}"
+          echo "Registered Telegram webhook at ${WEBHOOK}"
 
       - name: Build
         env:
