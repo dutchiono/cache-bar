@@ -1,23 +1,20 @@
-import { LIVE_SHOP_PRODUCT, shopUrl } from "./liveShopCatalog";
+import { shopUrl } from "./liveShopCatalog";
 import { managerConversationalReply } from "./managerConcierge";
+import { formatOpsContext, type OpsSnapshot } from "./opsSnapshot";
 import { shopConversationalReply } from "./shopConcierge";
 import type { TelegramBotRole } from "./telegramApi";
 
-const STORE_SYSTEM = `You are dotCache — the customer-facing shop agent for .cache.
+const STORE_SYSTEM = `You are dotCache — optional shop assistant for .cache (only when customer explicitly opens chat).
 
-Live shop: ${shopUrl()} — one product: Cozy Devs Sticker Pack (STICKER-PACK-001). Each pack contains all three stickers (Moon Seal, Floppy, Bus Riot) plus a proof NFT. 50 packs total. Price after proof.
+Live shop: ${shopUrl()} — Cozy Devs Sticker Pack (STICKER-PACK-001), 50 packs. Customers normally browse via buttons, not chat.
 
-You run the simple store Telegram bot. Customers may talk AND use shop buttons. Answer warmly and specifically. No ops jargon. Never mention the manager bot.
+Keep answers short. No ops jargon.`;
 
-No generic "how can I help" filler. No emoji spam. Never claim you charged a card or published a product.`;
+const MANAGER_SYSTEM = `You are dotCache Manager — the fulfillment and ops agent for .cache operators.
 
-const MANAGER_SYSTEM = `You are dotCache Manager — the ops and fulfillment agent for .cache on the operator Telegram bot.
+You run agentic fulfillment on the backend: orders, Prodigi, inventory, catalog review, proposals. Humans approve publish, payment, and ship. Never claim you executed money-moving actions.
 
-You help staff with orders, Prodigi fulfillment, inventory, catalog review, and agent proposals. Humans approve publish, payment, and fulfillment. Never claim you executed money-moving actions.
-
-Live product: Cozy Devs Sticker Pack (STICKER-PACK-001), 50 packs. Store customers use a separate simple shop bot — this bot is operators only.
-
-Answer directly and operationally. No generic assistant filler.`;
+The store bot is a separate simple menu for customers — this channel is operators only. Answer with live ops data when provided. Be direct and operational. No generic assistant filler.`;
 
 function envValue(key: string) {
   const globalProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
@@ -25,17 +22,22 @@ function envValue(key: string) {
   return value || undefined;
 }
 
-function systemPrompt(role: TelegramBotRole) {
-  return role === "manager" ? MANAGER_SYSTEM : STORE_SYSTEM;
+function systemPrompt(role: TelegramBotRole, opsContext?: string) {
+  const base = role === "manager" ? MANAGER_SYSTEM : STORE_SYSTEM;
+  if (role === "manager" && opsContext) {
+    return `${base}\n\n${opsContext}`;
+  }
+  return base;
 }
 
-function localFallback(role: TelegramBotRole, userText: string) {
-  return role === "manager" ? managerConversationalReply(userText) : shopConversationalReply(userText);
-}
-
-export async function elizaCloudChat(userText: string, role: TelegramBotRole = "store"): Promise<string> {
+export async function elizaCloudChat(
+  userText: string,
+  role: TelegramBotRole = "store",
+  opsSnap?: OpsSnapshot,
+): Promise<string> {
   const apiKey = envValue("CACHE_ELIZA_API_KEY") ?? envValue("ELIZA_API_KEY");
   const baseUrl = (envValue("CACHE_ELIZA_BASE_URL") ?? "https://www.elizacloud.ai").replace(/\/+$/, "");
+  const opsContext = opsSnap ? formatOpsContext(opsSnap) : undefined;
 
   if (apiKey) {
     const models = ["openai/gpt-4o-mini", "gpt-4o-mini"];
@@ -51,7 +53,7 @@ export async function elizaCloudChat(userText: string, role: TelegramBotRole = "
             model,
             max_tokens: 600,
             messages: [
-              { role: "system", content: systemPrompt(role) },
+              { role: "system", content: systemPrompt(role, opsContext) },
               { role: "user", content: userText },
             ],
           }),
@@ -70,10 +72,8 @@ export async function elizaCloudChat(userText: string, role: TelegramBotRole = "
     }
   }
 
-  return localFallback(role, userText);
-}
-
-export function packSummaryLine() {
-  const p = LIVE_SHOP_PRODUCT;
-  return `${p.name} · ${p.includes.join(", ")} · ${p.run}`;
+  if (role === "manager" && opsSnap) {
+    return managerConversationalReply(userText, opsSnap);
+  }
+  return shopConversationalReply(userText);
 }

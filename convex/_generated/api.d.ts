@@ -30,6 +30,7 @@ import type * as inventory from "../inventory.js";
 import type * as lib_elizaCloudChat from "../lib/elizaCloudChat.js";
 import type * as lib_liveShopCatalog from "../lib/liveShopCatalog.js";
 import type * as lib_managerConcierge from "../lib/managerConcierge.js";
+import type * as lib_opsSnapshot from "../lib/opsSnapshot.js";
 import type * as lib_prodigi from "../lib/prodigi.js";
 import type * as lib_shopConcierge from "../lib/shopConcierge.js";
 import type * as lib_stripe from "../lib/stripe.js";
@@ -89,6 +90,7 @@ declare const fullApi: ApiFromModules<{
   "lib/elizaCloudChat": typeof lib_elizaCloudChat;
   "lib/liveShopCatalog": typeof lib_liveShopCatalog;
   "lib/managerConcierge": typeof lib_managerConcierge;
+  "lib/opsSnapshot": typeof lib_opsSnapshot;
   "lib/prodigi": typeof lib_prodigi;
   "lib/shopConcierge": typeof lib_shopConcierge;
   "lib/stripe": typeof lib_stripe;

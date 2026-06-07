@@ -55,20 +55,6 @@ async function handleCallback(
     await sendShopMenu(chatId);
     return;
   }
-  if (data === "chat") {
-    await ctx.runMutation(internal.telegramSessions.upsertSession, {
-      bot: BOT,
-      chatId,
-      mode: "chat",
-    });
-    await sendTelegramMessage(
-      BOT,
-      chatId,
-      "Ask me anything — I'll answer here. Shop buttons stay below.",
-      menuKeyboard(),
-    );
-    return;
-  }
   if (data === "cart") {
     await sendCart(ctx, chatId);
     return;
@@ -126,7 +112,7 @@ async function handleMessage(
     await sendTelegramMessage(
       BOT,
       chatId,
-      "Ask me anything — I'll answer here. Shop buttons stay below.",
+      "Chat mode — optional. Tap Menu anytime to go back to the shop.",
       menuKeyboard(),
     );
     return;
@@ -141,13 +127,19 @@ async function handleMessage(
     return;
   }
 
-  await sendConversationalReply(chatId, text);
-}
+  const session = await ctx.runQuery(internal.telegramSessions.getSession, { bot: BOT, chatId });
+  if (session?.mode === "chat") {
+    const reply = await elizaCloudChat(text, BOT);
+    await sendTelegramMessage(BOT, chatId, reply, menuKeyboard());
+    return;
+  }
 
-async function sendConversationalReply(chatId: number, text: string) {
-  const reply = await elizaCloudChat(text, BOT);
-  const keyboard = looksLikeShopQuery(text) ? shopContextKeyboard() : menuKeyboard();
-  await sendTelegramMessage(BOT, chatId, reply, keyboard);
+  if (looksLikeShopQuery(text) || lower.includes("menu") || lower.includes("browse")) {
+    await sendShopMenu(chatId);
+    return;
+  }
+
+  await sendMainMenu(chatId, "Tap below to browse the sticker pack.");
 }
 
 function looksLikeShopQuery(text: string) {
@@ -166,11 +158,11 @@ function welcomeText() {
   return [
     "<b>.cache shop</b>",
     "",
-    "Browse stickers, ask questions, or both.",
+    `<b>${p.name}</b>`,
+    `${p.includes.join(" · ")}`,
+    `${p.run} · price after proof`,
     "",
-    `<b>Live now:</b> ${p.name}`,
-    `• ${p.includes.join(" · ")}`,
-    `• ${p.run} · price after proof`,
+    "Tap below to browse.",
   ].join("\n");
 }
 
@@ -184,24 +176,7 @@ function menuKeyboard(): InlineKeyboard {
       { text: "📦 Sticker pack", callback_data: "pack" },
       { text: "🌐 Website", url: shopUrl() },
     ],
-    [
-      { text: "💬 Chat", callback_data: "chat" },
-      { text: "📋 Cart", callback_data: "cart" },
-    ],
-  ]);
-}
-
-function shopContextKeyboard(): InlineKeyboard {
-  return inlineKeyboard([
-    [
-      { text: "📦 View pack", callback_data: "pack" },
-      { text: "➕ Add pack", callback_data: "add" },
-    ],
-    [
-      { text: "📋 Cart", callback_data: "cart" },
-      { text: "🌐 Website", url: shopUrl() },
-    ],
-    menuRow(),
+    [{ text: "📋 Cart", callback_data: "cart" }],
   ]);
 }
 

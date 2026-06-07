@@ -1,36 +1,63 @@
 import { shopUrl } from "./liveShopCatalog";
+import { formatOpsContext, type OpsSnapshot } from "./opsSnapshot";
 
-/** Local ops replies when Eliza Cloud inference is unavailable. */
-export function managerConversationalReply(text: string): string {
+/** Agent-style ops replies when Eliza inference is unavailable. */
+export function managerConversationalReply(text: string, snap: OpsSnapshot): string {
   const lower = text.toLowerCase();
-
-  if (lower.includes("fulfill") || lower.includes("prodigi") || lower.includes("ship")) {
-    return [
-      "Fulfillment runs through Prodigi after proof approval.",
-      "I can summarize pending orders and inventory — tap Fulfillment or Orders below.",
-      "Money-moving and publish actions still need human approval in the web console.",
-    ].join(" ");
-  }
+  const ctx = formatOpsContext(snap);
 
   if (lower.includes("order") || lower.includes("request")) {
-    return "Tap Orders for a snapshot of recent activity, or open the ops console for full detail.";
+    return [
+      ctx,
+      "",
+      snap.activeOrders === 0
+        ? "No active orders right now. I will flag new ones as they land."
+        : `${snap.activeOrders} order(s) need attention — paid, processing, or awaiting fulfillment.`,
+      `Full detail: ${shopUrl("/app")}`,
+    ].join("\n");
+  }
+
+  if (lower.includes("fulfill") || lower.includes("prodigi") || lower.includes("ship") || lower.includes("inventory")) {
+    const onHand = snap.stickerOnHand ?? "unknown";
+    const reserved = snap.stickerReserved ?? "unknown";
+    return [
+      ctx,
+      "",
+      `Sticker pack run: ${onHand} on hand, ${reserved} reserved.`,
+      "Prodigi path: proof → quote → ship. I can prep proposals; you approve before anything moves.",
+    ].join("\n");
   }
 
   if (lower.includes("catalog") || lower.includes("product") || lower.includes("sku")) {
-    return "Live SKU: STICKER-PACK-001 (Cozy Devs 3-sticker pack, 50 run). Catalog edits go through review before publish.";
+    return [
+      ctx,
+      "",
+      "Live SKU: STICKER-PACK-001 — Cozy Devs 3-sticker pack, 50 run.",
+      snap.newSubmissions > 0
+        ? `${snap.newSubmissions} submission(s) waiting in review.`
+        : "Catalog queue is clear.",
+    ].join("\n");
   }
 
   if (lower.includes("proposal") || lower.includes("approve")) {
-    return "Agent proposals queue in the ops console. I propose; you approve publish, payment, and fulfillment.";
+    return [
+      "I propose catalog and fulfillment actions; humans approve publish and payment.",
+      ctx,
+      `Approve in console: ${shopUrl("/app")}`,
+    ].join("\n\n");
   }
 
-  if (lower.includes("hi") || lower.includes("hello")) {
-    return "dotCache Manager — fulfillment and ops. Ask about orders, inventory, or fulfillment, or use the buttons.";
+  if (lower.includes("hi") || lower.includes("hello") || lower === "/start") {
+    return [
+      "dotCache Manager — fulfillment agent on the backend.",
+      ctx,
+      "Ask about orders, inventory, Prodigi, or what needs approval.",
+    ].join("\n\n");
   }
 
   return [
-    "I'm the manager bot — backend agent for fulfillment and ops.",
-    "Store customers use the separate shop bot; this channel is for operators.",
-    `Web console: ${shopUrl("/app")}`,
-  ].join(" ");
+    ctx,
+    "",
+    "Tell me what you need — orders, fulfillment, catalog, or approvals. I run ops; the store bot handles customers.",
+  ].join("\n");
 }
