@@ -99,9 +99,19 @@ Never set `CONVEX_SITE_URL` via `convex env set` — it is built-in.
 - Declaring done after push without checking webhook + logs
 - Re-enabling Eliza org telegram automation while Convex owns the webhook
 
+## Dual Telegram bots
+
+| Bot | Env | Webhook | Audience |
+|-----|-----|---------|----------|
+| **Store** | `TELEGRAM_BOT_TOKEN` | `/telegram/webhook` | Customers — simple shop + chat |
+| **Manager** | `TELEGRAM_MANAGER_BOT_TOKEN` | `/telegram/manager/webhook` | Operators — orders, fulfillment, catalog |
+
+Eliza org telegram automation must stay **disabled** — Convex owns both webhooks.
+
 ## Reference files
 
-- `convex/telegramBot.ts` — hybrid TG handler
+- `convex/telegramStoreBot.ts` — customer shop bot
+- `convex/telegramManagerBot.ts` — ops / fulfillment bot
 - `convex/lib/liveShopCatalog.ts` — live product truth for TG
 - `convex/lib/shopConcierge.ts` — local conversational fallback
 - `convex/lib/elizaCloudChat.ts` — Eliza + fallback wrapper

@@ -1,70 +1,19 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 import { elizaCloudChat } from "./lib/elizaCloudChat";
 import { LIVE_SHOP_PRODUCT, liveProduct, shopCatalogSummary, shopUrl } from "./lib/liveShopCatalog";
 import {
   answerCallbackQuery,
   type InlineKeyboard,
   sendTelegramMessage,
-  setTelegramWebhook,
-  convexTelegramWebhookUrl,
 } from "./lib/telegramApi";
 
-type CartLine = { sku: string; qty: number };
-
+const BOT = "store" as const;
 const PACK_SKU = LIVE_SHOP_PRODUCT.sku;
 
-const cartItem = v.object({ sku: v.string(), qty: v.number() });
-
-export const getSession = internalQuery({
-  args: { chatId: v.number() },
-  handler: async (ctx, { chatId }) => {
-    return await ctx.db
-      .query("telegramSessions")
-      .withIndex("by_chat", (q) => q.eq("chatId", chatId))
-      .unique();
-  },
-});
-
-export const upsertSession = internalMutation({
-  args: {
-    chatId: v.number(),
-    mode: v.optional(v.union(v.literal("menu"), v.literal("chat"))),
-    cart: v.optional(v.array(cartItem)),
-  },
-  handler: async (ctx, { chatId, mode, cart }) => {
-    const existing = await ctx.db
-      .query("telegramSessions")
-      .withIndex("by_chat", (q) => q.eq("chatId", chatId))
-      .unique();
-    const patch = {
-      ...(mode !== undefined ? { mode } : {}),
-      ...(cart !== undefined ? { cart } : {}),
-      updatedAt: Date.now(),
-    };
-    if (existing) {
-      await ctx.db.patch(existing._id, patch);
-      return existing._id;
-    }
-    return await ctx.db.insert("telegramSessions", {
-      chatId,
-      mode: mode ?? "menu",
-      cart: cart ?? [],
-      updatedAt: Date.now(),
-    });
-  },
-});
-
-export const registerWebhook = internalAction({
-  args: {},
-  handler: async () => {
-    const url = convexTelegramWebhookUrl();
-    await setTelegramWebhook(url);
-    return { ok: true, webhookUrl: url };
-  },
-});
+type CartLine = { sku: string; qty: number };
 
 export const processUpdate = internalAction({
   args: { update: v.any() },
@@ -90,11 +39,15 @@ async function handleCallback(
   const chatId = callback.message?.chat?.id;
   if (!chatId || !callback.data) return;
 
-  await answerCallbackQuery(callback.id);
+  await answerCallbackQuery(BOT, callback.id);
 
   const data = callback.data;
   if (data === "menu") {
-    await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, mode: "menu" });
+    await ctx.runMutation(internal.telegramSessions.upsertSession, {
+      bot: BOT,
+      chatId,
+      mode: "menu",
+    });
     await sendMainMenu(chatId, "Main menu");
     return;
   }
@@ -103,10 +56,15 @@ async function handleCallback(
     return;
   }
   if (data === "chat") {
-    await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, mode: "chat" });
-    await sendTelegramMessage(
+    await ctx.runMutation(internal.telegramSessions.upsertSession, {
+      bot: BOT,
       chatId,
-      "Ask me anything — I'll answer here. Shop and cart buttons stay below whenever you want them.",
+      mode: "chat",
+    });
+    await sendTelegramMessage(
+      BOT,
+      chatId,
+      "Ask me anything — I'll answer here. Shop buttons stay below.",
       menuKeyboard(),
     );
     return;
@@ -116,8 +74,12 @@ async function handleCallback(
     return;
   }
   if (data === "clear") {
-    await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, cart: [] });
-    await sendTelegramMessage(chatId, "Cart cleared.", menuKeyboard());
+    await ctx.runMutation(internal.telegramSessions.upsertSession, {
+      bot: BOT,
+      chatId,
+      cart: [],
+    });
+    await sendTelegramMessage(BOT, chatId, "Cart cleared.", menuKeyboard());
     return;
   }
   if (data === "add") {
@@ -139,7 +101,11 @@ async function handleMessage(
 
   const lower = text.toLowerCase();
   if (lower === "/start" || lower === "/menu" || lower === "menu") {
-    await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, mode: "menu" });
+    await ctx.runMutation(internal.telegramSessions.upsertSession, {
+      bot: BOT,
+      chatId,
+      mode: "menu",
+    });
     await sendMainMenu(chatId, welcomeText());
     return;
   }
@@ -152,19 +118,25 @@ async function handleMessage(
     return;
   }
   if (lower === "/chat" || lower === "chat") {
-    await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, mode: "chat" });
-    await sendTelegramMessage(
+    await ctx.runMutation(internal.telegramSessions.upsertSession, {
+      bot: BOT,
       chatId,
-      "Ask me anything — I'll answer here. Shop and cart buttons stay below whenever you want them.",
+      mode: "chat",
+    });
+    await sendTelegramMessage(
+      BOT,
+      chatId,
+      "Ask me anything — I'll answer here. Shop buttons stay below.",
       menuKeyboard(),
     );
     return;
   }
   if (lower === "/website" || lower === "website") {
     await sendTelegramMessage(
+      BOT,
       chatId,
-      `Full storefront: ${shopUrl()}`,
-      inlineKeyboard([[{ text: "Open dotcache shop", url: shopUrl() }], menuRow()]),
+      `Shop online: ${shopUrl()}`,
+      inlineKeyboard([[{ text: "Open shop", url: shopUrl() }], menuRow()]),
     );
     return;
   }
@@ -173,9 +145,9 @@ async function handleMessage(
 }
 
 async function sendConversationalReply(chatId: number, text: string) {
-  const reply = await elizaCloudChat(text);
+  const reply = await elizaCloudChat(text, BOT);
   const keyboard = looksLikeShopQuery(text) ? shopContextKeyboard() : menuKeyboard();
-  await sendTelegramMessage(chatId, reply, keyboard);
+  await sendTelegramMessage(BOT, chatId, reply, keyboard);
 }
 
 function looksLikeShopQuery(text: string) {
@@ -192,9 +164,9 @@ function looksLikeShopQuery(text: string) {
 function welcomeText() {
   const p = LIVE_SHOP_PRODUCT;
   return [
-    "<b>.cache · dotCache</b>",
+    "<b>.cache shop</b>",
     "",
-    "Talk to me, tap buttons, or both.",
+    "Browse stickers, ask questions, or both.",
     "",
     `<b>Live now:</b> ${p.name}`,
     `• ${p.includes.join(" · ")}`,
@@ -216,7 +188,6 @@ function menuKeyboard(): InlineKeyboard {
       { text: "💬 Chat", callback_data: "chat" },
       { text: "📋 Cart", callback_data: "cart" },
     ],
-    [{ text: "⚙️ Ops console", url: shopUrl("/app") }],
   ]);
 }
 
@@ -239,11 +210,12 @@ function inlineKeyboard(rows: InlineKeyboard["inline_keyboard"]) {
 }
 
 async function sendMainMenu(chatId: number, text: string) {
-  await sendTelegramMessage(chatId, text, menuKeyboard());
+  await sendTelegramMessage(BOT, chatId, text, menuKeyboard());
 }
 
 async function sendShopMenu(chatId: number) {
   await sendTelegramMessage(
+    BOT,
     chatId,
     `<b>Live drop</b>\n\n${shopCatalogSummary()}`,
     inlineKeyboard([
@@ -264,14 +236,22 @@ async function addToCart(ctx: ActionCtx, chatId: number, sku: string) {
   const product = liveProduct(sku);
   if (!product) return;
 
-  const session = await ctx.runQuery(internal.telegramBot.getSession, { chatId });
+  const session = await ctx.runQuery(internal.telegramSessions.getSession, {
+    bot: BOT,
+    chatId,
+  });
   const cart: CartLine[] = [...(session?.cart ?? [])];
   const line = cart.find((c) => c.sku === sku);
   if (line) line.qty += 1;
   else cart.push({ sku, qty: 1 });
 
-  await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, cart });
+  await ctx.runMutation(internal.telegramSessions.upsertSession, {
+    bot: BOT,
+    chatId,
+    cart,
+  });
   await sendTelegramMessage(
+    BOT,
     chatId,
     `Added <b>${product.name}</b> to your cart.\n\nIncludes: ${product.includes.join(", ")}`,
     inlineKeyboard([
@@ -285,10 +265,14 @@ async function addToCart(ctx: ActionCtx, chatId: number, sku: string) {
 }
 
 async function sendCart(ctx: ActionCtx, chatId: number) {
-  const session = await ctx.runQuery(internal.telegramBot.getSession, { chatId });
+  const session = await ctx.runQuery(internal.telegramSessions.getSession, {
+    bot: BOT,
+    chatId,
+  });
   const cart = session?.cart ?? [];
   if (cart.length === 0) {
     await sendTelegramMessage(
+      BOT,
       chatId,
       "Cart is empty. Tap Sticker pack to see the Cozy Devs 3-pack.",
       inlineKeyboard([[{ text: "📦 Sticker pack", callback_data: "pack" }], menuRow()]),
@@ -304,6 +288,7 @@ async function sendCart(ctx: ActionCtx, chatId: number) {
     .join("\n");
 
   await sendTelegramMessage(
+    BOT,
     chatId,
     `<b>Your selection</b>\n\n${lines}\n\nFinish on the web — price locks after proof.`,
     inlineKeyboard([

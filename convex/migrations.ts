@@ -58,6 +58,14 @@ export const backfillConciergeMetrics = migrations.define({
   },
 });
 
+export const backfillTelegramSessionBot = migrations.define({
+  table: "telegramSessions",
+  migrateOne: (_ctx, session) => {
+    if (session.bot === undefined) return { bot: "store" as const };
+    return undefined;
+  },
+});
+
 export const run = migrations.runner();
 
 export const runAll = migrations.runner([
@@ -66,4 +74,5 @@ export const runAll = migrations.runner([
   internal.migrations.backfillPaymentMetrics,
   internal.migrations.backfillRedemptionMetrics,
   internal.migrations.backfillConciergeMetrics,
+  internal.migrations.backfillTelegramSessionBot,
 ]);

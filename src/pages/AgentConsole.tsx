@@ -16,7 +16,8 @@ export default function AgentConsole() {
   const [config, setConfig] = useState<{
     elizaConfigured: boolean;
     discordConfigured: boolean;
-    telegramConfigured: boolean;
+    telegramStoreConfigured: boolean;
+    telegramManagerConfigured: boolean;
     elizaBaseUrl?: string;
     elizaAgentId?: string;
     elizaChannelId?: string;
@@ -91,11 +92,12 @@ export default function AgentConsole() {
         </p>
       )}
 
-      <section className="grid gap-3 md:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <StatusCard label="Eliza Cloud" ready={config?.elizaConfigured} detail={config?.elizaAgentId ?? "Missing CACHE_ELIZA_AGENT_ID / ELIZA_AGENT_ID"} />
         <StatusCard label="Web chat" ready={true} detail="Storefront concierge is enabled" />
         <StatusCard label="Discord" ready={config?.discordConfigured} detail="Requires DISCORD_APPLICATION_ID and DISCORD_API_TOKEN in Eliza" />
-        <StatusCard label="Telegram" ready={config?.telegramConfigured} detail="Shop buttons + chat via Convex webhook" />
+        <StatusCard label="TG Store bot" ready={config?.telegramStoreConfigured} detail="Customer shop · TELEGRAM_BOT_TOKEN" />
+        <StatusCard label="TG Manager bot" ready={config?.telegramManagerConfigured} detail="Ops & fulfillment · TELEGRAM_MANAGER_BOT_TOKEN" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[320px_1fr]">

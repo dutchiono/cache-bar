@@ -4,7 +4,7 @@ import { catalog, health, proposals } from "./capabilityHttp";
 import { handleResendWebhook } from "./email";
 import { demoLaunch, network } from "./foundryDemoHttp";
 import { handle as stripeWebhook } from "./stripeWebhook";
-import { handle as telegramWebhook } from "./telegramWebhook";
+import { handle, handleManager, handleStore } from "./telegramWebhook";
 
 const http = httpRouter();
 auth.addHttpRoutes(http);
@@ -21,7 +21,17 @@ http.route({
 http.route({
   path: "/telegram/webhook",
   method: "POST",
-  handler: telegramWebhook,
+  handler: handle,
+});
+http.route({
+  path: "/telegram/store/webhook",
+  method: "POST",
+  handler: handleStore,
+});
+http.route({
+  path: "/telegram/manager/webhook",
+  method: "POST",
+  handler: handleManager,
 });
 http.route({
   path: "/capabilities/cachebar/v1/health",

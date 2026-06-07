@@ -600,11 +600,14 @@ export default defineSchema({
   }).index("by_session", ["sessionId"]),
 
   telegramSessions: defineTable({
+    bot: v.optional(v.union(v.literal("store"), v.literal("manager"))),
     chatId: v.number(),
     mode: v.union(v.literal("menu"), v.literal("chat")),
     cart: v.array(v.object({ sku: v.string(), qty: v.number() })),
     updatedAt: v.number(),
-  }).index("by_chat", ["chatId"]),
+  })
+    .index("by_bot_chat", ["bot", "chatId"])
+    .index("by_chat", ["chatId"]),
 
   capabilityProposals: defineTable({
     capabilityId: v.string(),

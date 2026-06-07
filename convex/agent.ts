@@ -6,6 +6,7 @@ import { action, internalAction, internalMutation, internalQuery, mutation, quer
 import { rateLimiter } from "./componentLimits";
 import { recordConciergeMessageMetric } from "./componentMetrics";
 import { createCustomProduct, teemillConfig } from "./lib/teemill";
+import { telegramBotConfigured } from "./lib/telegramApi";
 import { requireUser } from "./model/auth";
 
 const conciergeSource = v.union(
@@ -33,6 +34,9 @@ type ElizaConfigStatus = {
   elizaAgentId?: string;
   elizaChannelId?: string;
   discordConfigured: boolean;
+  telegramStoreConfigured: boolean;
+  telegramManagerConfigured: boolean;
+  /** @deprecated use telegramStoreConfigured */
   telegramConfigured: boolean;
   mode: "process" | "ingest" | "auto";
   synchronousResponses: boolean;
@@ -285,7 +289,9 @@ export const readElizaConfigStatus = internalAction({
       elizaAgentId: c.agentId,
       elizaChannelId: c.channelId,
       discordConfigured: Boolean(envValue("DISCORD_APPLICATION_ID") && envValue("DISCORD_API_TOKEN")),
-      telegramConfigured: Boolean(envValue("TELEGRAM_BOT_TOKEN")),
+      telegramStoreConfigured: telegramBotConfigured("store"),
+      telegramManagerConfigured: telegramBotConfigured("manager"),
+      telegramConfigured: telegramBotConfigured("store"),
       mode: c.mode,
       synchronousResponses: c.mode !== "ingest",
       processEndpoint: "/api/messaging/external-messages",
