@@ -6,6 +6,7 @@ import { ScreenStub } from "./components/ScreenStub";
 import { SignIn } from "./components/SignIn";
 import AgentConsole from "./pages/AgentConsole";
 import Automations from "./pages/Automations";
+import ConciergePage from "./pages/ConciergePage";
 import Checkout from "./pages/Checkout";
 import CustomerDetail from "./pages/CustomerDetail";
 import Customers from "./pages/Customers";
@@ -51,6 +52,7 @@ export default function App() {
       <Route path="/checkout/success" element={<RedirectToStatic href="/cache.html" />} />
       <Route path="/stash" element={<RedirectToStatic href="/cache.html" />} />
       <Route path="/storefront" element={<RedirectToStatic href="/cache.html" />} />
+      <Route path="/concierge" element={<ConciergePage />} />
 
       <Route path="/app" element={<ProtectedOpsLayout />}>
         <Route index element={<Dashboard />} />

@@ -1,79 +1,62 @@
-import { shopUrl } from "./liveShopCatalog";
+import { askElizaAgent } from "./elizaAgent";
 import { managerConversationalReply } from "./managerConcierge";
 import { formatOpsContext, type OpsSnapshot } from "./opsSnapshot";
 import { shopConversationalReply } from "./shopConcierge";
 import type { TelegramBotRole } from "./telegramApi";
 
-const STORE_SYSTEM = `You are dotCache — optional shop assistant for .cache (only when customer explicitly opens chat).
+export type AskDotCacheInput = {
+  text: string;
+  surface: "store" | "manager" | "web" | "ops";
+  entityId: string;
+  roomId?: string;
+  opsSnap?: OpsSnapshot;
+  metadata?: Record<string, unknown>;
+};
 
-Live shop: ${shopUrl()} — Cozy Devs Sticker Pack (STICKER-PACK-001), 50 packs. Customers normally browse via buttons, not chat.
+/** Single dotCache agent entry — Eliza messaging API first, local fallback second. */
+export async function askDotCache(input: AskDotCacheInput): Promise<string> {
+  const source =
+    input.surface === "store" || input.surface === "manager" ? "telegram" : "web";
+  const contextPrefix =
+    input.surface === "manager" && input.opsSnap ? formatOpsContext(input.opsSnap) : undefined;
 
-Keep answers short. No ops jargon.`;
+  const reply = await askElizaAgent({
+    text: input.text,
+    source,
+    surface: input.surface,
+    entityId: input.entityId,
+    roomId: input.roomId,
+    contextPrefix,
+    metadata: input.metadata,
+  });
 
-const MANAGER_SYSTEM = `You are dotCache Manager — the fulfillment and ops agent for .cache operators.
-
-You run agentic fulfillment on the backend: orders, Prodigi, inventory, catalog review, proposals. Humans approve publish, payment, and ship. Never claim you executed money-moving actions.
-
-The store bot is a separate simple menu for customers — this channel is operators only. Answer with live ops data when provided. Be direct and operational. No generic assistant filler.`;
-
-function envValue(key: string) {
-  const globalProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
-  const value = globalProcess.process?.env?.[key]?.trim();
-  return value || undefined;
-}
-
-function systemPrompt(role: TelegramBotRole, opsContext?: string) {
-  const base = role === "manager" ? MANAGER_SYSTEM : STORE_SYSTEM;
-  if (role === "manager" && opsContext) {
-    return `${base}\n\n${opsContext}`;
+  if (reply.configured && reply.content) {
+    return reply.content;
   }
-  return base;
+
+  if (input.surface === "manager" && input.opsSnap) {
+    return managerConversationalReply(input.text, input.opsSnap);
+  }
+  if (input.surface === "store") {
+    return shopConversationalReply(input.text);
+  }
+  return reply.content;
 }
 
+/** @deprecated Use askDotCache — kept for telegram import sites. */
 export async function elizaCloudChat(
   userText: string,
   role: TelegramBotRole = "store",
   opsSnap?: OpsSnapshot,
+  chatId?: number,
 ): Promise<string> {
-  const apiKey = envValue("CACHE_ELIZA_API_KEY") ?? envValue("ELIZA_API_KEY");
-  const baseUrl = (envValue("CACHE_ELIZA_BASE_URL") ?? "https://www.elizacloud.ai").replace(/\/+$/, "");
-  const opsContext = opsSnap ? formatOpsContext(opsSnap) : undefined;
-
-  if (apiKey) {
-    const models = ["openai/gpt-4o-mini", "gpt-4o-mini"];
-    for (const model of models) {
-      try {
-        const response = await fetch(`${baseUrl}/api/v1/chat/completions`, {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${apiKey}`,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            max_tokens: 600,
-            messages: [
-              { role: "system", content: systemPrompt(role, opsContext) },
-              { role: "user", content: userText },
-            ],
-          }),
-        });
-
-        if (!response.ok) continue;
-
-        const body = (await response.json()) as {
-          choices?: Array<{ message?: { content?: string } }>;
-        };
-        const content = body.choices?.[0]?.message?.content?.trim();
-        if (content) return content;
-      } catch {
-        continue;
-      }
-    }
-  }
-
-  if (role === "manager" && opsSnap) {
-    return managerConversationalReply(userText, opsSnap);
-  }
-  return shopConversationalReply(userText);
+  const surface = role === "manager" ? "manager" : "store";
+  const entityId = chatId !== undefined ? `tg-${role}-${chatId}` : `tg-${role}-unknown`;
+  return askDotCache({
+    text: userText,
+    surface,
+    entityId,
+    opsSnap,
+    metadata: { telegramBot: role },
+  });
 }

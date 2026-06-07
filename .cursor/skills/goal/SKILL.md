@@ -16,7 +16,7 @@ Take your time. Do not patch one symptom and stop. Follow this workflow until th
 
 - **One source of truth for the live product** — bootstrap + checkout in Convex (`Cozy Devs Sticker Pack`, `STICKER-PACK-001`, 50 packs, Moon Seal + Floppy + Bus Riot). Not three separate CST SKUs unless the user explicitly changed the product.
 - **Telegram is hybrid** — conversational replies AND inline buttons together. Never button-only or chat-only unless the user explicitly chose that path.
-- **Verify in prod** — webhook URL, Convex logs, and a real message path. Do not assume deploy success equals working bot.
+- **One dotCache Eliza agent everywhere** — web `/concierge`, ops console, store TG `/chat`, manager TG all route through `askElizaAgent()` (messaging API), not raw `chat/completions`.
 
 ## Workflow
 
@@ -43,7 +43,9 @@ Goal progress:
 |--------|----------------|
 | Telegram webhook | `getWebhookInfo` → must be `{CONVEX_SITE}/telegram/webhook` |
 | Convex bot | `convex/telegramBot.ts`, `convex/lib/liveShopCatalog.ts` |
-| Chat inference | `convex/lib/elizaCloudChat.ts` — falls back to `shopConcierge.ts` if Eliza billing/API fails |
+| Chat inference | `convex/lib/elizaAgent.ts` → `askDotCache()` in `elizaCloudChat.ts`; falls back to `shopConcierge.ts` / `managerConcierge.ts` |
+| Web chat | `/concierge` → `agent.publicConciergeChat` → same `askElizaAgent()` |
+| Ops console | `/app/agent` → `agent.chat` → same `askElizaAgent()` |
 | Live product | `convex/bootstrap.ts`, `convex/checkout.ts` — single 3-pack |
 | Eliza Cloud | Telegram automation must be **disabled** (Convex owns the bot) |
 | Static shop | `public/cache.html` — should match pack story |
@@ -56,11 +58,11 @@ Goal progress:
 
 ### 5. Conversational path
 
-Eliza `chat/completions` may fail (`insufficient_quota`, bad agent model id). When it fails:
+All surfaces call `askElizaAgent()` (`/api/messaging/external-messages`, then ingest fallback). When Eliza is down or billing fails:
 
-1. Use `shopConversationalReply()` — never show "couldn't reach the model" without a useful answer.
-2. Do not use `openai/{agentId}` as model — use `openai/gpt-4o-mini` only when Eliza billing works.
-3. Keep hybrid: reply text + contextual inline keyboard.
+1. Use `shopConversationalReply()` / `managerConversationalReply()` — never show "couldn't reach the model" without a useful answer.
+2. Do **not** use raw `chat/completions` or `openai/{agentId}` as model.
+3. Keep hybrid on store bot: reply text + contextual inline keyboard.
 
 ### 6. Button path
 
@@ -90,7 +92,7 @@ Never set `CONVEX_SITE_URL` via `convex env set` — it is built-in.
 - `whats in the shop?` → conversational answer about **one 3-pack**, plus pack/cart buttons
 - Tap **Sticker pack** → Moon Seal, Floppy, Bus Riot listed
 - **Add pack** → cart shows Cozy Devs Sticker Pack × 1
-- No generic Eliza stub ("configured for specific applications")
+- `/concierge` on web uses same agent as Telegram and ops console
 
 ## Anti-patterns
 
@@ -114,6 +116,8 @@ Eliza org telegram automation must stay **disabled** — Convex owns both webhoo
 - `convex/telegramManagerBot.ts` — ops / fulfillment bot
 - `convex/lib/liveShopCatalog.ts` — live product truth for TG
 - `convex/lib/shopConcierge.ts` — local conversational fallback
-- `convex/lib/elizaCloudChat.ts` — Eliza + fallback wrapper
+- `convex/lib/elizaAgent.ts` — unified Eliza messaging API client
+- `convex/lib/elizaCloudChat.ts` — Telegram wrapper + local fallbacks
+- `src/pages/ConciergePage.tsx` — public web chat (same agent)
 - `convex/bootstrap.ts` — seeded catalog truth
 - `.github/workflows/deploy.yml` — deploy + webhook registration

@@ -6,6 +6,7 @@ import { action, internalAction, internalMutation, internalQuery, mutation, quer
 import { rateLimiter } from "./componentLimits";
 import { recordConciergeMessageMetric } from "./componentMetrics";
 import { createCustomProduct, teemillConfig } from "./lib/teemill";
+import { askElizaAgent, elizaConfig, envValue } from "./lib/elizaAgent";
 import { telegramBotConfigured } from "./lib/telegramApi";
 import { requireUser } from "./model/auth";
 
@@ -161,8 +162,9 @@ export const chat = action({
     const reply = await askEliza({
       text: body,
       source: "web",
+      surface: "ops",
       entityId: String(auth.userId),
-      roomId: config().channelId ?? String(threadId),
+      roomId: elizaConfig().channelId ?? String(threadId),
       metadata: {
         surface: auth.surface,
         contextRef: auth.contextRef,
@@ -231,31 +233,18 @@ export const publicConciergeChat = action({
           imageDataUrl: normalizedImageDataUrl,
           imageName: imageName?.trim() || undefined,
         })
-      : isPartnerAgentModelQuestion(body)
-        ? {
-            content: partnerAgentModelReply(),
-            configured: true,
-            provider: "cache" as const,
-            mode: "fallback" as const,
-          }
-        : isStickerDemoIntent(body)
-          ? {
-              content: stickerDemoReply(),
-              configured: true,
-              provider: "cache" as const,
-              mode: "fallback" as const,
-            }
-          : await askEliza({
-              text: body,
-              source: "web",
-              entityId: stableVisitorId,
-              roomId: config().channelId ?? String(sessionId),
-              metadata: {
-                currentPath,
-                waifuAgentId,
-                product: "cache_concierge",
-              },
-            });
+      : await askEliza({
+          text: body,
+          source: "web",
+          surface: "web",
+          entityId: stableVisitorId,
+          roomId: elizaConfig().channelId ?? String(sessionId),
+          metadata: {
+            currentPath,
+            waifuAgentId,
+            product: "cache_concierge",
+          },
+        });
 
     await ctx.runMutation(internal.agent.recordConciergeMessage, {
       sessionId,
@@ -282,7 +271,7 @@ export const configStatus = action({
 export const readElizaConfigStatus = internalAction({
   args: {},
   handler: async (): Promise<ElizaConfigStatus> => {
-    const c = config();
+    const c = elizaConfig();
     return {
       elizaConfigured: Boolean(c.baseUrl && c.agentId),
       elizaBaseUrl: c.baseUrl,
@@ -402,17 +391,19 @@ export const recordConciergeMessage = internalMutation({
 async function askEliza({
   text,
   source,
+  surface,
   entityId,
   roomId,
   metadata,
 }: {
   text: string;
   source: "web" | "discord" | "telegram" | "waifu";
+  surface: "store" | "manager" | "web" | "ops";
   entityId: string;
   roomId: string;
   metadata: Record<string, unknown>;
 }): Promise<ElizaReply> {
-  const c = config();
+  const c = elizaConfig();
   if (!c.baseUrl || !c.agentId) {
     return {
       content: fallbackReply(text),
@@ -422,46 +413,29 @@ async function askEliza({
     };
   }
 
-  if (c.mode !== "ingest") {
-    const processed = await processExternalMessage({
-      baseUrl: c.baseUrl,
-      apiKey: c.apiKey,
-      text,
-      source,
-      entityId,
-      roomId,
-      metadata,
-    });
-    if (processed) {
-      return {
-        content: processed,
-        configured: true,
-        provider: "eliza",
-        mode: "process",
-      };
-    }
-    if (c.mode === "process") {
-      throw new Error("Eliza Cloud did not return a message response from the process endpoint.");
-    }
-  }
-
-  await ingestExternalMessage({
-    baseUrl: c.baseUrl,
-    apiKey: c.apiKey,
-    agentId: c.agentId,
+  const agentReply = await askElizaAgent({
     text,
     source,
+    surface,
     entityId,
     roomId,
     metadata,
   });
 
+  if (agentReply.configured && agentReply.content) {
+    return {
+      content: agentReply.content,
+      configured: true,
+      provider: agentReply.provider,
+      mode: agentReply.mode,
+    };
+  }
+
   return {
-    content:
-      "I sent that to .cache's Eliza runtime. If this is a shop request, I will turn it into draft catalog, .stash, fulfillment, or ops proposals for human approval.",
-    configured: true,
-    provider: "eliza",
-    mode: "ingest",
+    content: fallbackReply(text),
+    configured: false,
+    provider: "cache",
+    mode: "fallback",
   };
 }
 
@@ -499,98 +473,6 @@ async function handleCustomProductRequest({
     provider: "cache",
     mode: "fallback",
   };
-}
-
-async function processExternalMessage({
-  baseUrl,
-  apiKey,
-  text,
-  source,
-  entityId,
-  roomId,
-  metadata,
-}: {
-  baseUrl: string;
-  apiKey?: string;
-  text: string;
-  source: "web" | "discord" | "telegram" | "waifu";
-  entityId: string;
-  roomId: string;
-  metadata: Record<string, unknown>;
-}) {
-  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/messaging/external-messages`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
-    },
-    body: JSON.stringify({
-      platform: source === "telegram" ? "telegram" : "discord",
-      messageId: `cache-${Date.now()}-${crypto.randomUUID()}`,
-      channelId: roomId,
-      userId: entityId,
-      content: text,
-      attachments: [],
-      metadata: {
-        ...metadata,
-        source,
-      },
-    }),
-  });
-
-  if (response.status === 404 || response.status === 405 || response.status === 501) {
-    return null;
-  }
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`Eliza Cloud process request failed (${response.status}). ${detail}`.trim());
-  }
-
-  const body = await response.json();
-  const candidate = body?.data?.response ?? body?.response ?? body?.message;
-  return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null;
-}
-
-async function ingestExternalMessage({
-  baseUrl,
-  apiKey,
-  agentId,
-  text,
-  source,
-  entityId,
-  roomId,
-  metadata,
-}: {
-  baseUrl: string;
-  apiKey?: string;
-  agentId: string;
-  text: string;
-  source: "web" | "discord" | "telegram" | "waifu";
-  entityId: string;
-  roomId: string;
-  metadata: Record<string, unknown>;
-}) {
-  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/messaging/ingest-external`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
-    },
-    body: JSON.stringify({
-      agentId,
-      roomId,
-      userId: entityId,
-      text,
-      sourceId: entityId,
-      sourceType: source === "telegram" ? "telegram" : "discord",
-      metadata,
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`Eliza Cloud request failed (${response.status}). ${detail}`.trim());
-  }
 }
 
 function fallbackReply(content: string) {
@@ -713,25 +595,4 @@ function deriveCustomProductName(text: string, imageName?: string) {
     return imageName.trim().replace(/\.[A-Za-z0-9]+$/, "").slice(0, 80);
   }
   return ".cache custom tee";
-}
-
-function config() {
-  return {
-    baseUrl: envValue("CACHE_ELIZA_BASE_URL") ?? envValue("ELIZA_BASE_URL") ?? envValue("ELIZA_API_URL"),
-    apiKey: envValue("CACHE_ELIZA_API_KEY") ?? envValue("ELIZA_API_KEY"),
-    agentId: envValue("CACHE_ELIZA_AGENT_ID") ?? envValue("ELIZA_AGENT_ID"),
-    channelId: envValue("CACHE_ELIZA_CHANNEL_ID") ?? envValue("ELIZA_CHANNEL_ID"),
-    mode: elizaMode(),
-  };
-}
-
-function elizaMode(): "process" | "ingest" | "auto" {
-  const raw = envValue("CACHE_ELIZA_MODE") ?? envValue("ELIZA_MODE") ?? "auto";
-  return raw === "process" || raw === "ingest" ? raw : "auto";
-}
-
-function envValue(key: string) {
-  const globalProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
-  const value = globalProcess.process?.env?.[key]?.trim();
-  return value || undefined;
 }

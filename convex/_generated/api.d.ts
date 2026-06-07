@@ -27,6 +27,7 @@ import type * as foundryDemo from "../foundryDemo.js";
 import type * as foundryDemoHttp from "../foundryDemoHttp.js";
 import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
+import type * as lib_elizaAgent from "../lib/elizaAgent.js";
 import type * as lib_elizaCloudChat from "../lib/elizaCloudChat.js";
 import type * as lib_liveShopCatalog from "../lib/liveShopCatalog.js";
 import type * as lib_managerConcierge from "../lib/managerConcierge.js";
@@ -87,6 +88,7 @@ declare const fullApi: ApiFromModules<{
   foundryDemoHttp: typeof foundryDemoHttp;
   http: typeof http;
   inventory: typeof inventory;
+  "lib/elizaAgent": typeof lib_elizaAgent;
   "lib/elizaCloudChat": typeof lib_elizaCloudChat;
   "lib/liveShopCatalog": typeof lib_liveShopCatalog;
   "lib/managerConcierge": typeof lib_managerConcierge;

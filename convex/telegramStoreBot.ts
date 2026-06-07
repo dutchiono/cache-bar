@@ -129,7 +129,7 @@ async function handleMessage(
 
   const session = await ctx.runQuery(internal.telegramSessions.getSession, { bot: BOT, chatId });
   if (session?.mode === "chat") {
-    const reply = await elizaCloudChat(text, BOT);
+    const reply = await elizaCloudChat(text, BOT, undefined, chatId);
     await sendTelegramMessage(BOT, chatId, reply, menuKeyboard());
     return;
   }

@@ -58,7 +58,7 @@ async function handleMessage(
 
 async function sendAgentReply(ctx: ActionCtx, chatId: number, text: string) {
   const snap = await ctx.runQuery(internal.telegramSessions.opsSnapshot, {});
-  const reply = await elizaCloudChat(text, BOT, snap);
+  const reply = await elizaCloudChat(text, BOT, snap, chatId);
   await sendTelegramMessage(BOT, chatId, reply, consoleKeyboard());
 }
 

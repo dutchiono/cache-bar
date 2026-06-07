@@ -13,7 +13,7 @@ window.I18N = {
 
   /* =================== ENGLISH =================== */
   en: {
-    nav: { drop: 'Drop 001', inventory: 'Inventory', manifesto: 'Manifesto', archive: 'Archive', ambassador: 'Ambassador', members: 'Members', cart: 'Cart', shop: 'Shop', about: 'About', ops: 'Ops' },
+    nav: { drop: 'Drop 001', inventory: 'Inventory', manifesto: 'Manifesto', archive: 'Archive', ambassador: 'Ambassador', members: 'Members', cart: 'Cart', shop: 'Shop', chat: 'Chat', about: 'About', ops: 'Ops' },
     hero: {
       dropLabel: 'Live drop · stickers',
       release: 'Request flow open',

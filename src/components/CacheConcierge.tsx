@@ -13,10 +13,10 @@ type PendingImage = {
   dataUrl: string;
 };
 
-export function CacheConcierge() {
+export function CacheConcierge({ embedded = false }: { embedded?: boolean }) {
   const chat = useAction(api.agent.publicConciergeChat);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(embedded);
   const [visitorId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const key = "cache.concierge.visitor";
@@ -30,7 +30,7 @@ export function CacheConcierge() {
     {
       role: "assistant",
       content:
-        "Ask what .cache has for sale, ask how DTOUR plugs into the same pack, ask what to send the DTOUR owner, or drop an image here and ask for a one-off t-shirt.",
+        "I'm dotCache — same Eliza agent as Telegram and ops. Ask about the Cozy Devs sticker pack, fulfillment, or drop an image to start a product.",
     },
   ]);
   const [busy, setBusy] = useState(false);
@@ -98,17 +98,19 @@ export function CacheConcierge() {
   }
 
   return (
-    <div className="sf-concierge">
-      {open && (
+    <div className={embedded ? "sf-concierge sf-concierge--embedded" : "sf-concierge"}>
+      {(open || embedded) && (
         <section className="sf-concierge-panel" aria-label=".cache concierge">
           <div className="sf-concierge-head">
             <div>
-              <div className="sf-kicker">.cache concierge</div>
-              <strong>Shop desk</strong>
+              <div className="sf-kicker">dotCache · Eliza Cloud</div>
+              <strong>{embedded ? "Web chat" : "Shop desk"}</strong>
             </div>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Close .cache chat">
-              Close
-            </button>
+            {!embedded && (
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close .cache chat">
+                Close
+              </button>
+            )}
           </div>
 
           <div className="sf-concierge-log">
@@ -167,9 +169,11 @@ export function CacheConcierge() {
         </section>
       )}
 
-      <button type="button" className="sf-concierge-button" onClick={() => setOpen((value) => !value)}>
-        Talk to .cache
-      </button>
+      {!embedded && (
+        <button type="button" className="sf-concierge-button" onClick={() => setOpen((value) => !value)}>
+          Talk to dotCache
+        </button>
+      )}
     </div>
   );
 }

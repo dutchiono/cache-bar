@@ -20,6 +20,17 @@
       },
     },
     {
+      id: 'chat',
+      i18n: 'nav.chat',
+      fallback: 'Chat',
+      href() {
+        return '/concierge';
+      },
+      active(ctx) {
+        return ctx.active === 'chat';
+      },
+    },
+    {
       id: 'about',
       i18n: 'nav.about',
       fallback: 'About',
