@@ -13,6 +13,11 @@ export const handle = httpAction(async (ctx, request) => {
     return new Response("Invalid JSON.", { status: 400 });
   }
 
-  await ctx.runAction(internal.telegramBot.processUpdate, { update });
+  try {
+    await ctx.runAction(internal.telegramBot.processUpdate, { update });
+  } catch (error) {
+    console.error("telegram webhook failed", error);
+  }
+  // Always 200 so Telegram does not disable the webhook on send failures.
   return new Response("ok");
 });

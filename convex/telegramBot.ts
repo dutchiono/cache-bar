@@ -164,6 +164,10 @@ async function handleMessage(ctx: ActionCtx, message: {
     );
     return;
   }
+  if (looksLikeShopQuery(text)) {
+    await sendShopMenu(chatId);
+    return;
+  }
 
   const session = await ctx.runQuery(internal.telegramBot.getSession, { chatId });
   const mode = session?.mode ?? "menu";
@@ -180,6 +184,16 @@ async function handleMessage(ctx: ActionCtx, message: {
 
 function looksLikeQuestion(text: string) {
   return text.includes("?") || text.split(/\s+/).length >= 4;
+}
+
+function looksLikeShopQuery(text: string) {
+  const lower = text.toLowerCase();
+  return (
+    /\b(shop|store|catalog|catalogue|drop|sticker|stickers|sku|inventory)\b/.test(lower) ||
+    /\bwhat('s|s| is) in\b/.test(lower) ||
+    /\bwhast in\b/.test(lower) ||
+    /\bcst-\d{3}\b/.test(lower)
+  );
 }
 
 function welcomeText() {
