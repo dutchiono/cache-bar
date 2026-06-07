@@ -7,6 +7,7 @@ import { rateLimiter } from "./componentLimits";
 import { recordConciergeMessageMetric } from "./componentMetrics";
 import { createCustomProduct, teemillConfig } from "./lib/teemill";
 import { askElizaAgent, elizaConfig, envValue } from "./lib/elizaAgent";
+import { shopConversationalReply } from "./lib/shopConcierge";
 import { telegramBotConfigured } from "./lib/telegramApi";
 import { requireUser } from "./model/auth";
 
@@ -403,10 +404,14 @@ async function askEliza({
   roomId: string;
   metadata: Record<string, unknown>;
 }): Promise<ElizaReply> {
+  const customerSurface = surface === "web" || surface === "store";
+
   const c = elizaConfig();
   if (!c.baseUrl || !c.agentId) {
     return {
-      content: fallbackReply(text),
+      content: customerSurface
+        ? shopConversationalReply(text, { channel: surface === "web" ? "web" : "telegram" })
+        : fallbackReply(text),
       configured: false,
       provider: "cache",
       mode: "fallback",
@@ -423,6 +428,14 @@ async function askEliza({
   });
 
   if (agentReply.configured && agentReply.content) {
+    if (customerSurface && agentReply.mode === "ingest") {
+      return {
+        content: shopConversationalReply(text, { channel: surface === "web" ? "web" : "telegram" }),
+        configured: false,
+        provider: "cache",
+        mode: "fallback",
+      };
+    }
     return {
       content: agentReply.content,
       configured: true,
@@ -432,7 +445,9 @@ async function askEliza({
   }
 
   return {
-    content: fallbackReply(text),
+    content: customerSurface
+      ? shopConversationalReply(text, { channel: surface === "web" ? "web" : "telegram" })
+      : fallbackReply(text),
     configured: false,
     provider: "cache",
     mode: "fallback",

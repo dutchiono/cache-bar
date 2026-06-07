@@ -38,7 +38,7 @@ export function CacheConcierge({
     {
       role: "assistant",
       content:
-        "I'm dotCache — same Eliza agent as Telegram and ops. Ask about the Cozy Devs sticker pack, fulfillment, or attach an image to start a product.",
+        "I'm dotCache. One live product right now — the Cozy Devs Sticker Pack (Moon Seal, Floppy, Bus Riot). Ask what's in the shop, pricing, or checkout.",
     },
   ]);
   const [busy, setBusy] = useState(false);

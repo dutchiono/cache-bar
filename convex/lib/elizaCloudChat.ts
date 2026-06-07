@@ -31,6 +31,14 @@ export async function askDotCache(input: AskDotCacheInput): Promise<string> {
   });
 
   if (reply.configured && reply.content) {
+    if (
+      reply.mode === "ingest" &&
+      (input.surface === "store" || input.surface === "web")
+    ) {
+      return shopConversationalReply(input.text, {
+        channel: input.surface === "web" ? "web" : "telegram",
+      });
+    }
     return reply.content;
   }
 
@@ -38,7 +46,10 @@ export async function askDotCache(input: AskDotCacheInput): Promise<string> {
     return managerConversationalReply(input.text, input.opsSnap);
   }
   if (input.surface === "store") {
-    return shopConversationalReply(input.text);
+    return shopConversationalReply(input.text, { channel: "telegram" });
+  }
+  if (input.surface === "web") {
+    return shopConversationalReply(input.text, { channel: "web" });
   }
   return reply.content;
 }
