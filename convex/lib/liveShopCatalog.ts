@@ -3,39 +3,40 @@ export type LiveShopProduct = {
   name: string;
   price: string;
   run: string;
-  composition: string;
+  description: string;
+  includes: string[];
   ships: string;
 };
 
-export const LIVE_SHOP_PRODUCTS: LiveShopProduct[] = [
-  {
-    sku: "CST-001",
-    name: "Cache Mark",
-    price: "TBD",
-    run: "50",
-    composition: "Die-cut vinyl sticker",
-    ships: "After proof approval",
-  },
-  {
-    sku: "CST-002",
-    name: "Proof Label",
-    price: "TBD",
-    run: "50",
-    composition: "Matte proof label sticker",
-    ships: "After proof approval",
-  },
-  {
-    sku: "CST-003",
-    name: "Seal Holo",
-    price: "TBD",
-    run: "50",
-    composition: "Holographic seal sticker",
-    ships: "After proof approval",
-  },
-];
+/** Single live product — matches bootstrap/checkout (STICKER-PACK-001). */
+export const LIVE_SHOP_PRODUCT: LiveShopProduct = {
+  sku: "STICKER-PACK-001",
+  name: "Cozy Devs Sticker Pack",
+  price: "TBD",
+  run: "50 packs",
+  description:
+    "One pack with all three Cozy Devs stickers plus a proof NFT for the buyer wallet. Stripe and connected-wallet checkout share the same 50-pack inventory.",
+  includes: ["Moon Seal", "Floppy", "Bus Riot"],
+  ships: "After proof approval",
+};
+
+/** @deprecated Use LIVE_SHOP_PRODUCT — kept for cart line lookups. */
+export const LIVE_SHOP_PRODUCTS = [LIVE_SHOP_PRODUCT];
 
 export function liveProduct(sku: string) {
+  if (sku === LIVE_SHOP_PRODUCT.sku) return LIVE_SHOP_PRODUCT;
   return LIVE_SHOP_PRODUCTS.find((p) => p.sku === sku);
+}
+
+export function shopCatalogSummary() {
+  const p = LIVE_SHOP_PRODUCT;
+  return [
+    `<b>${p.name}</b> · ${p.sku}`,
+    p.description,
+    `Includes: ${p.includes.join(", ")}`,
+    `Run: ${p.run} · Price: ${p.price}`,
+    p.ships,
+  ].join("\n");
 }
 
 export function shopBaseUrl() {

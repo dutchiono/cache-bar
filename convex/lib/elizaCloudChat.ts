@@ -1,10 +1,13 @@
+import { LIVE_SHOP_PRODUCT, shopUrl } from "./liveShopCatalog";
+import { shopConversationalReply } from "./shopConcierge";
+
 const DOTCACHE_SYSTEM = `You are dotCache — the head commerce agent for .cache.
 
-Live shop: https://dotcache.bushleague.xyz — three sticker SKUs (CST-001 Cache Mark, CST-002 Proof Label, CST-003 Seal Holo), 50 units each, request flow open, price after proof.
+Live shop: ${shopUrl()} — one product: Cozy Devs Sticker Pack (STICKER-PACK-001). Each pack contains all three stickers (Moon Seal, Floppy, Bus Riot) plus a proof NFT. 50 packs total. Price after proof.
 
-Telegram is hybrid: users can talk to you AND use inline buttons (shop, cart, website) at the same time. Answer conversationally and specifically about the drop. When they ask what's in the shop, describe the three stickers in plain language — do not tell them to "tap a button" instead of answering.
+Telegram is hybrid: users talk to you AND use inline buttons at the same time. Answer conversationally and specifically. When they ask what's in the shop, describe the one 3-sticker pack — not three separate SKUs.
 
-No generic "how can I help" filler. No emoji spam. You propose catalog and ops work; humans approve publish and payment. Never claim you charged a card or published a product.`;
+No generic "how can I help" filler. No emoji spam. Never claim you charged a card or published a product.`;
 
 function envValue(key: string) {
   const globalProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
@@ -16,40 +19,43 @@ export async function elizaCloudChat(userText: string): Promise<string> {
   const apiKey = envValue("CACHE_ELIZA_API_KEY") ?? envValue("ELIZA_API_KEY");
   const baseUrl = (envValue("CACHE_ELIZA_BASE_URL") ?? "https://www.elizacloud.ai").replace(/\/+$/, "");
 
-  if (!apiKey) {
-    return "Chat backend is not configured yet. Use the Shop button to browse stickers or open the website.";
-  }
+  if (apiKey) {
+    const models = ["openai/gpt-4o-mini", "gpt-4o-mini"];
+    for (const model of models) {
+      try {
+        const response = await fetch(`${baseUrl}/api/v1/chat/completions`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${apiKey}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 600,
+            messages: [
+              { role: "system", content: DOTCACHE_SYSTEM },
+              { role: "user", content: userText },
+            ],
+          }),
+        });
 
-  const agentId = envValue("CACHE_ELIZA_AGENT_ID") ?? envValue("ELIZA_AGENT_ID");
-  const models = agentId ? [`openai/${agentId}`, "openai/gpt-4o-mini"] : ["openai/gpt-4o-mini"];
+        if (!response.ok) continue;
 
-  for (const model of models) {
-    const response = await fetch(`${baseUrl}/api/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 600,
-        messages: [
-          { role: "system", content: DOTCACHE_SYSTEM },
-          { role: "user", content: userText },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      continue;
+        const body = (await response.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const content = body.choices?.[0]?.message?.content?.trim();
+        if (content) return content;
+      } catch {
+        continue;
+      }
     }
-
-    const body = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = body.choices?.[0]?.message?.content?.trim();
-    if (content) return content;
   }
 
-  return "I couldn't reach the model right now. Tap Shop to browse stickers or open the website.";
+  return shopConversationalReply(userText);
+}
+
+export function packSummaryLine() {
+  const p = LIVE_SHOP_PRODUCT;
+  return `${p.name} · ${p.includes.join(", ")} · ${p.run}`;
 }

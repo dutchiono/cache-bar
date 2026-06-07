@@ -3,7 +3,7 @@ import { internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { elizaCloudChat } from "./lib/elizaCloudChat";
-import { LIVE_SHOP_PRODUCTS, liveProduct, shopUrl } from "./lib/liveShopCatalog";
+import { LIVE_SHOP_PRODUCT, liveProduct, shopCatalogSummary, shopUrl } from "./lib/liveShopCatalog";
 import {
   answerCallbackQuery,
   type InlineKeyboard,
@@ -13,6 +13,8 @@ import {
 } from "./lib/telegramApi";
 
 type CartLine = { sku: string; qty: number };
+
+const PACK_SKU = LIVE_SHOP_PRODUCT.sku;
 
 const cartItem = v.object({ sku: v.string(), qty: v.number() });
 
@@ -77,7 +79,9 @@ export const processUpdate = internalAction({
   },
 });
 
-async function handleCallback(ctx: ActionCtx, callback: {
+async function handleCallback(
+  ctx: ActionCtx,
+  callback: {
     id: string;
     data?: string;
     message?: { chat: { id: number } };
@@ -94,7 +98,7 @@ async function handleCallback(ctx: ActionCtx, callback: {
     await sendMainMenu(chatId, "Main menu");
     return;
   }
-  if (data === "shop") {
+  if (data === "shop" || data === "pack") {
     await sendShopMenu(chatId);
     return;
   }
@@ -116,19 +120,15 @@ async function handleCallback(ctx: ActionCtx, callback: {
     await sendTelegramMessage(chatId, "Cart cleared.", menuKeyboard());
     return;
   }
-  if (data.startsWith("p:")) {
-    const sku = `CST-${data.slice(2)}`;
-    await sendProduct(chatId, sku);
-    return;
-  }
-  if (data.startsWith("a:")) {
-    const sku = `CST-${data.slice(2)}`;
-    await addToCart(ctx, chatId, sku);
+  if (data === "add") {
+    await addToCart(ctx, chatId, PACK_SKU);
     return;
   }
 }
 
-async function handleMessage(ctx: ActionCtx, message: {
+async function handleMessage(
+  ctx: ActionCtx,
+  message: {
     chat: { id: number };
     text?: string;
   },
@@ -169,7 +169,6 @@ async function handleMessage(ctx: ActionCtx, message: {
     return;
   }
 
-  // Default: conversational reply + contextual buttons (hybrid, not either/or).
   await sendConversationalReply(chatId, text);
 }
 
@@ -182,23 +181,24 @@ async function sendConversationalReply(chatId: number, text: string) {
 function looksLikeShopQuery(text: string) {
   const lower = text.toLowerCase();
   return (
-    /\b(shop|store|catalog|catalogue|drop|sticker|stickers|sku|inventory|buy|price|cost)\b/.test(lower) ||
+    /\b(shop|store|catalog|catalogue|drop|sticker|stickers|pack|sku|inventory|buy|price|cost|nft)\b/.test(
+      lower,
+    ) ||
     /\bwhat('s|s| is) in\b/.test(lower) ||
-    /\bwhast in\b/.test(lower) ||
-    /\bcst-\d{3}\b/.test(lower)
+    /\bwhast in\b/.test(lower)
   );
 }
 
 function welcomeText() {
+  const p = LIVE_SHOP_PRODUCT;
   return [
     "<b>.cache · dotCache</b>",
     "",
-    "Talk to me, tap buttons, or both — whatever you're comfortable with.",
-    "• Type a question about the drop",
-    "• Tap <b>Shop</b> for the sticker catalog",
-    "• Tap <b>Website</b> for the full storefront",
+    "Talk to me, tap buttons, or both.",
     "",
-    `Live drop: 3 stickers · 50 each · price after proof`,
+    `<b>Live now:</b> ${p.name}`,
+    `• ${p.includes.join(" · ")}`,
+    `• ${p.run} · price after proof`,
   ].join("\n");
 }
 
@@ -209,7 +209,7 @@ function menuRow(): [{ text: string; callback_data: string }] {
 function menuKeyboard(): InlineKeyboard {
   return inlineKeyboard([
     [
-      { text: "🛒 Shop", callback_data: "shop" },
+      { text: "📦 Sticker pack", callback_data: "pack" },
       { text: "🌐 Website", url: shopUrl() },
     ],
     [
@@ -222,12 +222,11 @@ function menuKeyboard(): InlineKeyboard {
 
 function shopContextKeyboard(): InlineKeyboard {
   return inlineKeyboard([
-    LIVE_SHOP_PRODUCTS.map((p) => ({
-      text: p.sku,
-      callback_data: `p:${p.sku.slice(-3)}`,
-    })),
     [
-      { text: "🛒 Full catalog", callback_data: "shop" },
+      { text: "📦 View pack", callback_data: "pack" },
+      { text: "➕ Add pack", callback_data: "add" },
+    ],
+    [
       { text: "📋 Cart", callback_data: "cart" },
       { text: "🌐 Website", url: shopUrl() },
     ],
@@ -244,41 +243,19 @@ async function sendMainMenu(chatId: number, text: string) {
 }
 
 async function sendShopMenu(chatId: number) {
-  const lines = LIVE_SHOP_PRODUCTS.map(
-    (p) => `• <b>${p.name}</b> (${p.sku}) — ${p.price} · run ${p.run}`,
-  ).join("\n");
-  const rows = LIVE_SHOP_PRODUCTS.map((p) => [
-    { text: `${p.sku} · ${p.name}`, callback_data: `p:${p.sku.slice(-3)}` },
-  ]);
-  rows.push(menuRow());
   await sendTelegramMessage(
     chatId,
-    `<b>Live drop · stickers</b>\n\n${lines}\n\nTap a SKU for details.`,
-    inlineKeyboard(rows),
-  );
-}
-
-async function sendProduct(chatId: number, sku: string) {
-  const product = liveProduct(sku);
-  if (!product) {
-    await sendShopMenu(chatId);
-    return;
-  }
-  const suffix = sku.slice(-3);
-  await sendTelegramMessage(
-    chatId,
-    [
-      `<b>${product.name}</b> · ${product.sku}`,
-      product.composition,
-      `Run: ${product.run} · Price: ${product.price}`,
-      product.ships,
-    ].join("\n"),
+    `<b>Live drop</b>\n\n${shopCatalogSummary()}`,
     inlineKeyboard([
       [
-        { text: "➕ Add to cart", callback_data: `a:${suffix}` },
+        { text: "➕ Add pack to cart", callback_data: "add" },
         { text: "Request on web", url: shopUrl("/pod-request.html") },
       ],
-      [{ text: "← Shop", callback_data: "shop" }, ...menuRow()],
+      [
+        { text: "🌐 Full storefront", url: shopUrl() },
+        { text: "📋 Cart", callback_data: "cart" },
+      ],
+      menuRow(),
     ]),
   );
 }
@@ -296,7 +273,7 @@ async function addToCart(ctx: ActionCtx, chatId: number, sku: string) {
   await ctx.runMutation(internal.telegramBot.upsertSession, { chatId, cart });
   await sendTelegramMessage(
     chatId,
-    `Added <b>${product.name}</b> to your cart.\n\nTap Cart to review or request on web.`,
+    `Added <b>${product.name}</b> to your cart.\n\nIncludes: ${product.includes.join(", ")}`,
     inlineKeyboard([
       [
         { text: "📋 View cart", callback_data: "cart" },
@@ -313,8 +290,8 @@ async function sendCart(ctx: ActionCtx, chatId: number) {
   if (cart.length === 0) {
     await sendTelegramMessage(
       chatId,
-      "Cart is empty. Tap Shop to browse the sticker drop.",
-      inlineKeyboard([[{ text: "🛒 Shop", callback_data: "shop" }], menuRow()]),
+      "Cart is empty. Tap Sticker pack to see the Cozy Devs 3-pack.",
+      inlineKeyboard([[{ text: "📦 Sticker pack", callback_data: "pack" }], menuRow()]),
     );
     return;
   }
@@ -333,7 +310,7 @@ async function sendCart(ctx: ActionCtx, chatId: number) {
       [{ text: "Submit request on web", url: shopUrl("/pod-request.html") }],
       [
         { text: "Clear cart", callback_data: "clear" },
-        { text: "🛒 Shop", callback_data: "shop" },
+        { text: "📦 Sticker pack", callback_data: "pack" },
       ],
       menuRow(),
     ]),
