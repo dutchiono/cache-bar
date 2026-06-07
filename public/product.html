@@ -162,7 +162,7 @@
   }
 </style>
 </head>
-<body>
+<body data-demo="true">
 
 <svg class="grain" xmlns="http://www.w3.org/2000/svg">
   <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
@@ -171,7 +171,7 @@
 <div class="vignette"></div>
 
 <!-- NAV -->
-<nav class="nav">
+<nav class="nav" data-demo="true">
   <a href="drop-001-live.html" class="nav__brand">
     <span class="dot"></span>
     <span>.cache</span>
@@ -247,6 +247,9 @@
 <script>
   const params = new URLSearchParams(location.search);
   const sku = params.get('sku') || 'CSH-001';
+  if (sku.startsWith('CST-')) {
+    window.location.replace('cache.html#shop');
+  }
   const p = PRODUCT_LOOKUP[sku] || PRODUCT_LOOKUP['CSH-001'];
 
   document.title = `.cache — ${p.name}`;

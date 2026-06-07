@@ -541,7 +541,13 @@ document.addEventListener('click', e => {
   }
   const row = e.target.closest('.row[data-sku]');
   if(!row) return;
-  window.location.href = `product.html?sku=${row.dataset.sku}`;
+  const sku = row.dataset.sku;
+  if (sku.startsWith('CST-')) {
+    addToCart(sku, 1);
+    if (typeof openCart === 'function') openCart();
+    return;
+  }
+  window.location.href = `product.html?sku=${sku}`;
 });
 
 /* seed product lookup with featured fallbacks (already done above) */

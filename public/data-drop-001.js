@@ -123,3 +123,120 @@ window.ARCHIVE = [
     items: ['CSH-003', 'CSH-010'],
   },
 ];
+
+
+/* Apparel demo copy — only on reference demo pages (not live shop satellites). */
+(function mergeDrop001DemoI18n() {
+  if (!window.I18N) return;
+
+  const path = window.location.pathname.replace(/\/+$/, '');
+  const isDemoPage =
+    document.body?.dataset?.demo === 'true' ||
+    document.querySelector('nav[data-demo="true"]') ||
+    /drop-001(-live)?\.html$/i.test(path) ||
+    /\/product\.html$/i.test(path);
+
+  if (!isDemoPage) return;
+
+  const DEMO_I18N = {
+    en: {
+      hero: {
+        dropLabel: 'Drop 001 · SS26',
+        release: 'Release — 14.06.26 · 19:00 UTC',
+        status: 'Status · Pre-warmed',
+        kicker: '// Streetwear for the people who ship it',
+        tag1: 'A small studio in Berlin and Tokyo. Heavyweight cottons, technical knits, hand-screened runs of',
+        tagLimit: '500 or less',
+        tag2: '. Members get the keys.',
+        viewDrop: 'View Drop 001',
+        toInvalidation: 'to invalidation',
+      },
+      feat: {
+        eyebrow: '// Featured — 03 pieces',
+        titleA: 'Wear the', titleB: 'stack.',
+        aside: 'Drop 001 lands across three silhouettes — a heavyweight tee, a cropped quilted shell, and the membership knit. Tap a card to preview the full spec sheet.',
+      },
+      inv: {
+        eyebrow: '// The full drop — 16 objects',
+        add: 'Add', download: 'Download',
+        inStock: 'In Stock', lowStock: 'Low Stock', soldOut: 'Sold Out', instant: 'Instant Download',
+      },
+      man: {
+        eyebrow: '// Manifesto — hover a line',
+        subA: 'Five rules.', subB: 'Hashed in.',
+        aside: ".cache is run by twelve people in Berlin and Tokyo. We don't run sales, we don't restock, and we don't sell to the resale market. Every drop is a commit — once it ships, it's archived.",
+        lines: [
+          ["We don't drop", 'We commit.'],
+          ['collections', 'runs of 500'],
+          ['we hash them', 'we sign them'],
+          ['we tag seams', 'git tag v1.0'],
+          ['then we ship', 'then archive'],
+        ],
+        foot1: 'Berlin / Tokyo', foot1Sub: 'Studio + Atelier',
+        foot2: '12 people', foot2Sub: 'Build the whole thing',
+      },
+      mem: {
+        eyebrow: '// Members · 184 of 500 keys remaining',
+        headA: 'Three ways', headB: 'in.', headC: 'Pick one.',
+        intro: 'Members get 96 hours on every drop, archive pricing on retired pieces, and a vote on what ships next. Pull keys by shipping code to an approved repo, by applying through the Cozy Devs Discord, or by minting the member seal.',
+        path1Num: 'Contribute', path1Title: 'Ship code.',
+        path1Desc: 'Push a merged PR to any approved repo. We watch the tag, you get the keys. Auto-verified through GitHub.',
+        path1Cta: 'Verify with GitHub',
+        path2Num: 'Apply', path2Title: 'Cozy Devs.',
+        path2Desc: 'Tell us what you build. Twelve of us read every message. No template, no forms. Just say hi.',
+        path2Server: 'Discord server', path2Online: 'Online now', path2Members: 'members',
+        path2Note: 'Average reply time · under 48 hours · weekdays', path2Cta: 'Join Cozy Devs',
+        path3Num: 'Purchase', path3Title: 'Member SNFT.',
+        path3Desc: 'Mint the seal. Soulbound, non-transferable. One-time, lifetime keys — the same seal rotating to your right.',
+        path3Minted: 'minted on Base', path3Note: 'Contract verified · No royalties · Burnable',
+        path3Cta: 'Mint Member Seal',
+        sealA: 'Member Seal · SS26', sealB: 'Issued once, archived forever.',
+        perks: [
+          ['96h Early Access', 'Members shop every drop ninety-six hours before the public window opens.'],
+          ['Archive Pricing', 'Retired drops re-open monthly at member rates only — no markups, no resellers.'],
+          ['Free Member Knit', 'A limited piece shipped with your onboarding order. New colorway every season.'],
+          ['Vote The Drop', "One member, one vote on next season's direction, fits, and colorway."],
+        ],
+      },
+      cart: {
+        summary0: '0 items · awaiting items',
+        summaryN: (n) => `${n} item${n === 1 ? '' : 's'} · ready to commit`,
+        emptyLine: 'Pull a piece from drop 001 or browse inventory.',
+        browse: 'Browse Drop',
+        subtotal: 'Subtotal',
+        checkout: 'Checkout',
+        noteFree: 'Free',
+        noteRest: 'worldwide shipping over $200 · Duty included',
+        free: 'FREE',
+      },
+      footer: {
+        shopLinks: ['Drop 001', 'Archive', 'Member Pricing', 'Gift Cards'],
+        cacheLinks: ['Manifesto', 'Process', 'Studio', 'Press'],
+        supportLinks: ['Sizing', 'Care', 'Shipping', 'Returns'],
+        cities: 'Berlin / Tokyo',
+        build: 'Build v1.0.4 — 2026.05.22',
+        tagline: 'No Resellers / No Lies',
+      },
+    },
+  };
+
+  function deepMerge(target, source) {
+    Object.keys(source).forEach((key) => {
+      const value = source[key];
+      if (value && typeof value === 'object' && !Array.isArray(value) && typeof value !== 'function') {
+        target[key] = target[key] || {};
+        deepMerge(target[key], value);
+      } else {
+        target[key] = value;
+      }
+    });
+  }
+
+  Object.keys(DEMO_I18N).forEach((lang) => {
+    if (window.I18N[lang]) deepMerge(window.I18N[lang], DEMO_I18N[lang]);
+  });
+
+  if (typeof window.applyLanguage === 'function') {
+    window.applyLanguage(typeof window.getLang === 'function' ? window.getLang() : 'en');
+  }
+})();
