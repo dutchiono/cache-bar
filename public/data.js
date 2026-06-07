@@ -1,5 +1,5 @@
 /* =====================================================================
-   .cache — sticker POD catalog
+   .cache — merch catalog (live pilot: sticker run)
    Used by cache.html and pod-request.html only.
    ===================================================================== */
 
@@ -62,8 +62,8 @@ window.FEATURED.forEach(p => { if(!window.PRODUCT_LOOKUP[p.sku]) window.PRODUCT_
 window.ARCHIVE = [
   {
     id: 'sticker-proof',
-    title: 'Sticker Proof Run',
-    season: 'Drop 001 · POD',
+    title: 'Sticker run',
+    season: 'Live pilot · POD',
     date: 'Jun 2026',
     pieces: 3,
     sold: 0,
@@ -72,99 +72,99 @@ window.ARCHIVE = [
   },
 ];
 
-/* Sticker storefront copy — merged only on cache.html / pod-request.html */
-(function mergeStickerI18n() {
+/* Primary storefront copy — merged only on cache.html / pod-request.html */
+(function mergeCacheStoreI18n() {
   if (!window.I18N) return;
 
-  const STICKER_I18N = {
+  const CACHE_STORE_I18N = {
     en: {
-      nav: { drop: 'Drop 001', inventory: 'Stickers', manifesto: 'Method', archive: 'Archive', members: 'Setup', cart: 'Cart' },
+      nav: { drop: 'Drop 001', inventory: 'Shop', manifesto: 'Method', archive: 'Archive', members: 'Ops', cart: 'Cart' },
       hero: {
-        dropLabel: 'Drop 001 · Stickers',
-        release: 'POD proof window · open now',
-        status: 'Status · POD setup ready',
-        kicker: '// Sticker run for the people shipping with us',
-        tag1: 'Three sticker types are staged for print-on-demand: ',
+        dropLabel: 'Live pilot · Sticker run',
+        release: 'Agentic commerce · proof window open',
+        status: 'Status · storefront ready',
+        kicker: '// Commerce concierge for creator-led drops',
+        tag1: 'Agents surface catalog, requests, and fulfillment handoff. The live pilot is a three-SKU sticker run — ',
         tagLimit: '50 each',
-        tag2: '. Pricing stays TBD until the proof and production quote are locked.',
-        viewDrop: 'View stickers',
+        tag2: '. More merch ships on the same rails.',
+        viewDrop: 'View live drop',
         toInvalidation: 'to proof lock',
       },
       feat: {
-        eyebrow: '// Featured — 03 sticker types',
-        titleA: 'Proof the', titleB: 'stickers.',
-        aside: 'The current run is three sticker types, fifty of each. The page reserves the batch and captures the POD handoff; price is decided after proof approval.',
+        eyebrow: '// Live pilot — 03 SKUs',
+        titleA: 'Shop the', titleB: 'run.',
+        aside: 'Stickers are the current demo drop. Browse, reserve, and hand off to fulfillment without standing up checkout first.',
       },
       inv: {
-        eyebrow: '// POD run — 150 stickers',
-        titleA: 'Sticker', titleB: '/ inventory',
+        eyebrow: '// Shop · current drop',
+        titleA: 'Cache', titleB: '/ inventory',
         add: 'Reserve',
-        inStock: 'POD Ready', lowStock: 'Proof Pending', soldOut: 'Closed', instant: 'File Ready',
+        inStock: 'Ready', lowStock: 'Proof pending', soldOut: 'Closed', instant: 'File ready',
       },
       man: {
         eyebrow: '// Method — hover a line',
-        subA: 'Five checks.', subB: 'Before print.',
-        aside: '.cache is preparing one POD-backed sticker batch: three sticker types, fifty units each, no Stripe checkout, no price collection until the proof and quote are approved.',
+        subA: 'Five rules.', subB: 'Agentic rails.',
+        aside: '.cache is a merch concierge: agents surface drops, capture intent, and route fulfillment. The sticker run proves the loop before the next silhouette ships.',
         lines: [
-          ['we choose three', 'we keep the set tight'],
-          ['fifty each', 'one hundred fifty total'],
-          ['we proof with POD', 'we approve before print'],
-          ['price later', 'quote after proof'],
-          ['then we ship', 'then archive'],
+          ['we surface drops', 'agents carry the shop'],
+          ['intent goes public', 'ops gets the handoff'],
+          ['proof before print', 'quote before charge'],
+          ['fulfillment routes out', 'POD or partner'],
+          ['then we archive', 'then next drop'],
         ],
-        foot1: 'POD provider', foot1Sub: 'Proof + fulfillment',
-        foot2: '3 types / 50 each', foot2Sub: 'Price TBD',
+        foot1: 'Berlin / Tokyo', foot1Sub: 'Concierge + ops',
+        foot2: 'Pilot live', foot2Sub: 'Sticker run · price TBD',
       },
       mem: {
-        eyebrow: '// POD setup · 3 sticker types',
-        headA: 'Three checks', headB: 'ready.', headC: 'Proof next.',
-        intro: 'The current front end is staged for the sticker POD run: final artwork, provider proof, and pricing lock. Each type is capped at fifty until the production quote is approved.',
-        path1Num: 'Artwork',
-        path1Title: 'Finalize files.',
-        path1Desc: 'Export production-ready sticker artwork with transparent edges, bleed, and SKU naming for the POD provider.',
-        path1Cta: 'Review artwork',
-        path2Num: 'POD',
-        path2Title: 'Approve proof.',
-        path2Desc: 'Send the three sticker SKUs to the POD provider and hold production until the proof comes back clean.',
-        path2Server: 'POD run',
+        eyebrow: '// Ops · agent + fulfillment',
+        headA: 'Storefront', headB: 'ready.', headC: 'Pilot live.',
+        intro: 'The public shop runs agentic commerce on a small sticker batch today. Ops wires catalog, fulfillment, and requests on the same rails wider merch will use next.',
+        path1Num: 'Agent',
+        path1Title: 'Surface the drop.',
+        path1Desc: 'Concierge agents handle catalog, language, and customer handoff while the public shop stays lightweight.',
+        path1Cta: 'Open ops',
+        path2Num: 'Fulfillment',
+        path2Title: 'Route production.',
+        path2Desc: 'Send the pilot SKUs to the fulfillment provider, approve proof, and hold charge until the quote is clean.',
+        path2Server: 'Pilot drop',
         path2Online: 'Queued now',
-        path2Members: 'stickers',
-        path2Note: 'Three types · fifty each · price TBD',
-        path2Cta: 'Open POD setup',
-        path3Num: 'Price',
-        path3Title: 'Lock pricing.',
-        path3Desc: 'Do not collect payment yet. Price is decided after proof approval, fulfillment quote, and shipping rate confirmation.',
+        path2Members: 'units',
+        path2Note: 'Three SKUs · fifty each · price TBD',
+        path2Cta: 'Open fulfillment setup',
+        path3Num: 'Request',
+        path3Title: 'Capture intent.',
+        path3Desc: 'Reserve from the shop and submit a request. Payment stays off until proof, quote, and shipping are approved.',
         path3Minted: 'reserved for proof',
-        path3Note: 'No Stripe · No card collection · Quote pending',
-        path3Cta: 'Reserve sticker',
-        sealA: 'POD proof · Drop 001', sealB: 'Three types, fifty each.',
+        path3Note: 'No card collection · Quote pending',
+        path3Cta: 'Browse shop',
+        sealA: 'Pilot drop · Sticker run', sealB: 'Same rails. Next merch next.',
         perks: [
-          ['Three sticker types', 'Cache Mark, Proof Label, and Seal Holo are the only active products.'],
-          ['Fifty each', 'Each SKU is capped at fifty units for the proofed POD batch.'],
-          ['Price TBD', 'The storefront reserves interest but does not collect payment.'],
-          ['POD ready', 'The handoff is structured around artwork, proof, quote, and fulfillment.'],
+          ['Agentic storefront', 'Concierge surfaces drops, cart, and requests on the same rails.'],
+          ['Live pilot', 'Three sticker SKUs prove fulfillment before the next silhouette ships.'],
+          ['Price later', 'Reserve intent now — charge after proof and quote.'],
+          ['Ops ready', 'Catalog, fulfillment, and staff tools share one backend.'],
         ],
       },
       cart: {
-        title: 'Sticker Reserve',
-        summary0: '0 stickers · awaiting proof',
-        summaryN: (n) => `${n} sticker${n === 1 ? '' : 's'} · price TBD`,
-        emptyLine: 'Reserve one of the three sticker types from the POD run.',
-        browse: 'Browse stickers',
+        title: 'Your Cache',
+        summary0: '0 items · ready to request',
+        summaryN: (n) => `${n} item${n === 1 ? '' : 's'} · price TBD`,
+        emptyLine: 'Browse the live drop and add a piece to your cache.',
+        browse: 'Browse shop',
         subtotal: 'Price',
-        checkout: 'POD request',
+        checkout: 'Submit request',
         noteFree: 'TBD',
-        noteRest: 'pricing decided after POD proof and quote',
-        added: 'Reserved',
+        noteRest: 'pricing locks after proof and fulfillment quote',
+        added: 'Added',
         free: 'TBD',
       },
       footer: {
-        shop: 'Run', cache: 'Cache', support: 'POD', follow: 'Follow',
-        shopLinks: ['Stickers', 'Archive', 'Drop 001', 'Setup'],
+        shop: 'Shop', cache: 'Cache', support: 'Support', follow: 'Follow',
+        shopLinks: ['Shop', 'Archive', 'Drop 001', 'Ops'],
         cacheLinks: ['Method', 'Process', 'Studio', 'Press'],
-        supportLinks: ['Artwork', 'Proof', 'Shipping', 'Returns'],
+        supportLinks: ['Sizing', 'Fulfillment', 'Shipping', 'Returns'],
         build: 'Build v1.0.5 — 2026.06.01',
-        tagline: 'No Stripe / Price TBD',
+        tagline: 'Agentic commerce / Pilot live',
       },
     },
   };
@@ -181,8 +181,8 @@ window.ARCHIVE = [
     });
   }
 
-  Object.keys(STICKER_I18N).forEach((lang) => {
-    if (window.I18N[lang]) deepMerge(window.I18N[lang], STICKER_I18N[lang]);
+  Object.keys(CACHE_STORE_I18N).forEach((lang) => {
+    if (window.I18N[lang]) deepMerge(window.I18N[lang], CACHE_STORE_I18N[lang]);
   });
 
   if (typeof window.applyLanguage === 'function') {
