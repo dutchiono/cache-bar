@@ -106,7 +106,7 @@
   }
 </style>
 </head>
-<body>
+<body data-nav="request">
 
 <svg class="grain" xmlns="http://www.w3.org/2000/svg">
   <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.4 0 0 0 0"/></filter>
@@ -116,16 +116,11 @@
 
 <!-- NAV -->
 <nav class="nav">
-  <a href="cache.html" class="nav__brand">
+  <a href="/cache.html" class="nav__brand">
     <span class="dot"></span>
     <span>.cache</span>
   </a>
-  <div class="nav__center">
-    <a href="cache.html" data-i18n="nav.inventory">Shop</a>
-    <a href="cache.html#manifesto" data-i18n="nav.manifesto">Method</a>
-    <a href="archive.html" data-i18n="nav.archive">Archive</a>
-    <a href="cache.html#members" data-i18n="nav.members">Ops</a>
-  </div>
+  <div class="nav__center"></div>
   <div class="nav__right">
     <div class="lang" id="lang">
       <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
@@ -192,6 +187,7 @@
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script src="i18n.js"></script>
 <script src="i18n-pages.js"></script>
+<script src="live-nav.js"></script>
 <script src="data.js"></script>
 <script src="shared.js"></script>
 <script>

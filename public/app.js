@@ -567,9 +567,9 @@ function renderFooterCols(){
   const wrap = document.getElementById('footer-cols');
   if(!wrap) return;
   const HREFS = {
-    shop:    ['cache.html#drop',      'archive.html',         'cache.html#members',     'gift.html'],
-    cache:   ['cache.html#manifesto', 'studio.html#process',  'studio.html#studio',     'studio.html#press'],
-    support: ['support.html#sizing',  'support.html#care',    'support.html#shipping',  'support.html#returns'],
+    shop:    ['cache.html#shop', 'archive.html', 'cache.html#manifesto', '/app'],
+    cache:   ['cache.html#manifesto', 'studio.html#process', 'studio.html#studio', 'studio.html#press'],
+    support: ['support.html#sizing', 'support.html#care', 'support.html#shipping', 'support.html#returns'],
     follow:  ['#', '#', '#', '#'],
   };
   const cols = [
@@ -595,6 +595,7 @@ renderFooterCols();
 
 /* Bootstrap initial language (applies i18n attrs that were rendered with EN defaults) */
 applyLanguage(getLang());
+if (window.renderLiveNav) window.renderLiveNav();
 
 /* ---------------------------------------------------------------------
    LANGCHANGE — re-render dynamic content
@@ -604,6 +605,7 @@ window.addEventListener('langchange', () => {
   renderCart();
   renderPerks();
   renderFooterCols();
+  if (window.renderLiveNav) window.renderLiveNav();
   // Carousel "Add" label is the only translated string in cards — rebuild
   rebuildFeaturedSlides();
 });

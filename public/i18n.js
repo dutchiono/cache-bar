@@ -13,7 +13,7 @@ window.I18N = {
 
   /* =================== ENGLISH =================== */
   en: {
-    nav: { drop: 'Drop 001', inventory: 'Inventory', manifesto: 'Manifesto', archive: 'Archive', ambassador: 'Ambassador', members: 'Members', cart: 'Cart' },
+    nav: { drop: 'Drop 001', inventory: 'Inventory', manifesto: 'Manifesto', archive: 'Archive', ambassador: 'Ambassador', members: 'Members', cart: 'Cart', shop: 'Shop', about: 'About', ops: 'Ops' },
     hero: {
       dropLabel: 'Drop 001 · SS26',
       release: 'Release — 14.06.26 · 19:00 UTC',

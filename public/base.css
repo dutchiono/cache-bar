@@ -259,7 +259,7 @@ body.cart-open .cart{transform:translateX(0)}
   .nav__right{gap:18px}
 }
 @media (max-width:900px){
-  .nav__center{display:none}
+  .nav__center{display:flex;flex-wrap:wrap;gap:16px 20px}
   .page{padding:140px 24px 60px}
   .page__head{grid-template-columns:1fr;gap:24px;margin-bottom:60px}
   .page__head .lead{justify-self:start;text-align:left}

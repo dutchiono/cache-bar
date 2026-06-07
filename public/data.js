@@ -78,7 +78,7 @@ window.ARCHIVE = [
 
   const CACHE_STORE_I18N = {
     en: {
-      nav: { inventory: 'Shop', manifesto: 'Method', archive: 'Archive', members: 'Ops', cart: 'Cart' },
+      nav: { shop: 'Shop', about: 'About', ops: 'Ops', cart: 'Cart' },
       hero: {
         dropLabel: 'Live pilot · Sticker run',
         release: 'Agentic commerce · proof window open',
@@ -160,7 +160,7 @@ window.ARCHIVE = [
       },
       footer: {
         shop: 'Shop', cache: 'Cache', support: 'Support', follow: 'Follow',
-        shopLinks: ['Shop', 'Archive', 'Method', 'Ops'],
+        shopLinks: ['Shop', 'Archive', 'About', 'Ops'],
         cacheLinks: ['Method', 'Process', 'Studio', 'Press'],
         supportLinks: ['Sizing', 'Fulfillment', 'Shipping', 'Returns'],
         build: 'Build v1.0.5 — 2026.06.01',

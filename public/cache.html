@@ -615,7 +615,7 @@ img{display:block;max-width:100%}
   .nav__right{gap:18px}
 }
 @media (max-width:900px){
-  .nav__center{display:none}
+  .nav__center{display:flex;flex-wrap:wrap;gap:16px 20px}
   .hero{padding:160px 24px 60px;gap:40px}
   .hero__sub{grid-template-columns:1fr;gap:32px}
   .hero__cta{justify-self:start}
@@ -651,7 +651,7 @@ img{display:block;max-width:100%}
 }
 </style>
 </head>
-<body>
+<body data-nav="shop">
 
 <!-- canvas backdrop -->
 <canvas id="bg-canvas"></canvas>
@@ -665,16 +665,11 @@ img{display:block;max-width:100%}
 
 <!-- NAV -->
 <nav class="nav">
-  <div class="nav__brand">
+  <a href="/cache.html" class="nav__brand">
     <span class="dot"></span>
     <span>.cache</span>
-  </div>
-  <div class="nav__center">
-    <a href="#shop" data-i18n="nav.inventory">Shop</a>
-    <a href="#manifesto" data-i18n="nav.manifesto">Method</a>
-    <a href="archive.html" data-i18n="nav.archive">Archive</a>
-    <a href="#members" id="nav-members" data-i18n="nav.members">Ops</a>
-  </div>
+  </a>
+  <div class="nav__center"></div>
   <div class="nav__right">
     <div class="lang" id="lang">
       <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
@@ -950,23 +945,16 @@ img{display:block;max-width:100%}
 <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
 <script src="i18n.js"></script>
 <script src="i18n-pages.js"></script>
+<script src="live-nav.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
 <script>
-  // Wire row click → product detail page; member nav → account if signed in
   document.addEventListener('click', (e) => {
     const row = e.target.closest('.row[data-sku]');
     if (row) {
-      // already opens cart via add — but let's prefer PDP nav on row click,
-      // and add via the explicit "Add" link on each row.
+      // row click handled elsewhere
     }
   }, true);
-
-  // Members nav goes to account if a session exists
-  const mem = document.getElementById('nav-members');
-  if (mem && window.cacheSession && window.cacheSession.user) {
-    mem.setAttribute('href', 'account.html');
-  }
 </script>
 
 </body>
