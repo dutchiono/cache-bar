@@ -6,9 +6,9 @@
 
 Public demo is A / B only. **B is primary:**
 
-- `/` and `/cache.html` — **B** · sticker POD run (three SKUs, price TBD)
-- `/drop-001-live.html` — **A** · preserved OG Drop 001 demo
-- `/pod-request.html` — POD proof request for B
+- `/` and `/cache.html` — **live shop** · agentic merch (sticker pilot SKUs today)
+- `/drop-001-live.html` — **reference demo only** · fake apparel catalog, not linked from live nav
+- `/pod-request.html` — request flow for the live shop
 - `/app` — staff ops
 - `/app/pod-setup` — Prodigi setup
 

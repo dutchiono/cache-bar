@@ -1,25 +1,19 @@
 # Storefront Surfaces
 
-Public demo is **A / B only**. **B is the primary site.**
+**Live shop is primary.** Production: `https://dotcache.bushleague.xyz` (legacy: `cachebar.bushleague.xyz`).
 
-Production host: `https://dotcache.bushleague.xyz` (legacy alias: `cachebar.bushleague.xyz`).
-
-## B — Sticker POD run (primary)
+## Live shop (primary)
 
 - URL: `/` and `/cache.html`
-- Catalog: `public/data.js` (`CST-001`, `CST-002`, `CST-003`)
+- Catalog: `public/data.js` — sticker pilot SKUs today; same rails for future merch
 - Request flow: `/pod-request.html`
-- Legacy alias: `/checkout.html` → redirects to `pod-request.html`
-- Price: TBD until Prodigi proof and quote are approved
+- Legacy alias: `/checkout.html` → `pod-request.html`
 
-This is the only real product work in flight: three sticker types, fifty each.
+## Reference demo (internal only)
 
-## A — Drop 001 demo (archive reference)
-
-- URL: `/drop-001-live.html`
-- Catalog: `public/data-drop-001.js` (OG apparel/digital demo)
-- Checkout: on-page demo cart only
-- Isolated copy: `/drop-001.html`
+- URL: `/drop-001-live.html` — **not linked from live shop nav**
+- Fake apparel catalog (`data-drop-001.js`) preserved for UX reference
+- Banner + `noindex` — clearly not production
 
 ## Ops
 

@@ -1,10 +1,11 @@
 <!doctype html>
-<!-- Standalone copy of the original DROP 001 design bridged into the live checkout flow. -->
+<!-- Reference demo: preserved fake apparel storefront. Not the live shop. Live shop → cache.html -->
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>.cache — DROP 001 / SS26</title>
+<meta name="robots" content="noindex" />
+<title>.cache — reference demo (not live)</title>
 <link rel='icon' type='image/svg+xml' href='/favicon.svg' />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -69,10 +70,19 @@ img{display:block;max-width:100%}
 .nav__right{display:flex;align-items:center;justify-content:flex-end;gap:24px;font:500 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .nav__right a:hover{color:var(--fg)}
 .nav__right .cart{color:var(--fg)}
+.nav__live{color:var(--accent)!important}
+.demo-banner{
+  position:fixed;top:72px;left:0;right:0;z-index:49;
+  padding:12px 40px;
+  background:#c4a47914;border-bottom:1px solid #c4a47935;
+  font:500 10px/1.5 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--fg-2);
+  text-align:center;
+}
+.demo-banner a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 
 /* ---------- HERO ---------- */
 .hero{
-  position:relative;min-height:100svh;padding:200px 40px 80px;
+  position:relative;min-height:100svh;padding:248px 40px 80px;
   display:grid;grid-template-rows:auto 1fr auto;gap:60px;
   overflow:hidden;
 }
@@ -664,22 +674,26 @@ img{display:block;max-width:100%}
 </svg>
 <div class="vignette"></div>
 
+<div class="demo-banner" role="note">
+  Reference demo only — fake apparel catalog for UX testing, not the live shop.
+  <a href="cache.html">Go to live shop →</a>
+</div>
+
 <!-- NAV -->
 <nav class="nav">
-  <div class="nav__brand">
+  <a href="cache.html" class="nav__brand">
     <span class="dot"></span>
     <span>.cache</span>
-  </div>
+  </a>
   <div class="nav__center">
-    <a href="#drop" data-i18n="nav.drop">Drop 001</a>
-    <a href="cache.html">Shop</a>
+    <a href="#drop">Featured</a>
     <a href="#shop" data-i18n="nav.inventory">Inventory</a>
     <a href="#manifesto" data-i18n="nav.manifesto">Manifesto</a>
     <a href="archive.html" data-i18n="nav.archive">Archive</a>
-    <a href="ambassador.html" data-i18n="nav.ambassador">Ambassador</a>
     <a href="login.html" id="nav-members" data-i18n="nav.members">Members</a>
   </div>
   <div class="nav__right">
+    <a href="cache.html" class="nav__live">Live shop →</a>
     <div class="lang" id="lang">
       <button class="lang__trigger" id="lang-trigger" aria-haspopup="true" aria-expanded="false">
         <span id="lang-current">EN</span>
