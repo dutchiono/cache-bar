@@ -71,3 +71,121 @@ window.ARCHIVE = [
     items: ['CST-001', 'CST-002', 'CST-003'],
   },
 ];
+
+/* Sticker storefront copy — merged only on cache.html / pod-request.html */
+(function mergeStickerI18n() {
+  if (!window.I18N) return;
+
+  const STICKER_I18N = {
+    en: {
+      nav: { drop: 'Drop 001', inventory: 'Stickers', manifesto: 'Method', archive: 'Archive', members: 'Setup', cart: 'Cart' },
+      hero: {
+        dropLabel: 'Drop 001 · Stickers',
+        release: 'POD proof window · open now',
+        status: 'Status · POD setup ready',
+        kicker: '// Sticker run for the people shipping with us',
+        tag1: 'Three sticker types are staged for print-on-demand: ',
+        tagLimit: '50 each',
+        tag2: '. Pricing stays TBD until the proof and production quote are locked.',
+        viewDrop: 'View stickers',
+        toInvalidation: 'to proof lock',
+      },
+      feat: {
+        eyebrow: '// Featured — 03 sticker types',
+        titleA: 'Proof the', titleB: 'stickers.',
+        aside: 'The current run is three sticker types, fifty of each. The page reserves the batch and captures the POD handoff; price is decided after proof approval.',
+      },
+      inv: {
+        eyebrow: '// POD run — 150 stickers',
+        titleA: 'Sticker', titleB: '/ inventory',
+        add: 'Reserve',
+        inStock: 'POD Ready', lowStock: 'Proof Pending', soldOut: 'Closed', instant: 'File Ready',
+      },
+      man: {
+        eyebrow: '// Method — hover a line',
+        subA: 'Five checks.', subB: 'Before print.',
+        aside: '.cache is preparing one POD-backed sticker batch: three sticker types, fifty units each, no Stripe checkout, no price collection until the proof and quote are approved.',
+        lines: [
+          ['we choose three', 'we keep the set tight'],
+          ['fifty each', 'one hundred fifty total'],
+          ['we proof with POD', 'we approve before print'],
+          ['price later', 'quote after proof'],
+          ['then we ship', 'then archive'],
+        ],
+        foot1: 'POD provider', foot1Sub: 'Proof + fulfillment',
+        foot2: '3 types / 50 each', foot2Sub: 'Price TBD',
+      },
+      mem: {
+        eyebrow: '// POD setup · 3 sticker types',
+        headA: 'Three checks', headB: 'ready.', headC: 'Proof next.',
+        intro: 'The current front end is staged for the sticker POD run: final artwork, provider proof, and pricing lock. Each type is capped at fifty until the production quote is approved.',
+        path1Num: 'Artwork',
+        path1Title: 'Finalize files.',
+        path1Desc: 'Export production-ready sticker artwork with transparent edges, bleed, and SKU naming for the POD provider.',
+        path1Cta: 'Review artwork',
+        path2Num: 'POD',
+        path2Title: 'Approve proof.',
+        path2Desc: 'Send the three sticker SKUs to the POD provider and hold production until the proof comes back clean.',
+        path2Server: 'POD run',
+        path2Online: 'Queued now',
+        path2Members: 'stickers',
+        path2Note: 'Three types · fifty each · price TBD',
+        path2Cta: 'Open POD setup',
+        path3Num: 'Price',
+        path3Title: 'Lock pricing.',
+        path3Desc: 'Do not collect payment yet. Price is decided after proof approval, fulfillment quote, and shipping rate confirmation.',
+        path3Minted: 'reserved for proof',
+        path3Note: 'No Stripe · No card collection · Quote pending',
+        path3Cta: 'Reserve sticker',
+        sealA: 'POD proof · Drop 001', sealB: 'Three types, fifty each.',
+        perks: [
+          ['Three sticker types', 'Cache Mark, Proof Label, and Seal Holo are the only active products.'],
+          ['Fifty each', 'Each SKU is capped at fifty units for the proofed POD batch.'],
+          ['Price TBD', 'The storefront reserves interest but does not collect payment.'],
+          ['POD ready', 'The handoff is structured around artwork, proof, quote, and fulfillment.'],
+        ],
+      },
+      cart: {
+        title: 'Sticker Reserve',
+        summary0: '0 stickers · awaiting proof',
+        summaryN: (n) => `${n} sticker${n === 1 ? '' : 's'} · price TBD`,
+        emptyLine: 'Reserve one of the three sticker types from the POD run.',
+        browse: 'Browse stickers',
+        subtotal: 'Price',
+        checkout: 'POD request',
+        noteFree: 'TBD',
+        noteRest: 'pricing decided after POD proof and quote',
+        added: 'Reserved',
+        free: 'TBD',
+      },
+      footer: {
+        shop: 'Run', cache: 'Cache', support: 'POD', follow: 'Follow',
+        shopLinks: ['Stickers', 'Archive', 'Drop 001', 'Setup'],
+        cacheLinks: ['Method', 'Process', 'Studio', 'Press'],
+        supportLinks: ['Artwork', 'Proof', 'Shipping', 'Returns'],
+        build: 'Build v1.0.5 — 2026.06.01',
+        tagline: 'No Stripe / Price TBD',
+      },
+    },
+  };
+
+  function deepMerge(target, source) {
+    Object.keys(source).forEach((key) => {
+      const value = source[key];
+      if (value && typeof value === 'object' && !Array.isArray(value) && typeof value !== 'function') {
+        target[key] = target[key] || {};
+        deepMerge(target[key], value);
+      } else {
+        target[key] = value;
+      }
+    });
+  }
+
+  Object.keys(STICKER_I18N).forEach((lang) => {
+    if (window.I18N[lang]) deepMerge(window.I18N[lang], STICKER_I18N[lang]);
+  });
+
+  if (typeof window.applyLanguage === 'function') {
+    window.applyLanguage(typeof window.getLang === 'function' ? window.getLang() : 'en');
+  }
+})();
