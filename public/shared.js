@@ -163,7 +163,7 @@
           <span class="big">${window.t('cart.emptyBig')}</span>
           ${window.t('cart.emptyLine')}
           <br><br>
-          <a href="/cache.html#drop" data-close>${window.t('cart.browse')}
+          <a href="/drop-001-live.html#drop" data-close>${window.t('cart.browse')}
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H2M9 1V8" stroke="currentColor" stroke-width="1.2"/></svg>
           </a>
         </div>`;
@@ -273,8 +273,8 @@
   //   supportLinks : Sizing, Care, Shipping, Returns
   //   followLinks  : Instagram, TikTok, X, RSS
   const FOOTER_HREFS = {
-    shop:    ['cache.html#drop',      'archive.html',         'cache.html#members',     'gift.html'],
-    cache:   ['cache.html#manifesto', 'studio.html#process',  'studio.html#studio',     'studio.html#press'],
+    shop:    ['drop-001-live.html#drop', 'archive.html',         'drop-001-live.html#members', 'gift.html'],
+    cache:   ['drop-001-live.html#manifesto', 'studio.html#process', 'studio.html#studio', 'studio.html#press'],
     support: ['support.html#sizing',  'support.html#care',    'support.html#shipping',  'support.html#returns'],
     follow:  ['#', '#', '#', '#'],
   };

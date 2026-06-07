@@ -3,24 +3,37 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 
+type ProdigiStatus = {
+  configured: boolean;
+  sandbox: boolean;
+  baseUrl: string;
+  apiKeyConfigured: boolean;
+  mappedStickerCount: number;
+  stickerSkus: Array<{
+    cacheSku: string;
+    name: string;
+    prodigiSku?: string;
+  }>;
+};
+
+type ProdigiStickerSmoke = {
+  ok: boolean;
+  configured: boolean;
+  mappedCount: number;
+  reachableCount: number;
+  stickers: Array<{
+    cacheSku: string;
+    name: string;
+    prodigiSku?: string;
+    reachable: boolean;
+    error?: string;
+  }>;
+};
+
 type TeemillStatus = {
   configured: boolean;
   customProductConfigured: boolean;
   projectName: string | null;
-  privateApiKeyConfigured: boolean;
-  publicSafeKeyConfigured: boolean;
-};
-
-type TeemillCatalogSmoke = {
-  ok: boolean;
-  productCount: number;
-  projectName: string | null;
-  sample: Array<{
-    id: string;
-    title: string;
-    slug: string | null;
-    variantCount: number;
-  }>;
 };
 
 const stickerRun = [
@@ -45,38 +58,41 @@ const stickerRun = [
 ];
 
 export default function Checkout() {
+  const getProdigiStatus = useAction(api.prodigi.configStatus);
+  const getProdigiStickerSmoke = useAction(api.prodigi.stickerCatalogSmoke);
   const getTeemillStatus = useAction(api.teemill.configStatus);
-  const getTeemillCatalogSmoke = useAction(api.teemill.catalogSmoke);
+  const [prodigi, setProdigi] = useState<ProdigiStatus | null>(null);
+  const [prodigiStickers, setProdigiStickers] = useState<ProdigiStickerSmoke | null>(null);
+  const [prodigiError, setProdigiError] = useState<string | null>(null);
   const [teemill, setTeemill] = useState<TeemillStatus | null>(null);
-  const [teemillCatalog, setTeemillCatalog] = useState<TeemillCatalogSmoke | null>(null);
-  const [teemillError, setTeemillError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    Promise.all([getTeemillStatus({}), getTeemillCatalogSmoke({})])
-      .then(([status, catalog]) => {
+    Promise.all([getProdigiStatus({}), getProdigiStickerSmoke({}), getTeemillStatus({})])
+      .then(([status, stickers, teemillStatus]) => {
         if (!active) return;
-        setTeemill(status);
-        setTeemillCatalog(catalog);
+        setProdigi(status);
+        setProdigiStickers(stickers);
+        setTeemill(teemillStatus);
       })
       .catch((error) => {
         if (active) {
-          setTeemillError(error instanceof Error ? error.message : "Unable to load POD provider status.");
+          setProdigiError(error instanceof Error ? error.message : "Unable to load Prodigi status.");
         }
       });
     return () => {
       active = false;
     };
-  }, [getTeemillCatalogSmoke, getTeemillStatus]);
+  }, [getProdigiStatus, getProdigiStickerSmoke, getTeemillStatus]);
 
   return (
     <div className="space-y-5">
       <section className="cb-panel-dark p-5">
-        <p className="cb-kicker text-[var(--cb-gold)]">POD launchpad</p>
-        <h1 className="cb-display mt-2 text-4xl font-semibold">Sticker run setup</h1>
+        <p className="cb-kicker text-[var(--cb-gold)]">Prodigi setup</p>
+        <h1 className="cb-display mt-2 text-4xl font-semibold">Sticker POD launchpad</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          The active storefront is a sticker POD reservation flow: three sticker types, fifty each,
-          price TBD until the provider proof and production quote are approved.
+          The active storefront is a sticker POD reservation flow backed by Prodigi: three sticker types,
+          fifty each, price TBD until the provider proof and production quote are approved.
         </p>
       </section>
 
@@ -97,42 +113,91 @@ export default function Checkout() {
           </section>
 
           <section className="cb-panel p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">POD Provider</h2>
-            {teemillError && (
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Prodigi</h2>
+            {prodigiError && (
               <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {teemillError}
+                {prodigiError}
               </p>
             )}
-            {!teemill && !teemillError && (
-              <p className="text-sm text-[var(--cb-muted)]">Loading POD provider status...</p>
+            {!prodigi && !prodigiError && (
+              <p className="text-sm text-[var(--cb-muted)]">Loading Prodigi status...</p>
             )}
+            {prodigi && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <StatusCard
+                  label="API key"
+                  ok={prodigi.configured}
+                  good="Prodigi API key configured"
+                  bad="Missing PRODIGI_API_KEY"
+                />
+                <StatusCard
+                  label="Environment"
+                  ok={prodigi.sandbox || prodigi.configured}
+                  good={prodigi.sandbox ? "Sandbox endpoint" : "Live endpoint"}
+                  bad="Base URL not configured"
+                />
+                <InfoCard label="Base URL" value={prodigi.baseUrl} mono />
+                <InfoCard
+                  label="Mapped sticker SKUs"
+                  value={`${prodigi.mappedStickerCount} / ${prodigi.stickerSkus.length}`}
+                />
+              </div>
+            )}
+            {prodigiStickers && prodigiStickers.mappedCount === 0 && (
+              <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Prodigi credentials can load, but the three cache sticker SKUs are not mapped yet. Set
+                `PRODIGI_STICKER_SKUS` once the Prodigi catalog SKUs are known.
+              </p>
+            )}
+            {prodigiStickers && prodigiStickers.mappedCount > 0 && prodigiStickers.reachableCount === 0 && (
+              <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Sticker SKUs are mapped, but Prodigi product lookup has not succeeded yet. Confirm the
+                mapped SKUs exist in the configured Prodigi account.
+              </p>
+            )}
+            {prodigiStickers && prodigiStickers.reachableCount > 0 && (
+              <div className="mt-3 space-y-2">
+                {prodigiStickers.stickers.map((sticker) => (
+                  <div
+                    key={sticker.cacheSku}
+                    className="rounded-md border border-[var(--cb-line)] bg-white/40 px-3 py-2 text-xs"
+                  >
+                    <div className="font-medium">
+                      {sticker.cacheSku} · {sticker.name}
+                    </div>
+                    <div className={sticker.reachable ? "text-emerald-700" : "text-amber-800"}>
+                      {sticker.reachable
+                        ? `Prodigi SKU ${sticker.prodigiSku} reachable`
+                        : sticker.error ?? "Not reachable yet"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="cb-panel p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Legacy Teemill</h2>
+            {!teemill && <p className="text-sm text-[var(--cb-muted)]">Loading Teemill status...</p>}
             {teemill && (
               <div className="grid gap-3 md:grid-cols-2">
                 <StatusCard
                   label="Catalog / orders"
                   ok={teemill.configured}
-                  good="Provider project + private key configured"
-                  bad="Missing provider project or private key"
+                  good="Teemill project + private key configured"
+                  bad="Teemill catalog mode not configured"
                 />
                 <StatusCard
                   label="Custom product"
                   ok={teemill.customProductConfigured}
                   good="Custom-product key configured"
-                  bad="Missing custom-product public key"
-                />
-                <InfoCard label="Provider project" value={teemill.projectName ?? "Not configured"} mono />
-                <InfoCard
-                  label="Catalog products"
-                  value={teemillCatalog ? String(teemillCatalog.productCount) : "Loading..."}
+                  bad="Missing Teemill custom-product key"
                 />
               </div>
             )}
-            {teemillCatalog && teemillCatalog.productCount === 0 && (
-              <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                Provider credentials are reachable, but the catalog has no products yet. Create or map
-                the three sticker SKUs before turning on paid checkout.
-              </p>
-            )}
+            <p className="mt-3 text-xs text-[var(--cb-muted)]">
+              Teemill remains available for one-off shirt flows. The active sticker run uses Prodigi.
+            </p>
           </section>
 
           <section className="cb-panel p-4">
@@ -141,7 +206,7 @@ export default function Checkout() {
               <p>1. Buyer reserves one of the three sticker types from the public storefront.</p>
               <p>2. Checkout collects contact and fulfillment details only.</p>
               <p>3. The final step submits a POD proof request, with no card or payment collection.</p>
-              <p>4. Ops locks price after artwork proof, provider quote, tax, and shipping are known.</p>
+              <p>4. Ops locks price after artwork proof, Prodigi quote, tax, and shipping are known.</p>
             </div>
           </section>
         </div>
@@ -152,21 +217,30 @@ export default function Checkout() {
             <div className="space-y-2 text-sm text-[var(--cb-muted)]">
               <p>Export production artwork for `CST-001`, `CST-002`, and `CST-003`.</p>
               <p>Confirm sticker material, cut line, bleed, finish, and backing requirements.</p>
-              <p>Create or map each SKU in the POD provider catalog at quantity 50.</p>
-              <p>Approve physical or digital proofs before production.</p>
-              <p>Set final unit price only after the provider quote and shipping rate are locked.</p>
+              <p>Map each cache SKU to a Prodigi catalog SKU at quantity 50.</p>
+              <p>Quote and approve proofs through Prodigi before production.</p>
+              <p>Set final unit price only after the Prodigi quote and shipping rate are locked.</p>
+            </div>
+          </section>
+
+          <section className="cb-panel p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Agent Tool</h2>
+            <div className="space-y-2 text-sm text-[var(--cb-muted)]">
+              <p>The vendored Prodigi CLI lives at `tools/prodigi-agent-tool/`.</p>
+              <p>Build it with Go, then use `prodigi-pp-cli tool schema` or the MCP server for agent ops.</p>
+              <p>Convex actions expose the same quote and order surface for staff ops and automation.</p>
             </div>
           </section>
 
           <section className="cb-panel p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Preview</h2>
             <p className="mb-4 text-sm text-[var(--cb-muted)]">
-              The live storefront route now renders the static `.cache` sticker bundle and the public
-              checkout is a POD request flow.
+              The live storefront route renders the static `.cache` sticker bundle and the public checkout
+              is a POD request flow.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Link to="/" className="cb-button">Open storefront</Link>
-              <Link to="/checkout" className="cb-button-secondary">Open POD request</Link>
+              <Link to="/cache.html" className="cb-button">Open sticker POD</Link>
+              <Link to="/drop-001-live.html" className="cb-button-secondary">Open Drop 001 demo</Link>
             </div>
           </section>
 

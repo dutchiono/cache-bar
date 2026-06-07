@@ -12,18 +12,24 @@ The active `.cache` storefront is set up for a POD-backed sticker run. There are
 
 ## Frontend State
 
-- `public/cache.html` and `public/data.js` are the live public storefront source for the iframe shell.
-- `public/checkout.html` is a POD request flow, not a payment checkout.
+- `public/cache.html` and `public/data.js` are the sticker POD storefront source.
+- `public/drop-001-live.html` and `public/data-drop-001.js` are the preserved OG Drop 001 demo.
+- `public/pod-request.html` is the POD request flow, not a payment checkout.
+- `public/checkout.html` redirects to `pod-request.html`.
 - Cart and checkout totals display `TBD`, not `$0`.
 - `/stash` is paused for this sticker run.
 
 ## POD Setup
 
-- Create or map the three SKUs in the POD provider catalog.
+- Provider: Prodigi (`tools/prodigi-agent-tool/`, `convex/lib/prodigi.ts`, `convex/prodigi.ts`)
+- Create or map the three SKUs in the Prodigi catalog.
+- Set `PRODIGI_API_KEY`, optional `PRODIGI_BASE_URL`, and optional `PRODIGI_STICKER_SKUS`.
 - Confirm artwork export specs for cut line, bleed, transparent background, material, finish, and backing.
 - Hold production until the proof is approved.
-- Lock unit price only after provider quote, margin, tax, and shipping rate are known.
+- Lock unit price only after Prodigi quote, margin, tax, and shipping rate are known.
 - Update `public/data.js` and `convex/bootstrap.ts` when final prices are approved.
+
+See [docs/prodigi-integration-plan.md](docs/prodigi-integration-plan.md).
 
 ## Self-Hosted Seed
 

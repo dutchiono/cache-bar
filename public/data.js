@@ -1,6 +1,6 @@
 /* =====================================================================
-   .cache — shared product data
-   Used by home (app.js), product detail, archive, cart, checkout.
+   .cache — sticker POD catalog
+   Used by cache.html and pod-request.html only.
    ===================================================================== */
 
 window.SHAPES = {

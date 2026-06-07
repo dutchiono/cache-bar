@@ -1,12 +1,12 @@
 import { useConvexAuth } from "@convex-dev/auth/react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { RedirectToStatic } from "./components/RedirectToStatic";
 import { ScreenStub } from "./components/ScreenStub";
 import { SignIn } from "./components/SignIn";
 import AgentConsole from "./pages/AgentConsole";
 import Automations from "./pages/Automations";
 import Checkout from "./pages/Checkout";
-import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CustomerDetail from "./pages/CustomerDetail";
 import Customers from "./pages/Customers";
 import Creators from "./pages/Creators";
@@ -20,8 +20,6 @@ import ProductDetail from "./pages/ProductDetail";
 import Reports from "./pages/Reports";
 import Royalties from "./pages/Royalties";
 import Settings from "./pages/Settings";
-import Stash from "./pages/Stash";
-import Storefront from "./pages/Storefront";
 import Submissions from "./pages/Submissions";
 import Team from "./pages/Team";
 import TokenBurn from "./pages/TokenBurn";
@@ -31,7 +29,6 @@ const legacyAdminRedirects = [
   "products",
   "submissions",
   "creators",
-  "checkout",
   "orders",
   "settings",
   "team",
@@ -49,11 +46,11 @@ const legacyAdminRedirects = [
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Storefront />} />
-      <Route path="/checkout" element={<Storefront focusCheckout />} />
-      <Route path="/checkout/success" element={<CheckoutSuccess />} />
-      <Route path="/stash" element={<Stash />} />
-      <Route path="/storefront" element={<Navigate to="/" replace />} />
+      <Route path="/" element={<RedirectToStatic href="/cache.html" />} />
+      <Route path="/checkout" element={<RedirectToStatic href="/pod-request.html" />} />
+      <Route path="/checkout/success" element={<RedirectToStatic href="/cache.html" />} />
+      <Route path="/stash" element={<RedirectToStatic href="/cache.html" />} />
+      <Route path="/storefront" element={<RedirectToStatic href="/cache.html" />} />
 
       <Route path="/app" element={<ProtectedOpsLayout />}>
         <Route index element={<Dashboard />} />
@@ -62,7 +59,8 @@ export default function App() {
         <Route path="submissions" element={<Submissions />} />
         <Route path="creators" element={<Creators />} />
         <Route path="creators/:id" element={<CreatorDetail />} />
-        <Route path="checkout" element={<Checkout />} />
+        <Route path="pod-setup" element={<Checkout />} />
+        <Route path="checkout" element={<Navigate to="/app/pod-setup" replace />} />
         <Route path="orders" element={<Orders />} />
         <Route path="orders/:id" element={<OrderDetail />} />
         <Route path="customers" element={<Customers />} />
@@ -77,7 +75,7 @@ export default function App() {
         <Route path="stash" element={<TokenBurn />} />
         <Route path="token" element={<Navigate to="/app/stash" replace />} />
         <Route path="treasury" element={<Treasury />} />
-        <Route path="storefront" element={<Navigate to="/" replace />} />
+        <Route path="storefront" element={<RedirectToStatic href="/cache.html" />} />
         <Route
           path="*"
           element={<ScreenStub title="Not found" subtitle="No route matches." />}
@@ -92,7 +90,7 @@ export default function App() {
         />
       ))}
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<RedirectToStatic href="/cache.html" />} />
     </Routes>
   );
 }

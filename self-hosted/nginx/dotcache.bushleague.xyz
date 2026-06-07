@@ -1,0 +1,28 @@
+server {
+    server_name dotcache.bushleague.xyz *.dotcache.bushleague.xyz;
+
+    root /var/www/dotcache/dist;
+    index cache.html index.html;
+
+    location = / {
+        try_files /cache.html =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/dotcache.bushleague.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/dotcache.bushleague.xyz/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name dotcache.bushleague.xyz *.dotcache.bushleague.xyz;
+    return 301 https://$host$request_uri;
+}

@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 
-type Item = { to: string; label: string };
+type Item = { to: string; label: string; external?: boolean };
 type Group = { label: string; items: Item[] };
 
 const groups: Group[] = [
@@ -41,11 +41,12 @@ const groups: Group[] = [
     ],
   },
   {
-    label: "Storefront",
+    label: "Demo surfaces",
     items: [
-      { to: "/", label: "Live Storefront" },
-      { to: "/stash", label: "Sticker .stash Pause" },
-      { to: "/checkout", label: "POD Request" },
+      { to: "/cache.html", label: "B · Sticker POD (primary)", external: true },
+      { to: "/drop-001-live.html", label: "A · Drop 001 demo", external: true },
+      { to: "/pod-request.html", label: "POD request", external: true },
+      { to: "/app/pod-setup", label: "Prodigi setup" },
     ],
   },
   {
@@ -74,11 +75,22 @@ export function Sidebar() {
   );
 }
 
-function SidebarLink({ to, label, accent }: Item & { accent?: boolean }) {
+function SidebarLink({ to, label, accent, external }: Item & { accent?: boolean }) {
+  if (external) {
+    return (
+      <a
+        href={to}
+        className="block rounded-md border border-transparent px-3 py-2 text-sm font-medium text-[var(--cb-muted)] transition hover:border-[var(--cb-line)] hover:bg-[var(--cb-paper-soft)] hover:text-[var(--cb-ink)]"
+      >
+        {label}
+      </a>
+    );
+  }
+
   return (
     <NavLink
       to={to}
-      end={to === "/" || to === "/app"}
+      end={to === "/app"}
       className={({ isActive }) =>
         [
           "block rounded-md border px-3 py-2 text-sm font-medium transition",

@@ -599,7 +599,7 @@ function fallbackReply(content: string) {
     return stickerDemoReply();
   }
   if (lower.includes("shop") || lower.includes("store") || lower.includes("drop")) {
-    return "I can help a waifu open a shop: decide whether the buyer needs a custom Teemill product link or the .cache Stripe catalog flow, define the drop, attach a token discount through .stash, and route fulfillment for approval.";
+    return "I can help a waifu open a shop: decide whether the buyer needs a custom Teemill product link or the .cache Stripe catalog flow, define the drop, attach a token discount through .stash, and route Prodigi or Teemill fulfillment for approval.";
   }
   if (
     lower.includes("custom shirt") ||
@@ -617,9 +617,12 @@ function fallbackReply(content: string) {
     return "The web concierge is wired here. Discord and Telegram should run through the same .cache Eliza agent once the bot tokens are added to the Eliza Cloud deployment.";
   }
   if (lower.includes("refund") || lower.includes("order")) {
-    return "I can help with order lookup, Stripe refund prep, fulfillment status, and customer support. Money-moving actions still need an operator approval path.";
+    return "I can help with order lookup, Stripe refund prep, fulfillment status, and customer support. Prodigi handles the active sticker POD run after approval; Teemill remains available for one-off shirt flows. Money-moving actions still need an operator approval path.";
   }
-  return "Tell me what the waifu wants to sell, whether the request is a one-off custom shirt or a catalog product, what token should unlock the discount, and whether fulfillment is print-on-demand, dropship, supplier, or digital.";
+  if (lower.includes("sticker") || lower.includes("pod") || lower.includes("prodigi")) {
+    return "The active sticker run uses Prodigi for proof, quote, and fulfillment. Price stays TBD until artwork proof, Prodigi quote, shipping, and margin are approved. I can help inspect mapped SKUs and prepare quotes, but live Prodigi orders still need ops approval.";
+  }
+  return "Tell me what the waifu wants to sell, whether the request is a one-off custom shirt or a catalog product, what token should unlock the discount, and whether fulfillment is Prodigi print-on-demand, Teemill, dropship, supplier, or digital.";
 }
 
 function isPartnerAgentModelQuestion(content: string) {

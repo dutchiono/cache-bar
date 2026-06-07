@@ -86,6 +86,9 @@ production. Use it as the first stop before you drill into the narrower subsyste
   - `TEEMILL_PROJECT_NAME`
   - `TEEMILL_PRIVATE_API_KEY`
   - `TEEMILL_PUBLIC_SAFE_KEY`
+  - `PRODIGI_API_KEY`
+  - `PRODIGI_BASE_URL`
+  - `PRODIGI_STICKER_SKUS`
 - Eliza / channel / messaging surfaces:
   - `CACHE_ELIZA_BASE_URL`
   - `CACHE_ELIZA_API_KEY`
@@ -152,6 +155,7 @@ git diff --check
   - `docs/stripe-handoff.md`
   - `docs/eliza-waifu-handoff.md`
   - `docs/teemill-integration-plan.md`
+  - `docs/prodigi-integration-plan.md`
   - `docs/solana-sticker-drop.md`
   - `docs/sticker-drop-nft.md`
   - `docs/partner-agent-promo-playbook.md`

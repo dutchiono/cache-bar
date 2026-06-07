@@ -59,6 +59,9 @@ jobs:
           TEEMILL_PROJECT_NAME: ${{ secrets.TEEMILL_PROJECT_NAME }}
           TEEMILL_PRIVATE_API_KEY: ${{ secrets.TEEMILL_PRIVATE_API_KEY }}
           TEEMILL_PUBLIC_SAFE_KEY: ${{ secrets.TEEMILL_PUBLIC_SAFE_KEY }}
+          PRODIGI_API_KEY: ${{ secrets.PRODIGI_API_KEY }}
+          PRODIGI_BASE_URL: ${{ secrets.PRODIGI_BASE_URL }}
+          PRODIGI_STICKER_SKUS: ${{ secrets.PRODIGI_STICKER_SKUS }}
           CACHEBAR_CAPABILITY_API_TOKENS: ${{ secrets.CACHEBAR_CAPABILITY_API_TOKENS }}
         run: |
           set -e
@@ -116,6 +119,15 @@ jobs:
           if [ -n "$TEEMILL_PUBLIC_SAFE_KEY" ]; then
             bunx convex env set --prod TEEMILL_PUBLIC_SAFE_KEY "$TEEMILL_PUBLIC_SAFE_KEY"
           fi
+          if [ -n "$PRODIGI_API_KEY" ]; then
+            bunx convex env set --prod PRODIGI_API_KEY "$PRODIGI_API_KEY"
+          fi
+          if [ -n "$PRODIGI_BASE_URL" ]; then
+            bunx convex env set --prod PRODIGI_BASE_URL "$PRODIGI_BASE_URL"
+          fi
+          if [ -n "$PRODIGI_STICKER_SKUS" ]; then
+            bunx convex env set --prod PRODIGI_STICKER_SKUS "$PRODIGI_STICKER_SKUS"
+          fi
           if [ -n "$CACHEBAR_CAPABILITY_API_TOKENS" ]; then
             bunx convex env set --prod CACHEBAR_CAPABILITY_API_TOKENS "$CACHEBAR_CAPABILITY_API_TOKENS"
           fi
@@ -160,6 +172,16 @@ jobs:
             set -e
             mkdir -p "${{ secrets.FOUNDRY_DEPLOY_PATH }}/dist"
 
+      - name: Ensure dotcache deploy directory exists
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DOTCACHE_DEPLOY_USER }}
+          key: ${{ secrets.DOTCACHE_DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            mkdir -p "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist"
+
       - name: Upload dist
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -181,3 +203,46 @@ jobs:
           target: "${{ secrets.FOUNDRY_DEPLOY_PATH }}/dist"
           strip_components: 1
           rm: true
+
+      - name: Upload dotcache dist
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DOTCACHE_DEPLOY_USER }}
+          key: ${{ secrets.DOTCACHE_DEPLOY_SSH_KEY }}
+          source: "dist/*"
+          target: "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist"
+          strip_components: 1
+          rm: true
+
+      - name: Fix dotcache dist permissions for nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            find "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist" -type d -exec chmod 755 {} \;
+            find "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist" -type f -exec chmod 644 {} \;
+
+      - name: Sync nginx site configs
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "self-hosted/nginx/dotcache.bushleague.xyz,self-hosted/nginx/cachebar.bushleague.xyz"
+          target: "/etc/nginx/sites-available"
+          overwrite: true
+
+      - name: Reload nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            nginx -t
+            systemctl reload nginx

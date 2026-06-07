@@ -4,11 +4,15 @@
 
 ## Main surfaces
 
-- `/` — public storefront
-- `/checkout` — buyer identity and Stripe handoff
-- `/stash` — token burn redemption for one-time Stripe discount codes
+Public demo is A / B only. **B is primary:**
+
+- `/` and `/cache.html` — **B** · sticker POD run (three SKUs, price TBD)
+- `/drop-001-live.html` — **A** · preserved OG Drop 001 demo
+- `/pod-request.html` — POD proof request for B
 - `/app` — staff ops
-- `/app/agent` — .cache concierge status and ops chat
+- `/app/pod-setup` — Prodigi setup
+
+Surface map lives in [docs/storefront-surfaces.md](docs/storefront-surfaces.md).
 
 ## Stack
 
@@ -35,6 +39,7 @@ Eliza and waifu handoff notes live in [docs/eliza-waifu-handoff.md](docs/eliza-w
 The Eliza Cloud proxy, migration, and contingency plan lives in [docs/cache-eliza-cloud-plan.md](docs/cache-eliza-cloud-plan.md).
 Convex component wiring is tracked in [docs/convex-components.md](docs/convex-components.md).
 Teemill hybrid mode notes live in [docs/teemill-integration-plan.md](docs/teemill-integration-plan.md).
+Prodigi sticker POD notes live in [docs/prodigi-integration-plan.md](docs/prodigi-integration-plan.md).
 Sticker proof NFT notes live in [docs/sticker-drop-nft.md](docs/sticker-drop-nft.md).
 Solana DTOUR sticker flow notes live in [docs/solana-sticker-drop.md](docs/solana-sticker-drop.md).
 The agent launchpad architecture and build sequence live in [docs/agent-foundry-blueprint.md](docs/agent-foundry-blueprint.md).
@@ -43,6 +48,7 @@ Its durable simulated-launch HTTP boundary lives in [docs/foundry-demo-control-p
 The combined `.cache` + Foundry operator handoff lives in [docs/platform-build-handoff.md](docs/platform-build-handoff.md).
 Partner-agent promo notes live in [docs/partner-agent-promo-playbook.md](docs/partner-agent-promo-playbook.md).
 The local partner-agent skill lives in [skills/partner-agent-shop/SKILL.md](skills/partner-agent-shop/SKILL.md).
+The local Prodigi fulfillment skill lives in [skills/prodigi-fulfillment/SKILL.md](skills/prodigi-fulfillment/SKILL.md).
 
 ## Agent capability API
 

@@ -372,7 +372,7 @@ export default function Storefront({ focusCheckout = false }: { focusCheckout?: 
         </Link>
         <nav className="sf-nav-links">
           <a href="#shop">Shop</a>
-          <a href="/drop-001-live.html">Drop 001 Demo</a>
+          <a href="/cache.html">Sticker POD</a>
           <Link to="/stash">.stash</Link>
           <a href="#launch">Start a drop</a>
         </nav>
