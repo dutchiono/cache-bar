@@ -57,7 +57,9 @@ export async function setTelegramWebhook(webhookUrl: string) {
 }
 
 export function convexTelegramWebhookUrl() {
-  const site = envValue("CONVEX_SITE_URL");
+  const site =
+    envValue("CONVEX_SITE_URL") ??
+    envValue("CONVEX_URL")?.replace(/\.convex\.cloud\b/, ".convex.site");
   if (!site) throw new Error("Missing CONVEX_SITE_URL.");
   return `${site.replace(/\/+$/, "")}/telegram/webhook`;
 }

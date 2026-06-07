@@ -99,10 +99,6 @@ jobs:
           if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
             bunx convex env set --prod TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
           fi
-          if [ -n "$VITE_CONVEX_URL" ]; then
-            CONVEX_SITE_URL="${VITE_CONVEX_URL/.convex.cloud/.convex.site}"
-            bunx convex env set --prod CONVEX_SITE_URL "$CONVEX_SITE_URL"
-          fi
           if [ -n "$RESEND_API_KEY" ]; then
             bunx convex env set --prod RESEND_API_KEY "$RESEND_API_KEY"
           fi
