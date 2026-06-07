@@ -182,6 +182,19 @@ jobs:
             set -e
             mkdir -p "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist"
 
+      - name: Prepare cachebar dist directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            rm -rf "${{ secrets.DEPLOY_PATH }}/dist"
+            mkdir -p "${{ secrets.DEPLOY_PATH }}/dist"
+            chown -R "${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }}" "${{ secrets.DEPLOY_PATH }}/dist"
+            chmod 755 "${{ secrets.DEPLOY_PATH }}/dist"
+
       - name: Upload dist
         uses: appleboy/scp-action@v0.1.7
         with:
