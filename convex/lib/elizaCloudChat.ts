@@ -1,7 +1,7 @@
 import { askElizaAgent } from "./elizaAgent";
 import { managerConversationalReply } from "./managerConcierge";
 import { formatOpsContext, type OpsSnapshot } from "./opsSnapshot";
-import { shopConversationalReply } from "./shopConcierge";
+import { shopAgentContext, shopConversationalReply } from "./shopConcierge";
 import type { TelegramBotRole } from "./telegramApi";
 
 export type AskDotCacheInput = {
@@ -20,13 +20,17 @@ export async function askDotCache(input: AskDotCacheInput): Promise<string> {
   const contextPrefix =
     input.surface === "manager" && input.opsSnap ? formatOpsContext(input.opsSnap) : undefined;
 
+  const shopContext =
+    input.surface === "store" || input.surface === "web" ? shopAgentContext() : undefined;
+  const mergedContext = [contextPrefix, shopContext].filter(Boolean).join("\n\n") || undefined;
+
   const reply = await askElizaAgent({
     text: input.text,
     source,
     surface: input.surface,
     entityId: input.entityId,
     roomId: input.roomId,
-    contextPrefix,
+    contextPrefix: mergedContext,
     metadata: input.metadata,
   });
 

@@ -1,68 +1,54 @@
-import { LIVE_SHOP_PRODUCT, shopCatalogSummary, shopUrl } from "./liveShopCatalog";
+import {
+  LIVE_SHOP_PRODUCT,
+  shopAgentContext,
+  shopCatalogSummary,
+  shopLinksText,
+} from "./liveShopCatalog";
 
 export type ShopConciergeChannel = "web" | "telegram";
 
-/** Local conversational replies when Eliza Cloud inference is unavailable. */
+/** Local fallback when Eliza is unavailable — all copy derived from liveShopCatalog. */
 export function shopConversationalReply(
   text: string,
   options: { channel?: ShopConciergeChannel } = {},
 ): string {
   const channel = options.channel ?? "telegram";
   const lower = text.toLowerCase().trim();
+  const product = LIVE_SHOP_PRODUCT;
 
   if (isShopGreeting(lower)) {
     return channel === "web"
-      ? "Yeah, I'm here. One live product right now — the Cozy Devs Sticker Pack with Moon Seal, Floppy, and Bus Riot. Ask about the pack, pricing, or checkout."
-      : "Hey — I'm dotCache. One product live right now: the Cozy Devs 3-sticker pack. Ask about it or tap Shop below.";
+      ? `Yeah, I'm here. One live product — ${product.name} (${product.includes.join(", ")}). Ask about the pack, pricing, or checkout.\n\n${shopLinksText()}`
+      : `Hey — I'm dotCache. One product live: ${product.name}. Ask about it or tap Shop below.\n\n${shopLinksText()}`;
   }
+
+  const lead = pickLead(lower, channel);
+  return [lead, shopCatalogSummary(), shopLinksText()].filter(Boolean).join("\n\n");
+}
+
+/** Re-export for tests / agent wiring. */
+export { shopAgentContext };
+
+function pickLead(lower: string, channel: ShopConciergeChannel): string {
+  const product = LIVE_SHOP_PRODUCT;
 
   if (
-    lower.includes("what") &&
-    (lower.includes("shop") ||
-      lower.includes("sale") ||
-      lower.includes("sell") ||
-      lower.includes("buy") ||
-      lower.includes("in the"))
+    lower.includes("price") ||
+    lower.includes("cost") ||
+    lower.includes("how much")
   ) {
-    return [
-      "Right now there is one live product: the Cozy Devs Sticker Pack.",
-      "Each pack has all three stickers — Moon Seal, Floppy, and Bus Riot — plus a proof NFT for your wallet.",
-      "50 packs total. Price locks after artwork proof.",
-      `Browse on web: ${shopUrl()}`,
-    ].join(" ");
+    return `Price is ${product.price} until artwork proof, Prodigi quote, shipping, and margin are approved.`;
   }
 
-  if (lower.includes("sticker") || lower.includes("pack") || lower.includes("drop")) {
-    const cta =
-      channel === "web"
-        ? `Open the shop: ${shopUrl()} · request flow: ${shopUrl("/pod-request.html")}`
-        : "Tap the pack button below to add one, or open the website to request/checkout.";
-    return [
-      "The Cozy Devs Sticker Pack is the active drop.",
-      "Three stickers in one pack, 50 packs in the run, proof NFT included.",
-      cta,
-    ].join(" ");
-  }
-
-  if (lower.includes("price") || lower.includes("cost") || lower.includes("how much")) {
-    return "Price is TBD until artwork proof, Prodigi quote, shipping, and margin are approved. The request flow is open now if you want in early.";
-  }
-
-  if (lower.includes("nft") || lower.includes("proof")) {
+  if (lower.includes("nft") || (lower.includes("proof") && !lower.includes("approval"))) {
     return "Each pack buyer gets a sticker-pack proof NFT tied to their wallet as part of the demo run.";
   }
 
-  if (lower.includes("request") || lower.includes("checkout") || lower.includes("order")) {
-    return `Request or checkout on the web at ${shopUrl("/pod-request.html")}. I can answer questions here; payment and fulfillment still go through .cache ops approval.`;
+  if (channel === "telegram" && !lower.includes("http")) {
+    return `Live shop: ${product.name} (${product.sku}). Use the buttons below or these links:`;
   }
 
-  const summary = shopCatalogSummary().replace(/<[^>]+>/g, "");
-  const cta =
-    channel === "web"
-      ? `Shop: ${shopUrl()} · request: ${shopUrl("/pod-request.html")}`
-      : "Ask about the pack, or use the buttons to browse and add to cart.";
-
-  return [`Live shop: ${LIVE_SHOP_PRODUCT.name} (${LIVE_SHOP_PRODUCT.sku}).`, summary, cta].join("\n\n");
+  return `Live shop: ${product.name} (${product.sku}).`;
 }
 
 function isShopGreeting(lower: string) {

@@ -7,7 +7,7 @@ import { rateLimiter } from "./componentLimits";
 import { recordConciergeMessageMetric } from "./componentMetrics";
 import { createCustomProduct, teemillConfig } from "./lib/teemill";
 import { askElizaAgent, elizaConfig, envValue } from "./lib/elizaAgent";
-import { shopConversationalReply } from "./lib/shopConcierge";
+import { shopAgentContext, shopConversationalReply } from "./lib/shopConcierge";
 import { telegramBotConfigured } from "./lib/telegramApi";
 import { requireUser } from "./model/auth";
 
@@ -424,6 +424,7 @@ async function askEliza({
     surface,
     entityId,
     roomId,
+    contextPrefix: customerSurface ? shopAgentContext() : undefined,
     metadata,
   });
 

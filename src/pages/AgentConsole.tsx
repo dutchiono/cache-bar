@@ -2,6 +2,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { ChatMessageBody } from "../components/ChatMessageBody";
 
 export default function AgentConsole() {
   const threads = useQuery(api.agent.listThreads, {});
@@ -137,7 +138,12 @@ export default function AgentConsole() {
                     {new Date(message._creationTime).toLocaleString()}
                   </span>
                 </div>
-                <div className="mt-2 whitespace-pre-wrap text-sm">{message.content}</div>
+                <div className="mt-2 text-sm">
+                  <ChatMessageBody
+                    content={message.content}
+                    linkClassName="font-medium text-[var(--cb-accent,#c4a479)] underline underline-offset-2"
+                  />
+                </div>
               </div>
             ))}
             {activeThreadId && thread?.messages.length === 0 && <Empty>No messages in this thread.</Empty>}

@@ -192,7 +192,7 @@ async function sendShopMenu(chatId: number) {
   await sendTelegramMessage(
     BOT,
     chatId,
-    `<b>Live drop</b>\n\n${shopCatalogSummary()}`,
+    `<b>Live drop</b>\n\n${shopCatalogSummary({ html: true })}`,
     inlineKeyboard([
       [
         { text: "➕ Add pack to cart", callback_data: "add" },

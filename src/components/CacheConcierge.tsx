@@ -1,7 +1,13 @@
 import { useAction } from "convex/react";
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { api } from "../../convex/_generated/api";
+import { ChatMessageBody } from "./ChatMessageBody";
 import "../storefront.css";
+
+const EMBEDDED_ASSISTANT_LINK =
+  "font-medium text-[#c4a479] underline decoration-[#c4a479]/50 underline-offset-2 hover:text-[#e8d4a8]";
+const EMBEDDED_USER_LINK =
+  "font-medium text-[#111110] underline decoration-[#111110]/40 underline-offset-2 hover:text-black";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -127,7 +133,12 @@ export function CacheConcierge({
                   : "mr-auto border-white/10 bg-white/[0.04] text-zinc-200"
               }`}
             >
-              {message.content}
+              <ChatMessageBody
+                content={message.content}
+                linkClassName={
+                  message.role === "user" ? EMBEDDED_USER_LINK : EMBEDDED_ASSISTANT_LINK
+                }
+              />
             </div>
           ))}
           {busy && (
@@ -238,7 +249,12 @@ export function CacheConcierge({
                 key={`${message.role}-${index}`}
                 className={`sf-concierge-message is-${message.role}`}
               >
-                {message.content}
+                <ChatMessageBody
+                  content={message.content}
+                  linkClassName={
+                    message.role === "user" ? "sf-concierge-link is-user" : "sf-concierge-link"
+                  }
+                />
               </div>
             ))}
             {busy && <div className="sf-concierge-message is-assistant">Checking the shop context...</div>}
