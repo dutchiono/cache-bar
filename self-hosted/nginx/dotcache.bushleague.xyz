@@ -1,7 +1,7 @@
 server {
     server_name dotcache.bushleague.xyz *.dotcache.bushleague.xyz;
 
-    root /var/www/dotcache/dist;
+    root $dotcache_lane_root;
     index cache.html index.html;
 
     location = / {

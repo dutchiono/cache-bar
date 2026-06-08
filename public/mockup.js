@@ -35,8 +35,13 @@
     </div>`;
   }
 
+  function photoMockHtml(src) {
+    return `<div class="mock mock--photo"><img class="mock__photo" src="${src}" alt="" loading="lazy" /></div>`;
+  }
+
   function render(product) {
     const meta = lookup(product);
+    if (meta.mockupImage) return photoMockHtml(meta.mockupImage);
     if (Array.isArray(meta.images) && meta.images.length > 1) {
       return stickerPackHtml(meta);
     }

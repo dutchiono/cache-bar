@@ -1,45 +1,110 @@
 # Merch mockup pipeline
 
-Shop UI must never show raw print PNGs to customers. Art is composited onto product silhouettes (tee, mug, desk mat, sticker sheet, sticker pack).
+Customers must never see a flat print PNG as the product photo. They need a **photoreal mockup** — art on a real mug, tee, mat, or sticker sheet.
 
-## v1 — CSS composite (live now)
+The CSS wireframe in `mockup.js` is a **placeholder only** when no `mockupImage` exists. It is not proof quality.
 
-**Files:** `public/mockup.js`, styles in `public/cache.html` and `public/product.html`.
+## What I can and cannot do from code
 
-| Product | How it renders |
-|---------|----------------|
-| Tee / mug / mat | SVG blank + `image` positioned with CSS |
-| Single sticker | SVG backing sheet + art centered |
-| Sticker pack (`images[]` length > 1) | Dark surface + 3 rotated sticker chips |
+| Can | Cannot |
+|-----|--------|
+| Composite art onto a blank silhouette (placeholder) | Generate factory-accurate product photography from your PNG in chat |
+| Display a JPG you export from Teemill / Placeit (`mockupImage`) | Match Teemill RNK25 wrap + lighting without Teemill or a photo template |
+| Call Teemill Custom Product API → URL where **Teemill** renders the real mockup | Pull a standalone mockup PNG from Teemill API today (response is a buy URL, not an image file) |
 
-**Catalog fields (`public/data.js`):**
+**Bottom line:** photoreal mug/tee shots come from **Teemill** (your supplier) or **Placeit** (manual export). Once you have the JPG, drop it in the repo — the shop picks it up via `mockupImage`.
 
-- `image` — single print file for one SKU
-- `images` — array for multi-design packs (e.g. Cozy Devs 3-pack)
-- `shape` — `tee` \| `mug` \| `mat` \| `sticker`
-- `gar` — garment / surface color
+---
 
-**Limits:** Stylized silhouettes, not photo-real Teemill/Prodigi renders. Good enough for launch catalog and internal proofing; not suitable for ads or marketplace hero shots.
+## Fast path — mug proof (Teemill dashboard, ~5 min)
 
-## v2 — Supplier photoreal (not built)
+You already source mugs on Teemill **`RNK25`** (11oz white ceramic).
 
-To get factory-accurate mockups you need one of:
+1. Log in at [teemill.com](https://teemill.com) → **My Products** → **Add product**.
+2. Pick **11oz Mug** (`RNK25`).
+3. Upload your print file (e.g. `public/uploads/merch/4gt-profile.png`).
+   - Wrap spec: **185 × 80 mm** — see `docs/eco-merch-sourcing.md`.
+4. Teemill generates the photoreal mockup on the product page.
+5. Save that hero image:
+   - Right-click → Save image, or screenshot the product hero.
+6. Put it in the repo:
+   ```
+   public/uploads/merch/mockups/ECO-MUG-004.jpg
+   ```
+7. Wire the SKU in `public/data.js`:
+   ```js
+   {
+     sku: 'ECO-MUG-004',
+     image: ELIZA_SIMPLE_ART,           // print file (fulfillment)
+     mockupImage: '/uploads/merch/mockups/ECO-MUG-004.jpg',  // shop display
+     shape: 'mug',
+     ...
+   }
+   ```
+8. Push → deploy. Shop shows the photo mockup everywhere (carousel, PDP, hover).
 
-| Route | What it gives | Effort |
-|-------|---------------|--------|
-| **Teemill Custom Product API** | Preview URLs for RNA1 tees and RNK25 mugs after artwork upload | Convex action: upload art → cache preview URL per SKU |
-| **Prodigi mockup API** | Mat/sticker product shots from print file | Same pattern; SKU `GLOBAL-GAMINGMAT`, `M-STI-5_5X5_5` |
-| **Manual Placeit / Smartmockups** | One-off hero images | Export PNGs → `public/uploads/merch/mockups/{sku}.jpg` → optional `mockupImage` field bypasses v1 composite |
-| **Photography** | Real samples after Teemill/Prodigi proof orders | Replace v1/v2 URLs after samples arrive |
+Repeat per SKU: `ECO-MUG-003`, `ECO-TEE-005`, `ECO-TEE-006`, etc.
 
-**Recommended v2 path for this repo:** Teemill preview API for apparel/mugs + static Placeit exports for desk mat until Prodigi mockup is wired. Store result URLs on each product as `mockupImage`; teach `mockup.js` to prefer `mockupImage` when set.
+---
 
-## Cozy Devs 3-pack assets
+## Fast path — Teemill API (same mockup, programmatic link)
 
-Print files (repo):
+If `TEEMILL_PUBLIC_SAFE_KEY` is set (already in Convex):
+
+```powershell
+$env:TEEMILL_PUBLIC_SAFE_KEY = "<your public safe key>"
+node tools/teemill-mockup-proof.mjs `
+  --art "https://dotcache.bushleague.xyz/uploads/merch/4gt-profile.png" `
+  --item RNK25 `
+  --name "Eliza Simple Mug proof"
+```
+
+Output `checkoutUrl` → open in browser → Teemill shows the **real** mug render → save image → `mockupImage` as above.
+
+Or from Convex dashboard: run action `teemill:createCustomProductLink` with the same args.
+
+---
+
+## Desk mats + stickers (Prodigi)
+
+Prodigi does not give you a one-click mug-style mockup in our integration yet.
+
+| Product | Practical mockup source |
+|---------|-------------------------|
+| Desk mat `GLOBAL-GAMINGMAT` | [Placeit](https://placeit.net) gaming desk mat template, or order a Prodigi sample and photograph it |
+| Stickers `M-STI-5_5X5_5` | Placeit sticker-on-laptop/surface, or flat art on a neutral surface photo |
+
+Export → `public/uploads/merch/mockups/{SKU}.jpg` → `mockupImage` on that SKU.
+
+---
+
+## Catalog fields
+
+| Field | Purpose |
+|-------|---------|
+| `image` | Print file for fulfillment / Teemill upload (not shown in shop when `mockupImage` set) |
+| `images` | Multi-design sticker packs (Cozy Devs 3-pack) |
+| `mockupImage` | **Photoreal product shot** — shop uses this when present |
+| `shape` | Fallback placeholder type if no `mockupImage` |
+
+---
+
+## Cozy Devs 3-pack
+
+Print files:
 
 - `/uploads/cozy-devs-moon-seal.png`
 - `/uploads/cozy-devs-floppy.png`
 - `/uploads/cozy-devs-bus-riot.png`
 
-SKU `STICKER-PACK-001` uses `images: COZY_DEVS_STICKERS` — shop shows all three on a pack surface, not three separate product rows.
+For proof, export a Placeit “3 stickers on desk” shot → `mockupImage` on `STICKER-PACK-001`.
+
+---
+
+## Future automation (not built)
+
+- Teemill Mockups API (Pro / integration tier) — programmatic JPG export
+- Prodigi mockup endpoint when wired
+- Convex cron: regenerate mockups when `image` changes
+
+Until then: **Teemill dashboard or `teemill-mockup-proof.mjs` for mugs/tees; Placeit or sample photos for mats/stickers.**
