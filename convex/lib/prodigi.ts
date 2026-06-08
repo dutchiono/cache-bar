@@ -58,7 +58,7 @@ const defaultStickerSkus: CacheStickerSku[] = [
   { cacheSku: "STICKER-PACK-001/moon", name: "Moon Seal", prodigiSku: "M-STI-5_5X5_5" },
   { cacheSku: "STICKER-PACK-001/floppy", name: "Floppy", prodigiSku: "M-STI-5_5X5_5" },
   { cacheSku: "STICKER-PACK-001/bus", name: "Bus Riot", prodigiSku: "M-STI-5_5X5_5" },
-  { cacheSku: "ECO-STI-001", name: "4GT Profile", prodigiSku: "M-STI-5_5X5_5" },
+  { cacheSku: "ECO-STI-001", name: "Eliza Simple", prodigiSku: "M-STI-5_5X5_5" },
   { cacheSku: "ECO-STI-002", name: "Ruby Labs Seal", prodigiSku: "M-STI-5_5X5_5" },
 ];
 

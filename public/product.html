@@ -25,6 +25,8 @@
     display:flex;align-items:center;justify-content:center;color:var(--garment,#bdb6a2);
   }
   .pdp__hero svg{width:62%;height:62%;filter:drop-shadow(0 24px 40px #00000080)}
+  .pdp__hero img{max-width:72%;max-height:72%;object-fit:contain;filter:drop-shadow(0 24px 40px #00000080)}
+  .pdp__hero img.is-wide{max-width:88%;max-height:55%}
   .pdp__hero .corner{position:absolute;top:24px;left:24px;font:500 10px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
   .pdp__hero .corner.r{left:auto;right:24px;text-align:right}
   .pdp__thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
@@ -203,7 +205,7 @@
 </nav>
 
 <main class="pdp" id="pdp">
-  <a href="drop-001-live.html#shop" class="link-back pdp__back" data-i18n="product.back">← Back to inventory</a>
+  <a href="cache.html#shop" class="link-back pdp__back" data-i18n="product.back">← Back to inventory</a>
   <div id="pdp-body"><!-- rendered by JS --></div>
 </main>
 
@@ -242,18 +244,29 @@
 <script src="i18n.js"></script>
 <script src="i18n-pages.js"></script>
 <script src="live-nav.js"></script>
-<script src="data-drop-001.js"></script>
+<script src="data.js"></script>
 <script src="shared.js"></script>
 <script>
   const params = new URLSearchParams(location.search);
-  const sku = params.get('sku') || 'CSH-001';
-  if (sku.startsWith('CST-')) {
+  const sku = params.get('sku');
+  if (!sku || sku.startsWith('CST-')) {
     window.location.replace('cache.html#shop');
   }
-  const p = PRODUCT_LOOKUP[sku] || PRODUCT_LOOKUP['CSH-001'];
+  const p = PRODUCT_LOOKUP[sku];
+  if (!p) {
+    window.location.replace('cache.html#shop');
+  }
 
   document.title = `.cache — ${p.name}`;
   const body = document.getElementById('pdp-body');
+
+  function pdpArtHtml(product) {
+    if (product.image) {
+      const wide = product.shape === 'mat';
+      return `<img src="${product.image}" alt="${product.name}" class="${wide ? 'is-wide' : ''}" />`;
+    }
+    return SHAPES[product.shape] || SHAPES.tee;
+  }
 
   const isDigital = p.cat === 'digital';
   const hasFormats = Array.isArray(p.formats) && p.formats.length;
@@ -269,7 +282,7 @@
   let sizes;
   if (Array.isArray(p.sizes)) sizes = p.sizes;
   else if (isDigital || hasFormats) sizes = null; // no size for digital/book
-  else if (['cap','beanie','bag','card','mug','patch'].includes(p.shape)) sizes = [t('product.sizeOne')];
+  else if (['cap','beanie','bag','card','mug','patch','sticker','mat'].includes(p.shape)) sizes = [t('product.sizeOne')];
   else sizes = t('product.sizesAll');
 
   // state
@@ -278,7 +291,9 @@
   let selectedColor = hasColors ? p.colors[0] : null;
   let selectedFmt   = hasFormats ? p.formats[1].id : null; // default to physical for book
 
-  const related = PRODUCTS.filter(x => x.cat === p.cat && x.sku !== p.sku && !x.formats).slice(0, 3);
+  const related = p.designLine
+    ? PRODUCTS.filter(x => x.designLine === p.designLine && x.sku !== p.sku)
+    : PRODUCTS.filter(x => x.cat === p.cat && x.sku !== p.sku && !x.formats).slice(0, 3);
 
   function priceCurrent(){
     if (hasFormats) {
@@ -312,7 +327,7 @@
           <span class="corner">${p.sku}</span>
           <span class="corner r">// Front view</span>
           <div style="color:${p.gar}; width:100%; height:100%; display:flex; align-items:center; justify-content:center">
-            ${SHAPES[p.shape]}
+            ${pdpArtHtml(p)}
           </div>
         </div>
         <div class="pdp__thumbs" id="pdp-thumbs">
@@ -324,7 +339,7 @@
       </div>
 
       <div class="pdp__info">
-        <div class="pdp__cat">${p.cat === 'apparel' ? t('inv.apparel') : p.cat === 'cap' ? t('inv.headwear') : p.cat === 'obj' ? t('inv.objects') : t('inv.digital')}${p.badge ? ' · ' + p.badge : ''}</div>
+        <div class="pdp__cat">${p.categoryLabel || (p.cat === 'apparel' ? t('inv.apparel') : p.cat === 'cap' ? t('inv.headwear') : p.cat === 'obj' ? t('inv.objects') : p.cat === 'desk' ? 'Desk' : p.cat === 'sticker' ? 'Sticker' : t('inv.digital'))}${p.badge ? ' · ' + p.badge : ''}</div>
         <h1 class="pdp__name">${p.name}</h1>
         ${p.subtitle ? `<p style="font-size:18px;line-height:1.4;color:var(--fg-2);max-width:520px;margin-top:-12px">${p.subtitle}</p>` : ''}
         <div class="pdp__meta">
@@ -333,11 +348,7 @@
           <span>· ${p.sku}</span>
         </div>
         <p class="pdp__intro">
-          ${isDigital
-            ? `Instant download · No physical shipment · DRM-free.`
-            : hasFormats
-              ? `Choose your format. Digital ships instantly; physical is numbered and bound in a run of ${p.run}.`
-              : `A piece of Drop 001. Made in a numbered run of ${p.run}, signed and committed. Once it ships, the run closes — there is no restock.`}
+          ${p.composition || p.designBrief || 'Eco merch run · price after proof and sample approval.'}
         </p>
 
         ${hasFormats ? `
@@ -429,7 +440,7 @@
       <div class="pdp__related-grid">
         ${related.map(r => `
           <a class="rel-card" href="product.html?sku=${r.sku}">
-            <div class="art" style="color:${r.gar}">${SHAPES[r.shape]}</div>
+            <div class="art" style="color:${r.gar}">${r.image ? `<img src="${r.image}" alt="${r.name}" style="max-width:55%;max-height:55%;object-fit:contain" />` : (SHAPES[r.shape] || SHAPES.tee)}</div>
             <div class="nm">${r.name}</div>
             <div class="mt"><span>${r.sku}</span><span class="pr">${r.price}</span></div>
           </a>
