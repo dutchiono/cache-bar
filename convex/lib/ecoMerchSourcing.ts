@@ -103,6 +103,17 @@ export const ECO_MERCH_SOURCING: EcoMerchSku[] = [
     retailTargetUsd: "14–16",
   },
   {
+    cacheSku: "ECO-STI-002",
+    name: "Ruby Labs Seal",
+    supplier: "prodigi",
+    prodigiSku: "M-STI-5_5X5_5",
+    blank: "Medium matte kiss-cut vinyl 140×140mm",
+    colors: ["Matt vinyl"],
+    printSpec: "PNG 1254×1254 — pad to 1650×1650",
+    designBrief: "Ruby Labs round seal — public/uploads/merch/ruby-labs-seal.png",
+    retailTargetUsd: "4–6",
+  },
+  {
     cacheSku: "ECO-MAT-001",
     name: "Ruby Labs Desk Mat",
     supplier: "prodigi",
