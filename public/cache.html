@@ -175,6 +175,9 @@ img{display:block;max-width:100%}
 /* a simple stylized "garment" silhouette via gradients */
 .gar{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
 .gar svg{width:72%;height:72%;color:var(--garment,#bdb6a2);filter:drop-shadow(0 24px 40px #00000080)}
+.gar--art img{height:78%;max-width:72%;width:auto;object-fit:contain;filter:drop-shadow(0 24px 40px #00000080)}
+.preview.is-art .preview-img{position:relative;z-index:1;width:65%;height:65%;object-fit:contain;filter:drop-shadow(0 16px 28px #00000080)}
+.preview.is-art svg{display:none}
 
 .card__hud{position:absolute;top:24px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:flex-start;z-index:3;font:500 10px/1.2 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 .card__hud .right{text-align:right;color:var(--muted)}
@@ -718,7 +721,7 @@ img{display:block;max-width:100%}
 <section class="featured" id="drop">
   <div class="featured__head">
     <div>
-      <div class="section-eyebrow" data-i18n="feat.eyebrow">// Eco merch — 08 SKUs</div>
+      <div class="section-eyebrow" data-i18n="feat.eyebrow">// Eco merch — 09 SKUs</div>
       <h2 class="section-title"><span data-i18n="feat.titleA">Shop the</span> <span class="ghost" data-i18n="feat.titleB">eco.</span></h2>
     </div>
     <p class="section-aside" data-i18n="feat.aside">Shirts, mugs, mouse pad, sticker pack — themed around Bushleague projects. Original art only. Request → proof → price.</p>
@@ -734,7 +737,7 @@ img{display:block;max-width:100%}
 
   <div class="carousel__nav">
     <button class="carousel__btn prev"><svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M5 1L1 5L5 9M1 5H13" stroke="currentColor" stroke-width="1.4"/></svg> <span data-i18n="feat.prev">Prev</span></button>
-    <div class="carousel__count"><b id="c-cur">01</b> / <span id="c-tot">08</span></div>
+    <div class="carousel__count"><b id="c-cur">01</b> / <span id="c-tot">09</span></div>
     <div class="carousel__progress" style="--p:33%"></div>
     <button class="carousel__btn next"><span data-i18n="feat.next">Next</span> <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M9 1L13 5L9 9M13 5H1" stroke="currentColor" stroke-width="1.4"/></svg></button>
   </div>
@@ -786,7 +789,7 @@ img{display:block;max-width:100%}
     </div>
 
     <div class="manifesto__foot">
-      <div><strong data-i18n="man.foot1">Eco run</strong><span data-i18n="man.foot1Sub">8 SKUs · sticker pack live</span></div>
+      <div><strong data-i18n="man.foot1">Eco run</strong><span data-i18n="man.foot1Sub">9 SKUs · art landing</span></div>
       <div style="justify-self:center;text-align:center"><strong data-i18n="man.foot2">Price</strong><span data-i18n="man.foot2Sub">TBD until proof</span></div>
       <div class="seal">.c</div>
     </div>

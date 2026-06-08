@@ -168,6 +168,15 @@ const SHAPES = window.SHAPES;
 
 const featured = window.FEATURED;
 
+function productGarHtml(p) {
+  const meta = window.PRODUCT_LOOKUP?.[p.sku] || p;
+  const image = meta.image || p.image;
+  if (image) {
+    return `<div class="gar gar--art"><img src="${image}" alt="${p.name}" loading="lazy" /></div>`;
+  }
+  return `<div class="gar" style="--garment:${p.gar}">${SHAPES[p.shape]}</div>`;
+}
+
 const wrap = $('#featured-swiper .swiper-wrapper');
 function rebuildFeaturedSlides(){
   wrap.innerHTML = featured.map(p => `
@@ -175,7 +184,7 @@ function rebuildFeaturedSlides(){
     <div class="card" style="--card-glow:${p.glow}">
       <div class="card__art">
         <div class="product" data-sku="${p.sku}">
-          <div class="gar" style="--garment:${p.gar}">${SHAPES[p.shape]}</div>
+          ${productGarHtml(p)}
         </div>
       </div>
       <div class="card__hud">
@@ -305,13 +314,30 @@ function renderList(filter='all'){
   $$('.row', list).forEach(row => {
     row.addEventListener('mouseenter', e => {
       list.classList.add('is-hovering');
+      const sku = row.dataset.sku;
+      const meta = window.PRODUCT_LOOKUP?.[sku];
+      const image = meta?.image;
       const shape = row.dataset.shape;
       const gar = row.dataset.gar;
-      previewSvg.innerHTML = (SHAPES[shape] || SHAPES.tee).replace(/<svg[^>]*>|<\/svg>/g, '');
-      previewSvg.setAttribute('viewBox', '0 0 200 200');
-      previewSvg.style.color = gar;
+      let previewImg = preview.querySelector('.preview-img');
+      if (image) {
+        preview.classList.add('is-art');
+        if (!previewImg) {
+          previewImg = document.createElement('img');
+          previewImg.className = 'preview-img';
+          preview.insertBefore(previewImg, previewSvg);
+        }
+        previewImg.src = image;
+        previewImg.alt = row.dataset.name;
+      } else {
+        preview.classList.remove('is-art');
+        if (previewImg) previewImg.remove();
+        previewSvg.innerHTML = (SHAPES[shape] || SHAPES.tee).replace(/<svg[^>]*>|<\/svg>/g, '');
+        previewSvg.setAttribute('viewBox', '0 0 200 200');
+        previewSvg.style.color = gar;
+      }
       previewName.textContent = row.dataset.name;
-      previewSku.textContent = row.dataset.sku;
+      previewSku.textContent = sku;
       preview.classList.add('is-on');
     });
     row.addEventListener('mouseleave', () => {

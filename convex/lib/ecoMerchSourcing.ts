@@ -15,6 +15,17 @@ export type EcoMerchSku = {
 
 export const ECO_MERCH_SOURCING: EcoMerchSku[] = [
   {
+    cacheSku: "ECO-TEE-005",
+    name: "ElizaOS Rated E",
+    supplier: "teemill",
+    teemillItemCode: "RNA1",
+    blank: "Men's Basic T-shirt",
+    colors: ["Black", "White"],
+    printSpec: "Upscale source to PNG 4500×5400 chest",
+    designBrief: "ELIZAOS / E / ESRB parody — art at public/uploads/merch/elizaos-rated-e.png",
+    retailTargetUsd: "28–32",
+  },
+  {
     cacheSku: "ECO-TEE-001",
     name: "Deez Cache Tee",
     supplier: "teemill",
