@@ -474,16 +474,19 @@ async function handleCustomProductRequest({
   }
 
   const productName = deriveCustomProductName(text, imageName);
+  const itemCode = teemillItemCodeForRequest(text);
+  const colours = itemCode === "RNK25" ? "White" : "White,Black";
   const result = await createCustomProduct({
     imageUrl: imageDataUrl,
-    itemCode: "RNA1",
+    itemCode,
     name: productName,
-    colours: "White,Black",
+    colours,
     description: "Created through the .cache concierge Teemill custom-product flow.",
   });
 
+  const productLabel = itemCode === "RNK25" ? "mug" : "shirt";
   return {
-    content: `I turned that image into a Teemill shirt draft. Buy it here: ${result.url}`,
+    content: `I turned that image into a Teemill ${productLabel} draft. Buy it here: ${result.url}`,
     configured: true,
     provider: "cache",
     mode: "fallback",
@@ -599,6 +602,13 @@ function partnerAgentPitchReply() {
     "`I am offering one real sticker pack plus a proof NFT through .cache and I want DTOUR to be allowed to offer the same pack as a promo. DTOUR does not need its own SKU, inventory, or checkout stack. It plugs into the existing .cache product, uses Stripe or connected-wallet Base and Solana payments against the same shared inventory, and .cache keeps the order record and fulfillment flow.`",
     "That same arrangement is the general pattern for any agent shop: the agent fronts the product, .cache runs the commerce backend.",
   ].join(" ");
+}
+
+function teemillItemCodeForRequest(text: string) {
+  const lower = text.toLowerCase();
+  if (/\b(mug|coffee|cup|ceramic)\b/.test(lower)) return "RNK25";
+  if (/\b(hoodie|hoody|sweatshirt)\b/.test(lower)) return "RNA7";
+  return "RNA1";
 }
 
 function deriveCustomProductName(text: string, imageName?: string) {

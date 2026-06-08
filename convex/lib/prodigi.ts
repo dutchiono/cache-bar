@@ -55,9 +55,9 @@ export type CacheStickerSku = {
 };
 
 const defaultStickerSkus: CacheStickerSku[] = [
-  { cacheSku: "CST-001", name: "Cache Mark" },
-  { cacheSku: "CST-002", name: "Proof Label" },
-  { cacheSku: "CST-003", name: "Seal Holo" },
+  { cacheSku: "STICKER-PACK-001/moon", name: "Moon Seal", prodigiSku: "M-STI-5_5X5_5" },
+  { cacheSku: "STICKER-PACK-001/floppy", name: "Floppy", prodigiSku: "M-STI-5_5X5_5" },
+  { cacheSku: "STICKER-PACK-001/bus", name: "Bus Riot", prodigiSku: "M-STI-5_5X5_5" },
 ];
 
 export function prodigiConfig() {
