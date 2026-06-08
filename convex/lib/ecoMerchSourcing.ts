@@ -15,6 +15,17 @@ export type EcoMerchSku = {
 
 export const ECO_MERCH_SOURCING: EcoMerchSku[] = [
   {
+    cacheSku: "ECO-STI-001",
+    name: "4GT Profile",
+    supplier: "prodigi",
+    prodigiSku: "M-STI-5_5X5_5",
+    blank: "Medium matte kiss-cut vinyl 140×140mm",
+    colors: ["Matt vinyl"],
+    printSpec: "PNG 799×799 — pad to 1650×1650, 30px padding",
+    designBrief: "Profile silhouette sticker — public/uploads/merch/4gt-profile.png",
+    retailTargetUsd: "4–6",
+  },
+  {
     cacheSku: "ECO-TEE-005",
     name: "ElizaOS Rated E",
     supplier: "teemill",
