@@ -88,7 +88,6 @@ export function shopWebCta() {
 
 /** Injected into Eliza requests so link answers use live catalog + env URLs. */
 export function shopAgentContext() {
-  const p = LIVE_SHOP_PRODUCT;
   return [
     "[Live .cache shop context]",
     shopCatalogSummary(),
