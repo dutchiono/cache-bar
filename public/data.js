@@ -29,12 +29,18 @@ const ELIZAOS_ART = '/uploads/merch/elizaos-rated-e.png';
 const ELIZA_SIMPLE_ART = '/uploads/merch/4gt-profile.png';
 const RUBY_LABS_WIDE = '/uploads/merch/ruby-labs-desk-mat.png';
 const RUBY_LABS_SEAL = '/uploads/merch/ruby-labs-seal.png';
+const COZY_DEVS_STICKERS = [
+  '/uploads/cozy-devs-moon-seal.png',
+  '/uploads/cozy-devs-floppy.png',
+  '/uploads/cozy-devs-bus-riot.png',
+];
 
 window.PRODUCTS = [
   {
     name:'Cozy Devs 3-Pack', sku:'STICKER-PACK-001', cat:'sticker', categoryLabel:'Sticker pack', tag:'01', price:'TBD', stock:'ok', shape:'sticker', gar:'#e8e3d6', badge:'PROOF',
     composition:'3× M-STI-5_5X5_5 matte + proof NFT', madeIn:'Prodigi', run:'50', ships:'POD request',
     colors:['Matt vinyl'], project:'dotcache', designLine:'cozy-devs',
+    images: COZY_DEVS_STICKERS,
     blank:'Prodigi medium kiss-cut', supplierSku:'M-STI-5_5X5_5', retailTarget:'$12–15',
   },
   {
@@ -115,6 +121,7 @@ window.PRODUCTS = [
 
 window.FEATURED = [
   { sku:'STICKER-PACK-001', cat:'Sticker pack', name:'Cozy Devs 3-Pack', price:'TBD', drop:'01/14', shape:'sticker', glow:'#c8ff2d30', gar:'#e8e3d6', hot:true, tag:'PROOF NEXT',
+    images: COZY_DEVS_STICKERS,
     composition: 'Prodigi sticker pack · 3 designs', madeIn: 'Prodigi', run: '50 packs' },
   { sku:'ECO-TEE-005', cat:'Apparel', name:'ElizaOS Rated E Tee', price:'TBD', drop:'02/14', shape:'tee', glow:'#ffffff18', gar:'#1a1a17', hot:true, tag:'ART IN', image: ELIZAOS_ART,
     composition: 'Tee · Mug · Desk mat', madeIn: 'Teemill / Prodigi', run: 'Open edition' },

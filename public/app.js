@@ -169,13 +169,9 @@ const SHAPES = window.SHAPES;
 const featured = window.FEATURED;
 
 function productGarHtml(p) {
+  if (window.MOCKUP) return MOCKUP.renderHtml(p);
   const meta = window.PRODUCT_LOOKUP?.[p.sku] || p;
-  const image = meta.image || p.image;
-  if (image) {
-    const wide = p.shape === 'mat' || meta.shape === 'mat';
-    return `<div class="gar gar--art${wide ? ' gar--wide' : ''}"><img src="${image}" alt="${p.name}" loading="lazy" /></div>`;
-  }
-  return `<div class="gar" style="--garment:${p.gar}">${SHAPES[p.shape]}</div>`;
+  return `<div class="gar" style="--garment:${p.gar}">${SHAPES[meta.shape || p.shape] || SHAPES.tee}</div>`;
 }
 
 const wrap = $('#featured-swiper .swiper-wrapper');
@@ -316,29 +312,23 @@ function renderList(filter='all'){
     row.addEventListener('mouseenter', e => {
       list.classList.add('is-hovering');
       const sku = row.dataset.sku;
-      const meta = window.PRODUCT_LOOKUP?.[sku];
-      const image = meta?.image;
-      const shape = row.dataset.shape;
-      const gar = row.dataset.gar;
-      let previewImg = preview.querySelector('.preview-img');
-      if (image) {
-        preview.classList.add('is-art');
-        if (!previewImg) {
-          previewImg = document.createElement('img');
-          previewImg.className = 'preview-img';
-          preview.insertBefore(previewImg, previewSvg);
-        }
-        previewImg.src = image;
-        previewImg.alt = row.dataset.name;
-      } else {
-        preview.classList.remove('is-art');
-        if (previewImg) previewImg.remove();
+      const meta = window.PRODUCT_LOOKUP?.[sku] || { sku, shape: row.dataset.shape, gar: row.dataset.gar, name: row.dataset.name };
+      preview.classList.remove('is-art');
+      const mockHost = $('#preview-mock');
+      if (window.MOCKUP && mockHost) {
+        if (previewSvg) previewSvg.style.display = 'none';
+        mockHost.innerHTML = MOCKUP.renderHtml(meta);
+      } else if (previewSvg) {
+        mockHost.innerHTML = '';
+        previewSvg.style.display = '';
+        const shape = row.dataset.shape;
+        const gar = row.dataset.gar;
         previewSvg.innerHTML = (SHAPES[shape] || SHAPES.tee).replace(/<svg[^>]*>|<\/svg>/g, '');
         previewSvg.setAttribute('viewBox', '0 0 200 200');
         previewSvg.style.color = gar;
       }
-      previewName.textContent = row.dataset.name;
-      previewSku.textContent = sku;
+      if (previewName) previewName.textContent = row.dataset.name;
+      if (previewSku) previewSku.textContent = sku;
       preview.classList.add('is-on');
     });
     row.addEventListener('mouseleave', () => {
