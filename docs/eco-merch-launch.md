@@ -9,7 +9,7 @@ Full sourcing (blanks, SKUs, art specs, retail targets): **[eco-merch-sourcing.m
 | All tees | Teemill Men's Basic organic tee | `RNA1` |
 | Both mugs | Teemill 11oz white ceramic | `RNK25` |
 | Sticker pack (×3 art) | Prodigi medium matte kiss-cut | `M-STI-5_5X5_5` |
-| Mouse pad | Prodigi neoprene desk mat | `GLOBAL-MOUSEMAT` |
+| Desk mat (large) | Prodigi gaming/desk mat 31×15″ | `GLOBAL-GAMINGMAT` |
 
 ## Next step
 

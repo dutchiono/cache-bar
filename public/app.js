@@ -172,7 +172,8 @@ function productGarHtml(p) {
   const meta = window.PRODUCT_LOOKUP?.[p.sku] || p;
   const image = meta.image || p.image;
   if (image) {
-    return `<div class="gar gar--art"><img src="${image}" alt="${p.name}" loading="lazy" /></div>`;
+    const wide = p.shape === 'mat' || meta.shape === 'mat';
+    return `<div class="gar gar--art${wide ? ' gar--wide' : ''}"><img src="${image}" alt="${p.name}" loading="lazy" /></div>`;
   }
   return `<div class="gar" style="--garment:${p.gar}">${SHAPES[p.shape]}</div>`;
 }
