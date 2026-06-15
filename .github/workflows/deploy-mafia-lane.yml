@@ -39,6 +39,15 @@ jobs:
         run: |
           npm ci
           npm run build
+          # Copy the export to a clean top-level dir so scp strip_components is
+          # unambiguous (mirrors cache-bar's own dist/* + strip 1 shape).
+          rm -rf "$GITHUB_WORKSPACE/_site"
+          cp -r out "$GITHUB_WORKSPACE/_site"
+
+      - name: Show local build tree
+        run: |
+          echo "=== _site (top level) ==="; ls -la "$GITHUB_WORKSPACE/_site"
+          echo "=== index.html present? ==="; test -f "$GITHUB_WORKSPACE/_site/index.html" && echo "yes" || echo "NO"
 
       - name: Ensure /mafia lane exists
         uses: appleboy/ssh-action@v1.0.3
@@ -57,12 +66,12 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DOTCACHE_DEPLOY_USER }}
           key: ${{ secrets.DOTCACHE_DEPLOY_SSH_KEY }}
-          source: "app/out/*"
+          source: "_site/*"
           target: "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist/mafia"
-          strip_components: 2
+          strip_components: 1
           rm: true
 
-      - name: Fix permissions for nginx
+      - name: Fix permissions and verify remote tree
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -70,5 +79,8 @@ jobs:
           key: ${{ secrets.DOTCACHE_DEPLOY_SSH_KEY }}
           script: |
             set -e
-            find "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist/mafia" -type d -exec chmod 755 {} \;
-            find "${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist/mafia" -type f -exec chmod 644 {} \;
+            D="${{ secrets.DOTCACHE_DEPLOY_PATH }}/dist/mafia"
+            find "$D" -type d -exec chmod 755 {} \;
+            find "$D" -type f -exec chmod 644 {} \;
+            echo "=== $D ==="; ls -la "$D"
+            echo "=== index.html present? ==="; test -f "$D/index.html" && echo "yes" || echo "NO"
