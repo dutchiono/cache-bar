@@ -1,0 +1,24 @@
+name: Verify Mafia URL
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe lane URLs
+        run: |
+          for u in \
+            "https://dotcache.bushleague.xyz/mafia/" \
+            "https://dotcache.bushleague.xyz/mafia" \
+            "https://dotcache.bushleague.xyz/Mafia" \
+            "https://dotcache.bushleague.xyz/mafia/index.html" \
+            "https://dotcache.bushleague.xyz/mafia/_next/" ; do
+            echo "===================================================="
+            echo "URL: $u"
+            echo "--- no-follow status / redirect ---"
+            curl -sS -o /tmp/b.html -w "code=%{http_code} redirect_to=%{redirect_url}\n" "$u" || true
+            echo "--- follow-redirects final ---"
+            curl -sSL -o /tmp/bf.html -w "final_code=%{http_code} final_url=%{url_effective}\n" "$u" || true
+            echo "--- body markers (followed) ---"
+            grep -aoiE "SOL<span|SOLMAFIA|MOCK MODE|<title>[^<]*</title>|/mafia/_next|cache\.html|/assets/" /tmp/bf.html | sort -u | head -15 || true
+            echo
+          done
