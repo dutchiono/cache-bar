@@ -181,6 +181,22 @@ jobs:
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
         run: bun run build
 
+      - name: Build Sol Mafia lane into dist/mafia
+        continue-on-error: true
+        env:
+          STATIC_EXPORT: "1"
+          BASE_PATH: "/mafia"
+          NEXT_PUBLIC_MOCK: "1"
+        run: |
+          set -e
+          rm -rf /tmp/sol-mafia
+          git clone --depth 1 --branch claude/sol-mafia-handover-2fvmek \
+            https://github.com/dutchiono/sol-mafia.git /tmp/sol-mafia
+          ( cd /tmp/sol-mafia/app && npm ci && npm run build )
+          rm -rf dist/mafia
+          cp -r /tmp/sol-mafia/app/out dist/mafia
+          echo "dist/mafia built:"; ls -la dist/mafia | head
+
       - name: Build Foundry site
         env:
           VITE_FOUNDRY_API_URL: ${{ secrets.VITE_FOUNDRY_API_URL }}
